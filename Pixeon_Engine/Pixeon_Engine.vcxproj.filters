@@ -24,6 +24,9 @@
     <Filter Include="ソース ファイル\GUI\Ohter">
       <UniqueIdentifier>{db601874-c5f0-415d-a0e8-b065767540fb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\BaseClass">
+      <UniqueIdentifier>{9a907b63-a5b3-4191-b9c2-d7e18ab2d61f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="content_Item.cpp">
