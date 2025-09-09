@@ -5,13 +5,34 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="ヘッダー ファイル">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
     <Filter Include="リソース ファイル">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="リソース ファイル\Text">
+      <UniqueIdentifier>{e3246b6b-9cc7-4080-8c72-fd2305023d37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\GUI">
+      <UniqueIdentifier>{443e4728-733e-47c8-ae1e-17c40449c28d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\GUI\Internal processing">
+      <UniqueIdentifier>{1af6bf24-6530-4d11-8f14-13991b5e4774}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\GUI\View">
+      <UniqueIdentifier>{306ee381-2d50-4435-99d5-f6e344be05b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\GUI\Ohter">
+      <UniqueIdentifier>{db601874-c5f0-415d-a0e8-b065767540fb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="content_Item.cpp">
+      <Filter>ソース ファイル\GUI\Ohter</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="content_Item.h">
+      <Filter>ソース ファイル\GUI\Ohter</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
