@@ -123,12 +123,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ApplicationFeedbackSystem.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="content_Item.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="Struct.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ApplicationFeedbackSystem.cpp" />
     <ClCompile Include="content_Item.cpp" />
     <ClCompile Include="Object.cpp" />
   </ItemGroup>

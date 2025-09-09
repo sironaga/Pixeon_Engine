@@ -17,12 +17,14 @@ public:
 	virtual void Draw();
 	virtual void UInit();
 
-
 	Transform GetTransform() { return _transform; }
 	void SetTransform(Transform transform) { _transform = transform; }
 
 	std::string GetObjectName() { return _ObjectName; }
 	void SetObjectName(const std::string& name) { _ObjectName = name; }
+
+public:
+
 
 public:
 	// variable Setter And Getter
@@ -37,7 +39,6 @@ protected:
 	std::string _ObjectName;
 	Transform _transform;
 	std::vector<Component*> _components;
-
 
 
 	std::map<std::string, int>	_intValues;
