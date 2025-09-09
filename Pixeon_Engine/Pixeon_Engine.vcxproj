@@ -129,7 +129,6 @@
     <ClInclude Include="Struct.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Component.cpp" />
     <ClCompile Include="content_Item.cpp" />
     <ClCompile Include="Object.cpp" />
   </ItemGroup>

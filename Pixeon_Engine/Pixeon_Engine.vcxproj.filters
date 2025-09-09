@@ -41,9 +41,6 @@
     <ClCompile Include="Object.cpp">
       <Filter>ソース ファイル\BaseClass</Filter>
     </ClCompile>
-    <ClCompile Include="Component.cpp">
-      <Filter>ソース ファイル\BaseClass</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
