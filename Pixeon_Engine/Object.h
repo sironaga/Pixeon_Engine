@@ -1,3 +1,7 @@
+//	コンポーネントの更新、描画を管理するクラス
+// BeginPlay() _TempTransformに_transformを保存する
+// InGameの処理が終了しだい_TempTransformを_transformに戻す
+
 #pragma once
 
 #include "Struct.h"
@@ -6,25 +10,69 @@
 #include <map>
 
 class Component;
+class Scene;
 
 class Object
 {
 public:
 	virtual void Init();
 	virtual void BeginPlay();
-	virtual void EditerUpdate();
+	virtual void EditUpdate();
 	virtual void InGameUpdate();
 	virtual void Draw();
 	virtual void UInit();
 
+public:
+
+	// Setter And Getter
 	Transform GetTransform() { return _transform; }
 	void SetTransform(Transform transform) { _transform = transform; }
+
+	Transform GetTempTransform() { return _TempTransform; }
+	void SetTempTransform(Transform transform) { _TempTransform = transform; }
 
 	std::string GetObjectName() { return _ObjectName; }
 	void SetObjectName(const std::string& name) { _ObjectName = name; }
 
-public:
+	void SetPosition(float x, float y, float z) {
+		_transform.position = { x, y, z };
+	}
 
+	void SetRotation(float x, float y, float z) {
+		_transform.rotation = { x, y, z };
+	}
+
+	void SetScale(float x, float y, float z) {
+		_transform.scale = { x, y, z };
+	}
+
+public:
+	// コンポーネントの追加
+	template<typename T = Component>
+	T* AddComponent() {
+		T* newComp = new T();
+		newComp->Init(this);
+		_components.push_back(newComp);
+		return newComp;
+	}
+	// 名前からコンポーネントを取得
+	Component* GetComponent(const std::string& name);
+	// 型からコンポーネントを取得
+	template<typename T = Component>
+	T* GetComponent() {
+		for (auto comp : _components) {
+			T* castedComp = dynamic_cast<T*>(comp);
+			if (castedComp) {
+				return castedComp;
+			}
+		}
+		return nullptr;
+	}
+	// コンポーネントの削除
+	void RemoveComponent(Component* comp);
+
+	void SetParentScene(Scene* scene) { _ParentScene = scene; }
+	Scene* GetParentScene() const { return _ParentScene; }
 
 public:
 	// variable Setter And Getter
@@ -37,9 +85,14 @@ public:
 
 protected:
 	std::string _ObjectName;
+
 	Transform _transform;
+	Transform _TempTransform;
+	bool _isInGame = false;
+
 	std::vector<Component*> _components;
 
+	Scene* _ParentScene = nullptr;
 
 	std::map<std::string, int>	_intValues;
 	std::map<std::string, float>	_floatValues;

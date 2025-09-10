@@ -16,12 +16,12 @@ public:
 public:
 	virtual void Init(Object* Prt)	{}
 	virtual void BeginPlay()		{}
-	virtual void EditerUpdate()		{}
+	virtual void EditUpdate()		{}
 	virtual void InGameUpdate()		{}
 	virtual void Draw()				{}
 	virtual void UInit()			{}
 
-private:
+public:
 	virtual void SaveToFile(std::ostream& out) {}
 	virtual void LoadFromFile(std::istream& in){}
 
@@ -29,6 +29,9 @@ private:
 	void SetComponentKind(ComponetKinds Kind)	{ _Kind = Kind; }
 
 	Object* GetParent() const { return _Parent; }
+
+	std::string GetComponentName() const { return _ComponentName; }
+	void SetComponentName(const std::string& name) { _ComponentName = name; }
 
 protected:
 	std::string _ComponentName;
