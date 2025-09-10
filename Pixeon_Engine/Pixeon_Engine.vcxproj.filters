@@ -33,6 +33,9 @@
     <Filter Include="ソース ファイル\Build">
       <UniqueIdentifier>{29a1df0a-7715-475e-b585-e94b358d5269}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\App">
+      <UniqueIdentifier>{5a1d980f-b464-49e8-b984-996914f8d0cb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="content_Item.cpp">
@@ -43,6 +46,9 @@
     </ClCompile>
     <ClCompile Include="ApplicationFeedbackSystem.cpp">
       <Filter>ソース ファイル\Other</Filter>
+    </ClCompile>
+    <ClCompile Include="StartUp.cpp">
+      <Filter>ソース ファイル\App</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
