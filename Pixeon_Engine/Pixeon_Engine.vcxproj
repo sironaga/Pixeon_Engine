@@ -138,6 +138,7 @@
     <ClCompile Include="ApplicationFeedbackSystem.cpp" />
     <ClCompile Include="content_Item.cpp" />
     <ClCompile Include="Object.cpp" />
+    <ClCompile Include="StartUp.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

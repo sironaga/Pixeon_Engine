@@ -94,7 +94,7 @@ protected:
 
 	Scene* _ParentScene = nullptr;
 
-	std::map<std::string, int>	_intValues;
+	std::map<std::string, int>		_intValues;
 	std::map<std::string, float>	_floatValues;
 	std::map<std::string, bool>		_boolValues;
 };
