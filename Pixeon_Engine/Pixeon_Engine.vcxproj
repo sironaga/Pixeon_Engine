@@ -133,13 +133,17 @@
     <ClInclude Include="Component.h" />
     <ClInclude Include="content_Item.h" />
     <ClInclude Include="Object.h" />
+    <ClInclude Include="SceneManger.h" />
     <ClInclude Include="Struct.h" />
+    <ClInclude Include="System.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ApplicationFeedbackSystem.cpp" />
     <ClCompile Include="content_Item.cpp" />
     <ClCompile Include="Object.cpp" />
+    <ClCompile Include="SceneManger.cpp" />
     <ClCompile Include="StartUp.cpp" />
+    <ClCompile Include="System.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

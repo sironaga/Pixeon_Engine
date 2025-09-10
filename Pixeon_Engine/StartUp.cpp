@@ -29,15 +29,19 @@ extern "C" {
 	}
 
 	__declspec(dllexport) void SoftUpdate(HWND hwnd){
+
 	}
 
 	__declspec(dllexport) void SoftDraw() {
+
 	}
 
 	__declspec(dllexport) void SoftShutDown(){
+
 	}
 
 	__declspec(dllexport) bool IsEngineRunning(){
+
 	}
 
 	__declspec(dllexport) void EngineProc(HWND wnd, UINT uint, WPARAM wparam, LPARAM lparam) {
