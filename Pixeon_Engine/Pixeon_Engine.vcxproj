@@ -133,6 +133,7 @@
     <ClInclude Include="Component.h" />
     <ClInclude Include="content_Item.h" />
     <ClInclude Include="Object.h" />
+    <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneManger.h" />
     <ClInclude Include="Struct.h" />
     <ClInclude Include="System.h" />
@@ -141,6 +142,7 @@
     <ClCompile Include="ApplicationFeedbackSystem.cpp" />
     <ClCompile Include="content_Item.cpp" />
     <ClCompile Include="Object.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneManger.cpp" />
     <ClCompile Include="StartUp.cpp" />
     <ClCompile Include="System.cpp" />
