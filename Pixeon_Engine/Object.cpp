@@ -6,21 +6,15 @@ void Object::Init(){
 }
 
 void Object::BeginPlay(){
-	_TempTransform = _transform;
-	for(auto comp : _components)comp->BeginPlay();
+	for(auto comp : _components)if(comp)comp->BeginPlay();
 }
 
 void Object::EditUpdate(){
-	if (_isInGame) {
-		_transform = _TempTransform;
-		_isInGame = false;
-	}
-	for(auto comp : _components)comp->EditUpdate();
+	for(auto comp : _components)if(comp)comp->EditUpdate();
 }
 
 void Object::InGameUpdate(){
-	_isInGame = true;
-	for(auto comp : _components)comp->InGameUpdate();
+	for(auto comp : _components)if(comp)comp->InGameUpdate();
 }
 
 void Object::Draw(){

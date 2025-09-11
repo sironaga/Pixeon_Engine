@@ -1,6 +1,4 @@
 //	コンポーネントの更新、描画を管理するクラス
-// BeginPlay() _TempTransformに_transformを保存する
-// InGameの処理が終了しだい_TempTransformを_transformに戻す
 
 #pragma once
 
@@ -27,9 +25,6 @@ public:
 	// Setter And Getter
 	Transform GetTransform() { return _transform; }
 	void SetTransform(Transform transform) { _transform = transform; }
-
-	Transform GetTempTransform() { return _TempTransform; }
-	void SetTempTransform(Transform transform) { _TempTransform = transform; }
 
 	std::string GetObjectName() { return _ObjectName; }
 	void SetObjectName(const std::string& name) { _ObjectName = name; }
@@ -85,10 +80,7 @@ public:
 
 protected:
 	std::string _ObjectName;
-
 	Transform _transform;
-	Transform _TempTransform;
-	bool _isInGame = false;
 
 	std::vector<Component*> _components;
 
