@@ -20,6 +20,8 @@ public:
 	virtual void Draw();
 	virtual void UInit();
 
+	Object* Clone();
+
 public:
 
 	// Setter And Getter
@@ -90,4 +92,6 @@ protected:
 	std::map<std::string, float>	_floatValues;
 	std::map<std::string, bool>		_boolValues;
 };
+
+
 

@@ -29,6 +29,14 @@ void Object::UInit(){
 	_components.clear();
 }
 
+Object* Object::Clone()
+{
+	// オブジェクトを複製
+	return nullptr;
+}
+
+
+
 Component* Object::GetComponent(const std::string& name)
 {
 	for(auto comp : _components) {

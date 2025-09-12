@@ -2,6 +2,7 @@
 // 
 
 #include <Windows.h>
+#include "System.h"
 
 #define VERSION (1)
 
@@ -25,7 +26,11 @@ extern "C" {
 	}
 
 	__declspec(dllexport) int SoftInit(const EngineConfig& config){
-
+		HRESULT hr = DirectX11::GetInstance()->Init(config.hWnd, config.screenWidth, config.screenHeight, config.fullscreen);
+		if (FAILED(hr)) {
+			return -1;
+		}
+		return 0;
 	}
 
 	__declspec(dllexport) void SoftUpdate(HWND hwnd){
@@ -38,6 +43,7 @@ extern "C" {
 
 	__declspec(dllexport) void SoftShutDown(){
 
+		DirectX11::DestroyInstance();
 	}
 
 	__declspec(dllexport) bool IsEngineRunning(){
