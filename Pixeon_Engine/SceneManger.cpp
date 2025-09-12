@@ -1,1 +1,117 @@
 #include "SceneManger.h"
+#include "Scene.h"
+
+// シーンディレクトリのパス
+#define SCENE_DIR "bin/Scenes/"
+
+SceneManger* SceneManger::instance = nullptr;
+
+SceneManger* SceneManger::GetInstance()
+{
+	if (instance == nullptr)
+	{
+		instance = new SceneManger();
+	}
+	return instance;
+}
+
+void SceneManger::DestroyInstance()
+{
+	if (instance != nullptr)
+	{
+		delete instance;
+		instance = nullptr;
+	}
+}
+
+void SceneManger::Init(){
+	_sceneList = ListSceneFiles();
+	for (const auto& fileName : _sceneList)
+	{
+		std::string sceneName = fileName.substr(0, fileName.find_last_of('.'));
+		if (CreateAndRegisterScene(sceneName)){
+			std::cout << "Registered scene: " << sceneName << std::endl;
+		}
+		else{
+			std::cout << "Scene already exists: " << sceneName << std::endl;
+		}
+	}
+}
+
+// シーン開始
+void SceneManger::BeginPlay(){
+	if (_currentScene) {
+		
+	}
+}
+
+// 更新
+void SceneManger::EditUpdate(){
+}
+
+// 更新
+void SceneManger::PlayUpdate(){
+}
+
+// 描画
+void SceneManger::Draw(){
+}
+
+// シーンの変更
+void SceneManger::ChangeScene(std::string SceneName){
+}
+
+// 新規シーンの作成と登録
+bool SceneManger::CreateAndRegisterScene(std::string SceneName) {
+
+	for (const auto& Name : _sceneList){
+		if (Name == SceneName){
+			return false;
+		}
+	}
+
+	RegisterScene(SceneName, [SceneName]() -> Scene* {
+		Scene* newScene = new Scene();
+		newScene->SetName(SceneName);
+		return newScene;
+		});
+	return true;
+}
+
+// シーンの登録
+void SceneManger::RegisterScene(std::string Name, std::function<Scene* ()> creator){
+	_SceneCreators[Name] = creator;
+}
+
+// ファイル名の取得
+std::vector<std::string> SceneManger::ListSceneFiles(){
+	std::vector<std::string> sceneFiles;
+	std::string sceneDir = SCENE_DIR;
+	std::string searchPath = sceneDir + "\\*.scene";
+	WIN32_FIND_DATAA findData;
+	HANDLE hFind = FindFirstFileA(searchPath.c_str(), &findData);
+
+	if (hFind == INVALID_HANDLE_VALUE) {
+		// シーンファイルが見つからない場合
+	}
+
+	do {
+		if (!(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+			sceneFiles.push_back(findData.cFileName);
+		}
+	} while (FindNextFileA(hFind, &findData));
+	FindClose(hFind);
+
+	return sceneFiles;
+}
+
+// ファイル名の変更
+bool SceneManger::RenameFileInDirectory(const std::string& oldName, const std::string& newName){
+	std::string oldPath = std::string(SCENE_DIR) + oldName;
+	std::string newPath = std::string(SCENE_DIR) + newName;
+	if (std::rename(oldPath.c_str(), newPath.c_str()) != 0) {
+		// リネーム失敗
+		return false;
+	}
+	return true;
+}
