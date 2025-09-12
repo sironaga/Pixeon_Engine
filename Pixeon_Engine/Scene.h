@@ -7,8 +7,18 @@
 class Scene
 {
 public:
+	Scene() {}
+	virtual ~Scene() {}
+	virtual void Init();
+	virtual void BeginPlay();
+	virtual void EditUpdate();
+	virtual void PlayUpdate();
+	virtual void Draw();
 
-
+public:
+	// セーブとロード
+	void SaveToFile();
+	void LoadToFile();
 
 	void SetName(std::string name) { _name = name; }
 

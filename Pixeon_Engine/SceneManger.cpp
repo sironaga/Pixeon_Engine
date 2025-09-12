@@ -41,24 +41,47 @@ void SceneManger::Init(){
 // シーン開始
 void SceneManger::BeginPlay(){
 	if (_currentScene) {
-		
+		_currentScene->SaveToFile();
+		_currentScene->BeginPlay();
 	}
 }
 
 // 更新
 void SceneManger::EditUpdate(){
+	// シーンの切り替え
+	if (_nextScene) {
+		if (_currentScene)delete _currentScene;
+		_currentScene = _nextScene;
+		_currentScene->Init();
+		_currentScene->LoadToFile();
+	}
+	// 更新
+	if (_currentScene)_currentScene->EditUpdate();
 }
 
 // 更新
 void SceneManger::PlayUpdate(){
+	if (_nextScene) {
+		if (_currentScene)delete _currentScene;
+		_currentScene = _nextScene;
+		_currentScene->Init();
+		_currentScene->LoadToFile();
+		_currentScene->BeginPlay();
+	}
+	if (_currentScene)_currentScene->PlayUpdate();
 }
 
 // 描画
 void SceneManger::Draw(){
+	if (_currentScene)_currentScene->Draw();
 }
 
 // シーンの変更
 void SceneManger::ChangeScene(std::string SceneName){
+	auto it = _SceneCreators.find(SceneName);
+	if (it != _SceneCreators.end()) {
+		_nextScene = it->second();
+	}
 }
 
 // 新規シーンの作成と登録

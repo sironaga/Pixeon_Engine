@@ -31,19 +31,14 @@ public:
 	bool RenameFileInDirectory(const std::string& oldName, const std::string& newName);
 	std::vector<std::string> GetSceneList() { return _sceneList; }
 
-
 private:
 	bool CreateAndRegisterScene(std::string SceneName);
 	void RegisterScene(std::string Name, std::function<Scene* ()> creator);
 	std::vector<std::string> ListSceneFiles();
 
-
 private:
 	SceneManger() {}
 	~SceneManger() {}
-
-	
-
 
 private:
 	// シーンリスト
