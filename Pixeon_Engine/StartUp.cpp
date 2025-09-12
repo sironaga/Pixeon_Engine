@@ -3,6 +3,7 @@
 
 #include <Windows.h>
 #include "System.h"
+#include "AssetsManager.h"
 
 #define VERSION (1)
 
@@ -34,7 +35,15 @@ extern "C" {
 	}
 
 	__declspec(dllexport) void SoftUpdate(HWND hwnd){
+		AssetsManager::GetInstance()->Open("assets.PixAssets");
+		AssetWatcher watcher(".", "Assets.PixAssets",
+			[&]() {
+				AssetsManager::GetInstance()->Open("assets.PixAssets");
+			}
+		);
+		watcher.Start();
 
+		watcher.Stop();
 	}
 
 	__declspec(dllexport) void SoftDraw() {
@@ -48,6 +57,7 @@ extern "C" {
 
 	__declspec(dllexport) bool IsEngineRunning(){
 
+		return false;
 	}
 
 	__declspec(dllexport) void EngineProc(HWND wnd, UINT uint, WPARAM wparam, LPARAM lparam) {
