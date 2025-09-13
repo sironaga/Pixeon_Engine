@@ -22,5 +22,7 @@ void UnInit();
 // “à•”ˆ—
 void EditeUpdate();
 void InGameUpdate();
+void EditeDraw();
+void InGamDraw();
 
 void AssetsUpdate();

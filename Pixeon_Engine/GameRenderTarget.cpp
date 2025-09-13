@@ -1,8 +1,5 @@
 #include "GameRenderTarget.h"
-#include "DirectX.h"
-#include "Process.h"
-#include "SceneManager.h"
-#include "Scene.h"
+#include "System.h"
 
 void GameRenderTarget::Init(ID3D11Device* device, int width, int height)
 {
@@ -171,21 +168,7 @@ void GameRenderTarget::Begin(ID3D11DeviceContext* context)
 
     DirectX::XMFLOAT4 Temp;
     float clearColor[4] = { 0.1f, 0.1f, 0.3f, 1.0f };
-    if (SceneManager::GetInstance()->GetCurrentScene())
-    {
-        Temp = SceneManager::GetInstance()->GetCurrentScene()->GetSceneColor();
-        clearColor[0] = Temp.x;
-        clearColor[1] = Temp.y;
-        clearColor[2] = Temp.z;
-        clearColor[3] = Temp.w;
-    }
-    else
-    {
-        clearColor[0] = 0.1f;
-        clearColor[1] = 0.1f;
-        clearColor[2] = 0.1f;
-		clearColor[3] = 1.0f;
-    }
+
     context->ClearRenderTargetView(m_pRTV, clearColor);
     if (m_pDSV)
     {
@@ -196,11 +179,11 @@ void GameRenderTarget::Begin(ID3D11DeviceContext* context)
 void GameRenderTarget::End()
 {
     // Šù‘¶‚ÌŽÀ‘•‚ð‚»‚Ì‚Ü‚ÜˆÛŽ
-    RenderTarget* defaultRTV = GetDefaultRTV();
-    DepthStencil* defaultDSV = GetDefaultDSV();
+    RenderTarget* defaultRTV = DirectX11::GetInstance()->GetDefaultRTV();
+	DepthStencil* defaultDSV = DirectX11::GetInstance()->GetDefaultDSV();
 
     if (defaultRTV)
     {
-        SetRenderTargets(1, &defaultRTV, defaultDSV);
+		DirectX11::GetInstance()->SetRenderTargets(1, &defaultRTV, defaultDSV);
     }
 }
