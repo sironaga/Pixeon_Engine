@@ -92,6 +92,9 @@
     <ClCompile Include="Scene.cpp">
       <Filter>ソース ファイル\BaseClass</Filter>
     </ClCompile>
+    <ClCompile Include="GameRenderTarget.cpp">
+      <Filter>ソース ファイル\Sys</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -147,6 +150,9 @@
     </ClInclude>
     <ClInclude Include="Main.h">
       <Filter>ソース ファイル\App</Filter>
+    </ClInclude>
+    <ClInclude Include="GameRenderTarget.h">
+      <Filter>ソース ファイル\Sys</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

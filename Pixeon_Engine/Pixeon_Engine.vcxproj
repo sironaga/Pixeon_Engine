@@ -134,6 +134,7 @@
     <ClInclude Include="AssetsManager.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="content_Item.h" />
+    <ClInclude Include="GameRenderTarget.h" />
     <ClInclude Include="IMGUI\imconfig.h" />
     <ClInclude Include="IMGUI\imgui.h" />
     <ClInclude Include="IMGUI\imgui_impl_dx11.h" />
@@ -153,6 +154,7 @@
     <ClCompile Include="ApplicationFeedbackSystem.cpp" />
     <ClCompile Include="AssetsManager.cpp" />
     <ClCompile Include="content_Item.cpp" />
+    <ClCompile Include="GameRenderTarget.cpp" />
     <ClCompile Include="IMGUI\imgui.cpp" />
     <ClCompile Include="IMGUI\imgui_demo.cpp" />
     <ClCompile Include="IMGUI\imgui_draw.cpp" />
