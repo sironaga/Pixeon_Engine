@@ -4,6 +4,8 @@
 #include "System.h"
 #include "Main.h"
 #include "AssetsManager.h"
+#include "IMGUI/imgui_impl_win32.h" 
+#include "IMGUI/imgui_impl_dx11.h"
 
 #define VERSION (1)
 
@@ -38,6 +40,7 @@ extern "C" {
 	}
 
 	__declspec(dllexport) void EngineProc(HWND wnd, UINT uint, WPARAM wparam, LPARAM lparam) {
+		ImGui_ImplWin32_WndProcHandler(wnd, uint, wparam, lparam);
 
 	}
 }

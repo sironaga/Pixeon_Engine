@@ -12,6 +12,7 @@ bool bInGame;
 
 int Init(const EngineConfig& InPut){
 	// DirectX11の初期化
+	ghWnd = InPut.hWnd;
 	HRESULT hr = DirectX11::GetInstance()->Init(InPut.hWnd, InPut.screenWidth, InPut.screenHeight, InPut.fullscreen);
 	if (FAILED(hr)) return -1;
 	//　アセットマネージャーの起動
@@ -28,8 +29,6 @@ int Init(const EngineConfig& InPut){
 
 	EditrGUI::GetInstance()->Init();
 	bInGame = false;
-
-	ghWnd = InPut.hWnd;
 
 	SceneManger::GetInstance()->Init();
 
