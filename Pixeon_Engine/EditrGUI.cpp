@@ -39,6 +39,24 @@ void EditrGUI::Init(){
     ImGui_ImplWin32_Init(GetWindowHandle());
     ImGui_ImplDX11_Init(DirectX11::GetInstance()->GetDevice(), DirectX11::GetInstance()->GetContext());
 
+    auto Style = ImGui::GetStyle();
+    Style.WindowRounding = 8.0f;
+    Style.FrameRounding = 6.0f;
+    Style.GrabRounding = 6.0f;
+    Style.ScrollbarRounding = 8.0f;
+    Style.WindowPadding = ImVec2(16, 16);
+    Style.FramePadding = ImVec2(10, 6);
+    Style.ItemSpacing = ImVec2(10, 10);
+    Style.ItemInnerSpacing = ImVec2(8, 8);
+    Style.Colors[ImGuiCol_WindowBg] = ImVec4(0.13f, 0.14f, 0.19f, 1.00f);
+    Style.Colors[ImGuiCol_Header] = ImVec4(0.30f, 0.35f, 0.50f, 1.00f);
+    Style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.37f, 0.42f, 0.65f, 1.00f);
+    Style.Colors[ImGuiCol_Button] = ImVec4(0.25f, 0.29f, 0.42f, 1.00f);
+    Style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.33f, 0.38f, 0.53f, 1.00f);
+    Style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.45f, 0.50f, 0.75f, 1.00f);
+    Style.Colors[ImGuiCol_Tab] = ImVec4(0.20f, 0.24f, 0.40f, 1.00f);
+    Style.Colors[ImGuiCol_TabActive] = ImVec4(0.35f, 0.40f, 0.65f, 1.00f);
+
 }
 
 void EditrGUI::Update(){

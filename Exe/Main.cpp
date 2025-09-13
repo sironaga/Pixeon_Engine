@@ -31,8 +31,8 @@ EngineProcessWindowMessageFunc EngineProcessWindowMessage;
 
 
 #define APP_TITLE "Pixeon"
-#define SCREEN_WIDTH 1920
-#define SCREEN_HEIGHT 1080
+#define SCREEN_WIDTH (1280)
+#define SCREEN_HEIGHT (720)
 // ウィンドウプロシージャ
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
