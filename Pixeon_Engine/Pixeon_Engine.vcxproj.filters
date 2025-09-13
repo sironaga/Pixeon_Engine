@@ -62,6 +62,36 @@
     <ClCompile Include="SceneManger.cpp">
       <Filter>ソース ファイル\Manager</Filter>
     </ClCompile>
+    <ClCompile Include="AssetsManager.cpp">
+      <Filter>ソース ファイル\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="IMGUI\imgui.cpp">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClCompile>
+    <ClCompile Include="IMGUI\imgui_demo.cpp">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClCompile>
+    <ClCompile Include="IMGUI\imgui_draw.cpp">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClCompile>
+    <ClCompile Include="IMGUI\imgui_impl_dx11.cpp">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClCompile>
+    <ClCompile Include="IMGUI\imgui_impl_win32.cpp">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClCompile>
+    <ClCompile Include="IMGUI\imgui_tables.cpp">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClCompile>
+    <ClCompile Include="IMGUI\imgui_widgets.cpp">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>ソース ファイル\App</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>ソース ファイル\BaseClass</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -84,6 +114,39 @@
     </ClInclude>
     <ClInclude Include="SceneManger.h">
       <Filter>ソース ファイル\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetsManager.h">
+      <Filter>ソース ファイル\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="IMGUI\imstb_truetype.h">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClInclude>
+    <ClInclude Include="IMGUI\imgui.h">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClInclude>
+    <ClInclude Include="IMGUI\imgui_impl_dx11.h">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClInclude>
+    <ClInclude Include="IMGUI\imgui_impl_win32.h">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClInclude>
+    <ClInclude Include="IMGUI\imgui_internal.h">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClInclude>
+    <ClInclude Include="IMGUI\imstb_rectpack.h">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClInclude>
+    <ClInclude Include="IMGUI\imstb_textedit.h">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClInclude>
+    <ClInclude Include="IMGUI\imconfig.h">
+      <Filter>ソース ファイル\GUI\Internal processing</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>ソース ファイル\BaseClass</Filter>
+    </ClInclude>
+    <ClInclude Include="Main.h">
+      <Filter>ソース ファイル\App</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

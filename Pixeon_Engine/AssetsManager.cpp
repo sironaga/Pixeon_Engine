@@ -3,16 +3,14 @@
 
 AssetsManager* AssetsManager::instance = nullptr;
 
-AssetsManager* AssetsManager::GetInstance()
-{
+AssetsManager* AssetsManager::GetInstance(){
 	if (instance == nullptr) {
 		instance = new AssetsManager();
 	}
 	return instance;
 }
 
-void AssetsManager::DestroyInstance()
-{
+void AssetsManager::DestroyInstance(){
 	if (instance) {
 		delete instance;
 		instance = nullptr;

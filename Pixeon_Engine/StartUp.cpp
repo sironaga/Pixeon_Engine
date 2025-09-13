@@ -1,23 +1,11 @@
 // DLLのエントリーポイント
-// 
+// コアモジュール
 
-#include <Windows.h>
 #include "System.h"
+#include "Main.h"
 #include "AssetsManager.h"
 
 #define VERSION (1)
-
-
-struct EngineConfig {
-	HWND hWnd;
-	int screenWidth;
-	int screenHeight;
-	const char* windowTitle;
-	bool fullscreen;
-	float targetFPS;
-	const char* startScene;
-};
-
 
 extern "C" {
 
@@ -27,32 +15,21 @@ extern "C" {
 	}
 
 	__declspec(dllexport) int SoftInit(const EngineConfig& config){
-		HRESULT hr = DirectX11::GetInstance()->Init(config.hWnd, config.screenWidth, config.screenHeight, config.fullscreen);
-		if (FAILED(hr)) {
-			return -1;
-		}
-		return 0;
+		int nResult = 0;
+		nResult = Init(config);
+		return nResult;
 	}
 
 	__declspec(dllexport) void SoftUpdate(HWND hwnd){
-		AssetsManager::GetInstance()->Open("assets.PixAssets");
-		AssetWatcher watcher(".", "Assets.PixAssets",
-			[&]() {
-				AssetsManager::GetInstance()->Open("assets.PixAssets");
-			}
-		);
-		watcher.Start();
-
-		watcher.Stop();
+		Update();
 	}
 
 	__declspec(dllexport) void SoftDraw() {
-
+		Draw();
 	}
 
 	__declspec(dllexport) void SoftShutDown(){
-
-		DirectX11::DestroyInstance();
+		UnInit();
 	}
 
 	__declspec(dllexport) bool IsEngineRunning(){
