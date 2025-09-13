@@ -40,7 +40,7 @@ extern "C" {
 	}
 
 	__declspec(dllexport) void EngineProc(HWND wnd, UINT uint, WPARAM wparam, LPARAM lparam) {
-		ImGui_ImplWin32_WndProcHandler(wnd, uint, wparam, lparam);
+		//ImGui_ImplWin32_WndProcHandler(wnd, uint, wparam, lparam);
 
 	}
 }

@@ -56,6 +56,27 @@ void EditrGUI::Draw(){
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 }
 
+std::string EditrGUI::ShiftJISToUTF8(const std::string& str)
+{
+    if (str.empty()) return {};
+
+    // Shift-JIS → UTF-16
+    int lenW = MultiByteToWideChar(932, 0, str.data(), (int)str.size(), nullptr, 0);
+    if (lenW <= 0) return {};
+
+    std::wstring wstr(lenW, 0);
+    MultiByteToWideChar(932, 0, str.data(), (int)str.size(), &wstr[0], lenW);
+
+    // UTF-16 → UTF-8
+    int lenU8 = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), lenW, nullptr, 0, nullptr, nullptr);
+    if (lenU8 <= 0) return {};
+
+    std::string u8str(lenU8, 0);
+    WideCharToMultiByte(CP_UTF8, 0, wstr.data(), lenW, &u8str[0], lenU8, nullptr, nullptr);
+
+    return u8str;
+}
+
 void EditrGUI::WindowGUI(){
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->Pos);
@@ -78,7 +99,7 @@ void EditrGUI::WindowGUI(){
     // メニューバー
     if (ImGui::BeginMenuBar())
     {
-        if (ImGui::BeginMenu("File"))
+        if (ImGui::BeginMenu(ShiftJISToUTF8("ファイル").c_str()))
         {
             if (ImGui::MenuItem("New Scene")) {
             }
@@ -91,13 +112,13 @@ void EditrGUI::WindowGUI(){
             }
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("Settings"))
+        if (ImGui::BeginMenu(ShiftJISToUTF8("設定").c_str()))
         {
             if (ImGui::MenuItem("Preferences")) {
             }
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("Editor"))
+        if (ImGui::BeginMenu(ShiftJISToUTF8("編集").c_str()))
         {
             if (ImGui::MenuItem("Toggle Console")) {
             }
