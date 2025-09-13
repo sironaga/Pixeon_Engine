@@ -24,5 +24,3 @@ void EditeUpdate();
 void InGameUpdate();
 
 void AssetsUpdate();
-
-bool bInGame;

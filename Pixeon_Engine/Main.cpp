@@ -1,8 +1,10 @@
 #include "Main.h"
 #include "System.h"
 #include "AssetsManager.h"
+#include "SceneManger.h"
 
 AssetWatcher *watcher;
+bool bInGame;
 
 int Init(const EngineConfig& InPut){
 	// DirectX11‚Ì‰Šú‰»
@@ -19,15 +21,25 @@ int Init(const EngineConfig& InPut){
 
 	bInGame = false;
 
+	SceneManger::GetInstance()->Init();
+
 	return 0;
 }
 
 void Update(){
-
+	if(bInGame){
+		InGameUpdate();
+	}
+	else{
+		EditeUpdate();
+	}
 
 }
 
 void Draw(){
+	DirectX11::GetInstance()->BeginDraw();
+	SceneManger::GetInstance()->Draw();
+	DirectX11::GetInstance()->EndDraw();
 }
 
 void UnInit(){
@@ -38,10 +50,11 @@ void UnInit(){
 // “à•”ˆ—
 
 void EditeUpdate(){
-
+	SceneManger::GetInstance()->EditUpdate();
 }
 
 void InGameUpdate(){
+	SceneManger::GetInstance()->PlayUpdate();
 }
 
 void AssetsUpdate() {

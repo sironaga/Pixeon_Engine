@@ -116,6 +116,7 @@ std::vector<std::string> SceneManger::ListSceneFiles(){
 
 	if (hFind == INVALID_HANDLE_VALUE) {
 		// シーンファイルが見つからない場合
+		CreateAndRegisterScene("SampleScene");
 	}
 
 	do {
