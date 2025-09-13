@@ -95,6 +95,9 @@
     <ClCompile Include="GameRenderTarget.cpp">
       <Filter>ソース ファイル\Sys</Filter>
     </ClCompile>
+    <ClCompile Include="EditrGUI.cpp">
+      <Filter>ソース ファイル\GUI\View</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -153,6 +156,9 @@
     </ClInclude>
     <ClInclude Include="GameRenderTarget.h">
       <Filter>ソース ファイル\Sys</Filter>
+    </ClInclude>
+    <ClInclude Include="EditrGUI.h">
+      <Filter>ソース ファイル\GUI\View</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
