@@ -26,3 +26,4 @@ void EditeDraw();
 void InGamDraw();
 
 void AssetsUpdate();
+HWND GetWindowHandle();

@@ -3,7 +3,9 @@
 #include "AssetsManager.h"
 #include "SceneManger.h"
 #include "GameRenderTarget.h"
+#include "EditrGUI.h"
 
+HWND ghWnd;
 AssetWatcher *watcher;
 GameRenderTarget* gGameRenderTarget;
 bool bInGame;
@@ -24,7 +26,10 @@ int Init(const EngineConfig& InPut){
 	gGameRenderTarget = new GameRenderTarget();
 	gGameRenderTarget->Init(DirectX11::GetInstance()->GetDevice(), InPut.screenWidth, InPut.screenHeight);
 
+	EditrGUI::GetInstance()->Init();
 	bInGame = false;
+
+	ghWnd = InPut.hWnd;
 
 	SceneManger::GetInstance()->Init();
 
@@ -42,7 +47,9 @@ void Update(){
 }
 
 void Draw(){
-	EditeDraw();
+	DirectX11::GetInstance()->BeginDraw();
+	EditrGUI::GetInstance()->Draw();
+	DirectX11::GetInstance()->EndDraw();
 }
 
 void UnInit(){
@@ -53,6 +60,7 @@ void UnInit(){
 // “à•”ˆ—
 
 void EditeUpdate(){
+	EditrGUI::GetInstance()->Update();
 	SceneManger::GetInstance()->EditUpdate();
 }
 
@@ -64,6 +72,9 @@ void EditeDraw(){
 	gGameRenderTarget->Begin(DirectX11::GetInstance()->GetContext());
 	SceneManger::GetInstance()->Draw();
 	gGameRenderTarget->End();
+	DirectX11::GetInstance()->BeginDraw();
+	EditrGUI::GetInstance()->Draw();
+	DirectX11::GetInstance()->EndDraw();
 }
 
 void InGamDraw(){
@@ -74,4 +85,8 @@ void InGamDraw(){
 
 void AssetsUpdate() {
 
+}
+
+HWND GetWindowHandle(){
+	return ghWnd;
 }

@@ -178,7 +178,7 @@ void DirectX11::Uninit()
 
 void DirectX11::BeginDraw()
 {
-	float color[4] = { 0.2f, 0.2f, 0.2f, 0.0f };
+	float color[4] = { 0.5f, 0.5f, 0.5f, 1.0f };
 	g_pRTV->Clear(color);
 	g_pDSV->Clear();
 }

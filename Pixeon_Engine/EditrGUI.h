@@ -12,6 +12,8 @@ public:
 	void Update();
 	void Draw();
 
+private:
+	void WindowGUI();
 
 private:
 	static EditrGUI* instance;
