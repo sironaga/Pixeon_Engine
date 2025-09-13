@@ -26,5 +26,5 @@ bool CallAssetPacker(const std::string& toolPath, const std::string& assetDir, c
 
 int main()
 {
-	CallAssetPacker("Asset packaging tool.exe", "Assets", "GameAssets.PixAssets");
+	CallAssetPacker("Asset packaging tool.exe", "Assets", "assets.PixAssets");
 }

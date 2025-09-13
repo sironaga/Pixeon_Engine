@@ -34,7 +34,7 @@ extern "C" {
 
 	__declspec(dllexport) bool IsEngineRunning(){
 
-		return false;
+		return true;
 	}
 
 	__declspec(dllexport) void EngineProc(HWND wnd, UINT uint, WPARAM wparam, LPARAM lparam) {

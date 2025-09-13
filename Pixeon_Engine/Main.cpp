@@ -12,7 +12,7 @@ int Init(const EngineConfig& InPut){
 	if (FAILED(hr)) return -1;
 
 	AssetsManager::GetInstance()->Open("assets.PixAssets");
-	watcher = new AssetWatcher(".", "Assets.PixAssets",
+	watcher = new AssetWatcher(".", "assets.PixAssets",
 		[&]() {
 			AssetsManager::GetInstance()->Open("assets.PixAssets");
 		}
