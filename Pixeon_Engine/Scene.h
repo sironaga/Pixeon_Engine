@@ -40,7 +40,6 @@ private:
 	std::vector<Object*> _ToBeAdded;
 	std::vector<Object*> _ToBeAddedBuffer;
 	std::mutex _mtx;
-	
 
 };
 
