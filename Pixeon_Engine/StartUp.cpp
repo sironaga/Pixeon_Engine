@@ -11,6 +11,7 @@
 int g_nScreenWidth = 1920;
 int g_nScreenHeight = 1080;
 bool g_bInit = false;
+bool g_bRun = false;
 
 extern "C" {
 
@@ -22,6 +23,9 @@ extern "C" {
 	__declspec(dllexport) int SoftInit(const EngineConfig& config){
 		int nResult = 0;
 		nResult = Init(config);
+		g_nScreenHeight = config.screenHeight;
+		g_nScreenWidth = config.screenWidth;
+		g_bRun = true;
 		g_bInit = true;
 		return nResult;
 	}
@@ -40,7 +44,7 @@ extern "C" {
 
 	__declspec(dllexport) bool IsEngineRunning(){
 
-		return true;
+		return g_bRun;
 	}
 
 	__declspec(dllexport) void EngineProc(HWND wnd, UINT uint, WPARAM wparam, LPARAM lparam) {

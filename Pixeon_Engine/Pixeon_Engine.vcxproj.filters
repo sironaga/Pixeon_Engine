@@ -160,5 +160,8 @@
     <ClInclude Include="EditrGUI.h">
       <Filter>ソース ファイル\GUI\View</Filter>
     </ClInclude>
+    <ClInclude Include="StartUp.h">
+      <Filter>ソース ファイル\App</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
