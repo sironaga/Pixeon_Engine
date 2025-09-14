@@ -129,7 +129,7 @@ public:
 	void BeginDraw();
 	void EndDraw();
 
-
+	void OnResize(UINT width, UINT height);
 	ID3D11Device* GetDevice() { return g_pDevice; }
 	ID3D11DeviceContext* GetContext() { return g_pContext; }
 	IDXGISwapChain* GetSwapChain() { return g_pSwapChain; }

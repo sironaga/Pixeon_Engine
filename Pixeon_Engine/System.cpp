@@ -1,5 +1,7 @@
 #include "System.h"
 #include "DirectXTex/TextureLoad.h"
+#include "IMGUI/imgui.h"
+#include "IMGUI/imgui_impl_dx11.h"
 
 // DirectX11 class
 
@@ -186,6 +188,36 @@ void DirectX11::BeginDraw()
 void DirectX11::EndDraw()
 {
 	g_pSwapChain->Present(0, 0);
+}
+
+void DirectX11::OnResize(UINT width, UINT height){
+	if (width == 0 || height == 0) return;
+
+	// ImGui: デバイスオブジェクト無効化
+	ImGui_ImplDX11_InvalidateDeviceObjects();
+
+	// 既存リソース削除
+	SAFE_DELETE(g_pRTV);
+	SAFE_DELETE(g_pDSV);
+
+	// スワップチェーンのリサイズ
+	HRESULT hr = g_pSwapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
+	if (FAILED(hr)) {
+		MessageBox(nullptr, "ResizeBuffers Failed", "Error", MB_OK);
+		return;
+	}
+
+	// 新しいRTV/DSVの生成
+	g_pRTV = new RenderTarget();
+	g_pRTV->CreateFromScreen();
+	g_pDSV = new DepthStencil();
+	g_pDSV->Create(g_pRTV->GetWidth(), g_pRTV->GetHeight(), false);
+
+	// ビューポート再設定
+	SetRenderTargets(1, &g_pRTV, g_pDSV);
+
+	// ImGui: デバイスオブジェクト再生成
+	ImGui_ImplDX11_CreateDeviceObjects();
 }
 
 void DirectX11::SetRenderTargets(UINT num, RenderTarget** ppViews, DepthStencil* pView)

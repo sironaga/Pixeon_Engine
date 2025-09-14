@@ -31,8 +31,8 @@ EngineProcessWindowMessageFunc EngineProcessWindowMessage;
 
 
 #define APP_TITLE "Pixeon"
-#define SCREEN_WIDTH (1280)
-#define SCREEN_HEIGHT (720)
+#define SCREEN_WIDTH (1920)
+#define SCREEN_HEIGHT (1080)
 // ウィンドウプロシージャ
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -137,8 +137,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return -1;
     }
 
+	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
     // ウィンドウの作成
-    RECT rect = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+    RECT rect = { 0, 0, screenWidth, screenHeight };
     DWORD style = WS_OVERLAPPEDWINDOW;
     DWORD exStyle = WS_EX_OVERLAPPEDWINDOW;
     AdjustWindowRectEx(&rect, style, false, exStyle);
@@ -164,8 +167,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // エンジンの初期化
     EngineConfig config = {};
     config.hWnd = g_hWnd;
-    config.screenWidth = SCREEN_WIDTH;
-    config.screenHeight = SCREEN_HEIGHT;
+    config.screenWidth = screenWidth;
+    config.screenHeight = screenHeight;
     config.windowTitle = APP_TITLE;
     config.fullscreen = false;
     config.targetFPS = 60.0f;
