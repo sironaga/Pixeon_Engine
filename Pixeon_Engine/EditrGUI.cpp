@@ -304,7 +304,14 @@ void EditrGUI::ShowGameView()
     ImGui::Separator();
 
     // --- ゲーム画面（プレビュー） ---
-	ImGui::Image((ImTextureID)GetGameRender(), ImGui::GetContentRegionAvail(), ImVec2(0, 1), ImVec2(1, 0));
+    ID3D11ShaderResourceView* srv = GetGameRender();
+    ImVec2 size = ImGui::GetContentRegionAvail();
+    if (srv) {
+        ImGui::Image((ImTextureID)srv, size);
+    }
+    else {
+        ImGui::Text("SRVがnullです");
+    }
     ImGui::End();
 }
 

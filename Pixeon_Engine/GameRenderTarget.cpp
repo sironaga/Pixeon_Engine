@@ -154,25 +154,19 @@ void GameRenderTarget::InitWithDepthSRV(ID3D11Device* device, int width, int hei
 
 void GameRenderTarget::Begin(ID3D11DeviceContext* context)
 {
-    // Šù‘¶‚ÌŽÀ‘•‚ð‚»‚Ì‚Ü‚ÜˆÛŽ
     if (m_isRenderZBuffer)
-    {
         context->OMSetRenderTargets(1, &m_pRTV, m_pDSV);
-    }
     else
-    {
         context->OMSetRenderTargets(1, &m_pRTV, nullptr);
-    }
 
     context->RSSetViewports(1, &m_viewport);
 
+    DirectX::XMFLOAT4 Temp;
     float clearColor[4] = { 1.0f, 0.1f, 0.3f, 1.0f };
 
     context->ClearRenderTargetView(m_pRTV, clearColor);
     if (m_pDSV)
-    {
         context->ClearDepthStencilView(m_pDSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    }
 }
 
 void GameRenderTarget::End()
