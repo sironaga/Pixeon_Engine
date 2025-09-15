@@ -163,5 +163,8 @@
     <ClInclude Include="StartUp.h">
       <Filter>ソース ファイル\App</Filter>
     </ClInclude>
+    <ClInclude Include="PostEffectBase.h">
+      <Filter>ソース ファイル\BaseClass</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

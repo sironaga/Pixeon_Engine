@@ -145,6 +145,7 @@
     <ClInclude Include="IMGUI\imstb_textedit.h" />
     <ClInclude Include="IMGUI\imstb_truetype.h" />
     <ClInclude Include="Object.h" />
+    <ClInclude Include="PostEffectBase.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneManger.h" />
     <ClInclude Include="Struct.h" />

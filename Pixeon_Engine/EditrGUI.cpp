@@ -6,6 +6,8 @@
 #include "IMGUI/imgui_internal.h"
 #include "System.h"
 #include "Main.h"
+#include "StartUp.h"
+
 
 EditrGUI* EditrGUI::instance = nullptr;
 
@@ -141,7 +143,9 @@ void EditrGUI::WindowGUI()
             ImGui::MenuItem(ShiftJISToUTF8("開く...").c_str());
             ImGui::MenuItem(ShiftJISToUTF8("保存").c_str());
             ImGui::Separator();
-            ImGui::MenuItem(ShiftJISToUTF8("終了").c_str());
+            if (ImGui::MenuItem(ShiftJISToUTF8("終了").c_str())) {
+				SetRun(false);
+            }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu(ShiftJISToUTF8("設定").c_str()))
@@ -172,19 +176,7 @@ void EditrGUI::WindowGUI()
 	// 環境設定ウィンドウ
     if (ShowSettingsWindow)
     {
-        ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
-        ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
-        if (ImGui::Begin(ShiftJISToUTF8("環境設定").c_str(), &ShowSettingsWindow, flags))
-        {
-            // ここに設定項目を追加
-            static int option = 0;
-            ImGui::Text(ShiftJISToUTF8("ここに環境設定項目を追加してください").c_str());
-            ImGui::RadioButton(ShiftJISToUTF8("オプション1").c_str(), &option, 0);
-            ImGui::RadioButton(ShiftJISToUTF8("オプション2").c_str(), &option, 1);
-            ImGui::SliderInt(ShiftJISToUTF8("スライダー設定").c_str(), &option, 0, 10);
-            // ...他の設定項目...
-        }
-        ImGui::End();
+        SettingWindow();
     }
 
     // DockSpaceを作成
@@ -278,8 +270,21 @@ void EditrGUI::ShowGameView()
     ImGui::Separator();
 
     // --- ゲーム画面（プレビュー） ---
-    ImGui::Text(ShiftJISToUTF8("ここにゲーム画面をプレビュー表示します。").c_str());
-    // ImGui::Image でDX11テクスチャを描画するなど
+	ImGui::Image((ImTextureID)GetGameRender(), ImGui::GetContentRegionAvail(), ImVec2(0, 1), ImVec2(1, 0));
+    ImGui::End();
+}
 
+void EditrGUI::SettingWindow()
+{
+    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
+    if (ImGui::Begin(ShiftJISToUTF8("環境設定").c_str(), &ShowSettingsWindow, flags))
+    {
+        static int option = 0;
+        ImGui::Text(ShiftJISToUTF8("ここに環境設定項目を追加してください").c_str());
+        ImGui::RadioButton(ShiftJISToUTF8("オプション1").c_str(), &option, 0);
+        ImGui::RadioButton(ShiftJISToUTF8("オプション2").c_str(), &option, 1);
+        ImGui::SliderInt(ShiftJISToUTF8("スライダー設定").c_str(), &option, 0, 10);
+    }
     ImGui::End();
 }

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Windows.h>
+#include <d3d11.h>
 
 struct EngineConfig {
 	HWND hWnd;
@@ -27,3 +28,5 @@ void InGamDraw();
 
 void AssetsUpdate();
 HWND GetWindowHandle();
+
+ID3D11ShaderResourceView* GetGameRender();

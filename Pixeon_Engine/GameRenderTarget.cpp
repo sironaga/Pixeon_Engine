@@ -167,7 +167,7 @@ void GameRenderTarget::Begin(ID3D11DeviceContext* context)
     context->RSSetViewports(1, &m_viewport);
 
     DirectX::XMFLOAT4 Temp;
-    float clearColor[4] = { 0.1f, 0.1f, 0.3f, 1.0f };
+    float clearColor[4] = { 1.0f, 0.1f, 0.3f, 1.0f };
 
     context->ClearRenderTargetView(m_pRTV, clearColor);
     if (m_pDSV)

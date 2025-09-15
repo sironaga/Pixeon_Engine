@@ -22,6 +22,7 @@ private:
 	void ShowHierarchy();
 	void ShowInspector();
 	void ShowGameView();
+	void SettingWindow();
 
 	bool dockNeedsReset = false;
 	bool ShowSettingsWindow = false;

@@ -4,11 +4,13 @@
 #include "SceneManger.h"
 #include "GameRenderTarget.h"
 #include "EditrGUI.h"
+#include "PostEffectBase.h"
 
 HWND ghWnd;
 AssetWatcher *watcher;
 GameRenderTarget* gGameRenderTarget;
 bool bInGame;
+std::vector<PostEffectBase*> gPostEffects;
 
 int Init(const EngineConfig& InPut){
 	// DirectX11‚Ì‰Šú‰»
@@ -42,7 +44,6 @@ void Update(){
 	else{
 		EditeUpdate();
 	}
-
 }
 
 void Draw(){
@@ -68,15 +69,18 @@ void InGameUpdate(){
 }
 
 void EditeDraw(){
+
 	gGameRenderTarget->Begin(DirectX11::GetInstance()->GetContext());
 	SceneManger::GetInstance()->Draw();
 	gGameRenderTarget->End();
+
 	DirectX11::GetInstance()->BeginDraw();
 	EditrGUI::GetInstance()->Draw();
 	DirectX11::GetInstance()->EndDraw();
 }
 
 void InGamDraw(){
+
 	DirectX11::GetInstance()->BeginDraw();
 	SceneManger::GetInstance()->Draw();
 	DirectX11::GetInstance()->EndDraw();
@@ -88,4 +92,8 @@ void AssetsUpdate() {
 
 HWND GetWindowHandle(){
 	return ghWnd;
+}
+
+ID3D11ShaderResourceView* GetGameRender(){
+	return gGameRenderTarget->GetShaderResourceView();
 }

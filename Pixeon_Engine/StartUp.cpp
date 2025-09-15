@@ -6,6 +6,7 @@
 #include "AssetsManager.h"
 #include "IMGUI/imgui_impl_win32.h" 
 #include "IMGUI/imgui_impl_dx11.h"
+#include "StartUp.h"
 
 #define VERSION (1)
 int g_nScreenWidth = 1920;
@@ -61,4 +62,8 @@ extern "C" {
 			break;
 		}
 	}
+}
+
+void SetRun(bool run){
+	g_bRun = run;
 }
