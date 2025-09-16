@@ -7,7 +7,7 @@
 #include "System.h"
 #include "Main.h"
 #include "StartUp.h"
-
+#include "SettingManager.h"
 
 EditrGUI* EditrGUI::instance = nullptr;
 
@@ -280,13 +280,24 @@ void EditrGUI::SettingWindow()
 {
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
-    if (ImGui::Begin(ShiftJISToUTF8("環境設定").c_str(), &ShowSettingsWindow, flags))
-    {
-        static int option = 0;
-        ImGui::Text(ShiftJISToUTF8("ここに環境設定項目を追加してください").c_str());
-        ImGui::RadioButton(ShiftJISToUTF8("オプション1").c_str(), &option, 0);
-        ImGui::RadioButton(ShiftJISToUTF8("オプション2").c_str(), &option, 1);
-        ImGui::SliderInt(ShiftJISToUTF8("スライダー設定").c_str(), &option, 0, 10);
+    if (ImGui::Begin(ShiftJISToUTF8("環境設定").c_str(), &ShowSettingsWindow, flags)){
+
+		ImGui::Text(ShiftJISToUTF8("パスの設定").c_str());
+		ImGui::Separator();
+		std::string assetsPath = SettingManager::GetInstance()->GetAssetsFilePath();
+		char assetsBuffer[256];
+		strncpy_s(assetsBuffer, assetsPath.c_str(), sizeof(assetsBuffer));
+        if (ImGui::InputText(ShiftJISToUTF8("アセットフォルダ").c_str(), assetsBuffer, sizeof(assetsBuffer)))SettingManager::GetInstance()->SetAssetsFilePath(assetsBuffer);
+		std::string archivePath = SettingManager::GetInstance()->GetArchiveFilePath();
+		char archiveBuffer[256];
+        strncpy_s(archiveBuffer, archivePath.c_str(), sizeof(archiveBuffer));
+		if (ImGui::InputText(ShiftJISToUTF8("アーカイブフォルダ").c_str(), archiveBuffer, sizeof(archiveBuffer)))SettingManager::GetInstance()->SetArchiveFilePath(archiveBuffer);
+		std::string scenePath = SettingManager::GetInstance()->GetSceneFilePath();
+        char sceneBuffer[256];
+		strncpy_s(sceneBuffer, scenePath.c_str(), sizeof(sceneBuffer));
+		if (ImGui::InputText(ShiftJISToUTF8("シーンフォルダ").c_str(), sceneBuffer, sizeof(sceneBuffer)))SettingManager::GetInstance()->SetSceneFilePath(sceneBuffer);
+        
+
     }
     ImGui::End();
 }

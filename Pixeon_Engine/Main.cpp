@@ -5,6 +5,7 @@
 #include "GameRenderTarget.h"
 #include "EditrGUI.h"
 #include "PostEffectBase.h"
+#include "SettingManager.h"
 
 HWND ghWnd;
 AssetWatcher *watcher;
@@ -33,6 +34,7 @@ int Init(const EngineConfig& InPut){
 	bInGame = false;
 
 	SceneManger::GetInstance()->Init();
+	SettingManager::GetInstance()->LoadConfig();
 
 	return 0;
 }
@@ -52,6 +54,7 @@ void Draw(){
 
 void UnInit(){
 	watcher->Stop();
+	SettingManager::GetInstance()->SaveConfig();
 	DirectX11::DestroyInstance();
 }
 
