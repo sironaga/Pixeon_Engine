@@ -42,6 +42,12 @@
     <Filter Include="ソース ファイル\Manager">
       <UniqueIdentifier>{a767e929-0ea9-4db3-922d-cf813b1b6179}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\Tool">
+      <UniqueIdentifier>{f78a1d59-4c18-4465-9d69-766bc08c1956}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Drawing">
+      <UniqueIdentifier>{47a24c30-a7c9-4049-9471-04a08c063b48}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="content_Item.cpp">

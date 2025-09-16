@@ -2,6 +2,9 @@
 #include "Object.h"
 #include <thread>
 #include <mutex>
+#include <nlohmann/json.hpp>
+#include <fstream>
+#include <iostream>
 
 // 開放処理
 Scene::~Scene(){
@@ -102,7 +105,10 @@ bool Scene::AddObject(Object* obj)
 	return true;
 }
 
+// シーンの保存　json形式の状態のまま拡張子を.sceneに変更する
 void Scene::SaveToFile(){
+	
+
 }
 
 void Scene::LoadToFile(){
