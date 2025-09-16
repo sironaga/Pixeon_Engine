@@ -29,7 +29,8 @@ void InGamDraw();
 
 void OpenExplorer(const std::string& path);
 std::string GetExePath();
-
+std::string RemoveExeFromPath(const std::string& exePath);
+bool CallAssetPacker(const std::string& toolPath, const std::string& assetDir, const std::string& outputPak);
 void AssetsUpdate();
 HWND GetWindowHandle();
 

@@ -33,13 +33,19 @@ public:
 	int GetAutoSaveInterval() const { return AutoSaveInterval; }
 	void SetAutoSaveInterval(int interval) { AutoSaveInterval = interval; }
 
+	std::string GetPackingToolFilePath() const { return PackingTool; }
+	void SetPackingToolFilePath(const std::string& path) { PackingTool = path; }
+
 private:
 	static SettingManager* instance;
 private:
 	// ê›íËçÄñ⁄
-	std::string AssetsFilePath	= "SceneRoot/Assets/";
-	std::string ArchiveFilePath = "SceneRoot/Archive/";
-	std::string SceneFilePath	= "SceneRoot/Scene/";
+	std::string AssetsFilePath	= "SceneRoot/Assets";
+	std::string ArchiveFilePath = "SceneRoot/Archive";
+	std::string SceneFilePath	= "SceneRoot/Scene";
+	std::string PackingTool		= "SceneRoot/Tool/Asset packaging tool.exe";
+
+
 	bool bZBuffer = true;
 	int AutoSaveInterval = 5; // é©ìÆï€ë∂ä‘äuÅiï™Åj
 

@@ -83,7 +83,7 @@ void AssetWatcher::WatchThread(){
     if (hChange == INVALID_HANDLE_VALUE) return;
 
     // 最初のタイムスタンプを取得
-    std::filesystem::path filePath = m_dir + "\\" + m_file;
+    std::filesystem::path filePath = m_dir + "/" + m_file;
     if (!std::filesystem::exists(filePath))return;
     auto lastWrite = std::filesystem::last_write_time(filePath);
     while (m_running) {

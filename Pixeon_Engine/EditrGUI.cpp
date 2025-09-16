@@ -176,10 +176,13 @@ void EditrGUI::WindowGUI()
 
         if(ImGui::BeginMenu(ShiftJISToUTF8("ツール").c_str()))
         {
+            if (ImGui::MenuItem(ShiftJISToUTF8("アーカイブ化").c_str())) {
+                ShowArchiveWindow = true;
+            }
 			if (ImGui::MenuItem(ShiftJISToUTF8("コンソール").c_str()))ShowConsoleWindow = !ShowConsoleWindow;
-            if (ImGui::MenuItem(ShiftJISToUTF8("アセット管理").c_str())) {
+            if (ImGui::MenuItem(ShiftJISToUTF8("フォルダ").c_str())) {
                 std::string Path = GetExePath();
-				Path += SettingManager::GetInstance()->GetAssetsFilePath();
+                Path = RemoveExeFromPath(Path);
 				OpenExplorer(Path);
             }
             ImGui::EndMenu();
@@ -190,6 +193,23 @@ void EditrGUI::WindowGUI()
     if (ShowSettingsWindow)
     {
         SettingWindow();
+    }
+    // ツールウインドウ
+    if (ShowArchiveWindow)
+    {
+        ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
+        ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
+        if (ImGui::Begin(ShiftJISToUTF8("アーカイブ化").c_str(), &ShowArchiveWindow, flags)){
+            if (ImGui::Button(ShiftJISToUTF8("アーカイブ化実行").c_str(), ImVec2(120, 0))) {
+                bool OK = false;
+                OK = CallAssetPacker(SettingManager::GetInstance()->GetPackingToolFilePath(),"../Assets", "assets.PixAssets");
+                if(OK)
+					MessageBoxA(NULL, "アーカイブ化に成功しました。", "成功", MB_OK | MB_ICONINFORMATION);
+				else
+                    MessageBoxA(NULL, "アーカイブ化に失敗しました。", "失敗", MB_OK | MB_ICONERROR);
+            }
+        }
+        ImGui::End();
     }
 
     // DockSpaceを作成
@@ -318,6 +338,10 @@ void EditrGUI::SettingWindow()
         char sceneBuffer[256];
 		strncpy_s(sceneBuffer, scenePath.c_str(), sizeof(sceneBuffer));
 		if (ImGui::InputText(ShiftJISToUTF8("シーンフォルダ").c_str(), sceneBuffer, sizeof(sceneBuffer)))SettingManager::GetInstance()->SetSceneFilePath(sceneBuffer);
+        std::string PackingTool = SettingManager::GetInstance()->GetPackingToolFilePath();
+        char PackingToolBuffer[256];
+        strncpy_s(PackingToolBuffer, PackingTool.c_str(), sizeof(PackingToolBuffer));
+        if (ImGui::InputText(ShiftJISToUTF8("PackingTool").c_str(), PackingToolBuffer, sizeof(PackingToolBuffer)))SettingManager::GetInstance()->SetPackingToolFilePath(PackingToolBuffer);
         
 		ImGui::Text(ShiftJISToUTF8("レンダリング設定").c_str());
 		ImGui::Separator();

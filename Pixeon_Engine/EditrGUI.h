@@ -27,9 +27,10 @@ private:
 
 	void SettingWindow();
 
-	bool dockNeedsReset = false;
+	bool dockNeedsReset		= false;
 	bool ShowSettingsWindow = false;
-	bool ShowConsoleWindow = false;
+	bool ShowConsoleWindow	= false;
+	bool ShowArchiveWindow	= false;
 private:
 	static EditrGUI* instance;
 private:
