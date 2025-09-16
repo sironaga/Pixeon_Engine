@@ -44,7 +44,12 @@ void SettingManager::LoadConfig(){
 	if (configJson.contains("SceneFilePath")) {
 		SceneFilePath = configJson["SceneFilePath"].get<std::string>();
 	}
-
+	if (configJson.contains("bZBuffer")) {
+		bZBuffer = configJson["bZBuffer"].get<bool>();
+	}
+	if (configJson.contains("AutoSaveInterval")) {
+		AutoSaveInterval = configJson["AutoSaveInterval"].get<int>();
+	}
 }
 
 void SettingManager::SaveConfig(){
@@ -53,6 +58,8 @@ void SettingManager::SaveConfig(){
 	configJson["AssetsFilePath"] = AssetsFilePath;
 	configJson["ArchiveFilePath"] = ArchiveFilePath;
 	configJson["SceneFilePath"] = SceneFilePath;
+	configJson["bZBuffer"] = bZBuffer;
+	configJson["AutoSaveInterval"] = AutoSaveInterval;
 	// JSONÉtÉ@ÉCÉãÇ…èëÇ´çûÇﬁ
 	std::ofstream configFile(CONFIG_FILE_PATH);
 	if (configFile.is_open()) {

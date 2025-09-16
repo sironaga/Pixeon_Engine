@@ -27,6 +27,11 @@ public:
 	std::string GetSceneFilePath() const { return SceneFilePath; }
 	void SetSceneFilePath(const std::string& path) { SceneFilePath = path; }
 
+	bool GetZBuffer() const { return bZBuffer; }
+	void SetZBuffer(bool bEnable) { bZBuffer = bEnable; }
+
+	int GetAutoSaveInterval() const { return AutoSaveInterval; }
+	void SetAutoSaveInterval(int interval) { AutoSaveInterval = interval; }
 
 private:
 	static SettingManager* instance;
@@ -35,7 +40,8 @@ private:
 	std::string AssetsFilePath	= "SceneRoot/Assets/";
 	std::string ArchiveFilePath = "SceneRoot/Archive/";
 	std::string SceneFilePath	= "SceneRoot/Scene/";
-
+	bool bZBuffer = true;
+	int AutoSaveInterval = 5; // é©ìÆï€ë∂ä‘äuÅiï™Åj
 
 
 

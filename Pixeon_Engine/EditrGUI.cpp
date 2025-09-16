@@ -297,6 +297,17 @@ void EditrGUI::SettingWindow()
 		strncpy_s(sceneBuffer, scenePath.c_str(), sizeof(sceneBuffer));
 		if (ImGui::InputText(ShiftJISToUTF8("シーンフォルダ").c_str(), sceneBuffer, sizeof(sceneBuffer)))SettingManager::GetInstance()->SetSceneFilePath(sceneBuffer);
         
+		ImGui::Text(ShiftJISToUTF8("レンダリング設定").c_str());
+		ImGui::Separator();
+		bool bZBuffer = SettingManager::GetInstance()->GetZBuffer();
+		if (ImGui::Checkbox(ShiftJISToUTF8("Zバッファを有効にする").c_str(), &bZBuffer))SettingManager::GetInstance()->SetZBuffer(bZBuffer);
+
+		int autoSaveInterval = SettingManager::GetInstance()->GetAutoSaveInterval();
+        if (ImGui::InputInt(ShiftJISToUTF8("自動保存間隔（分）").c_str(), &autoSaveInterval)) {
+            if (autoSaveInterval < 1) autoSaveInterval = 1;
+            SettingManager::GetInstance()->SetAutoSaveInterval(autoSaveInterval);
+        }
+
 
     }
     ImGui::End();

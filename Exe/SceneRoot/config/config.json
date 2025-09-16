@@ -1,5 +1,7 @@
 {
     "ArchiveFilePath": "SceneRoot/Archive/",
     "AssetsFilePath": "SceneRoot/Assets/",
-    "SceneFilePath": "SceneRoot/Scene/"
+    "AutoSaveInterval": 6,
+    "SceneFilePath": "SceneRoot/Scene/",
+    "bZBuffer": true
 }
