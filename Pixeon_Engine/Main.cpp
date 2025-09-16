@@ -47,9 +47,7 @@ void Update(){
 }
 
 void Draw(){
-	DirectX11::GetInstance()->BeginDraw();
-	EditrGUI::GetInstance()->Draw();
-	DirectX11::GetInstance()->EndDraw();
+	EditeDraw();
 }
 
 void UnInit(){

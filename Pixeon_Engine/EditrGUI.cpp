@@ -52,7 +52,9 @@ void EditrGUI::Init()
 
     colors[ImGuiCol_Tab] = flatTabColor;
     colors[ImGuiCol_TabUnfocused] = flatTabColor;
-    colors[ImGuiCol_TabUnfocusedActive] = flatTabActive;
+    colors[ImGuiCol_TabUnfocusedActive] = flatTabColor;
+    colors[ImGuiCol_TabActive] = flatTabColor; // アクティブ時も同じ色に
+    colors[ImGuiCol_TabHovered] = flatTabColor; // ホバー時も同じ色に
     colors[ImGuiCol_TabActive] = flatTabActive;
     colors[ImGuiCol_TabHovered] = flatTabHovered;
 
