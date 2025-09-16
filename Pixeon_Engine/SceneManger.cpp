@@ -1,8 +1,6 @@
 #include "SceneManger.h"
 #include "Scene.h"
-
-// シーンディレクトリのパス
-#define SCENE_DIR "bin/Scenes/"
+#include "SettingManager.h"
 
 SceneManger* SceneManger::instance = nullptr;
 
@@ -57,6 +55,14 @@ void SceneManger::EditUpdate(){
 	}
 	// 更新
 	if (_currentScene)_currentScene->EditUpdate();
+
+	// オートセーブの処理
+	DWORD nowTime = GetTickCount();
+	_AutoNowTime = SettingManager::GetInstance()->GetAutoSaveInterval() * 1000;
+	if (nowTime - _AutoSaveCurrentTime >= _AutoNowTime) {
+		Save();
+		_AutoSaveCurrentTime = nowTime;
+	}
 }
 
 // 更新
@@ -109,7 +115,7 @@ void SceneManger::RegisterScene(std::string Name, std::function<Scene* ()> creat
 // ファイル名の取得
 std::vector<std::string> SceneManger::ListSceneFiles(){
 	std::vector<std::string> sceneFiles;
-	std::string sceneDir = SCENE_DIR;
+	std::string sceneDir = SettingManager::GetInstance()->GetSceneFilePath();
 	std::string searchPath = sceneDir + "\\*.scene";
 	WIN32_FIND_DATAA findData;
 	HANDLE hFind = FindFirstFileA(searchPath.c_str(), &findData);
@@ -131,11 +137,19 @@ std::vector<std::string> SceneManger::ListSceneFiles(){
 
 // ファイル名の変更
 bool SceneManger::RenameFileInDirectory(const std::string& oldName, const std::string& newName){
-	std::string oldPath = std::string(SCENE_DIR) + oldName;
-	std::string newPath = std::string(SCENE_DIR) + newName;
+	std::string oldPath = SettingManager::GetInstance()->GetSceneFilePath() + oldName;
+	std::string newPath = SettingManager::GetInstance()->GetSceneFilePath() + newName;
 	if (std::rename(oldPath.c_str(), newPath.c_str()) != 0) {
 		// リネーム失敗
 		return false;
 	}
 	return true;
+}
+
+void SceneManger::Save(){
+
+}
+
+void SceneManger::Load(){
+
 }

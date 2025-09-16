@@ -173,6 +173,13 @@ void EditrGUI::WindowGUI()
             }
             ImGui::EndMenu();
         }
+
+        if(ImGui::BeginMenu(ShiftJISToUTF8("ツール").c_str()))
+        {
+			if (ImGui::MenuItem(ShiftJISToUTF8("コンソール").c_str()))ShowConsoleWindow = !ShowConsoleWindow;
+            ImGui::MenuItem(ShiftJISToUTF8("アセット管理").c_str());
+            ImGui::EndMenu();
+		}
         ImGui::EndMenuBar();
     }
 	// 環境設定ウィンドウ
@@ -221,6 +228,7 @@ void EditrGUI::WindowGUI()
     ShowHierarchy();
     ShowInspector();
     ShowGameView();
+    ShowConsole();
 }
 
 void EditrGUI::ShowContentDrawer()
@@ -274,6 +282,15 @@ void EditrGUI::ShowGameView()
     // --- ゲーム画面（プレビュー） ---
 	ImGui::Image((ImTextureID)GetGameRender(), ImGui::GetContentRegionAvail(), ImVec2(0, 1), ImVec2(1, 0));
     ImGui::End();
+}
+
+void EditrGUI::ShowConsole(){
+	if (!ShowConsoleWindow)return;
+    ImGui::Begin(ShiftJISToUTF8("コンソール").c_str());
+
+
+
+	ImGui::End();
 }
 
 void EditrGUI::SettingWindow()

@@ -18,23 +18,28 @@ int Init(const EngineConfig& InPut){
 	ghWnd = InPut.hWnd;
 	HRESULT hr = DirectX11::GetInstance()->Init(InPut.hWnd, InPut.screenWidth, InPut.screenHeight, InPut.fullscreen);
 	if (FAILED(hr)) return -1;
+	// 設定の読み込み
+	SettingManager::GetInstance()->LoadConfig();
+	std::string ArchivePath = SettingManager::GetInstance()->GetArchiveFilePath();
+	ArchivePath += "assets.PixAssets";
+
 	//　アセットマネージャーの起動
-	AssetsManager::GetInstance()->Open("assets.PixAssets");
-	watcher = new AssetWatcher(".", "assets.PixAssets",
+	AssetsManager::GetInstance()->Open(ArchivePath);
+	watcher = new AssetWatcher(SettingManager::GetInstance()->GetArchiveFilePath(), "assets.PixAssets",
 		[&]() {
-			AssetsManager::GetInstance()->Open("assets.PixAssets");
+			AssetsManager::GetInstance()->Open(ArchivePath);
 		}
 	);
+	// 非同期監視開始
 	watcher->Start();
-
+	// ゲームレンダリングターゲットの初期化
 	gGameRenderTarget = new GameRenderTarget();
 	gGameRenderTarget->Init(DirectX11::GetInstance()->GetDevice(), InPut.screenWidth, InPut.screenHeight);
-
+	// GUIの初期化
 	EditrGUI::GetInstance()->Init();
 	bInGame = false;
-
+	// シーンマネージャーの初期化
 	SceneManger::GetInstance()->Init();
-	SettingManager::GetInstance()->LoadConfig();
 
 	return 0;
 }

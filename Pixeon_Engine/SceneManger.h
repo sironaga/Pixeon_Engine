@@ -31,6 +31,9 @@ public:
 	bool RenameFileInDirectory(const std::string& oldName, const std::string& newName);
 	std::vector<std::string> GetSceneList() { return _sceneList; }
 
+	void Save();
+	void Load();
+
 private:
 	bool CreateAndRegisterScene(std::string SceneName);
 	void RegisterScene(std::string Name, std::function<Scene* ()> creator);
@@ -49,5 +52,8 @@ private:
 	Scene* _nextScene = nullptr;
 
 	static SceneManger* instance;
+
+	DWORD _AutoSaveCurrentTime;
+	DWORD _AutoNowTime;
 };
 

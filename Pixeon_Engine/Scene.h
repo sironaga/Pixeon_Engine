@@ -27,7 +27,8 @@ public: // セーブとロード
 public: // Setter And Getter
 	void SetName(std::string name) { _name = name; }
 	std::string GetName() { return _name; }
-
+	// すべてのオブジェクトを取得
+	std::vector<Object*> GetObjects() { return _objects; }
 private://内部処理
 	void ProcessThreadSafeAdditions();
 

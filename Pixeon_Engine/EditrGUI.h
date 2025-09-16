@@ -18,14 +18,18 @@ public:
 
 private:
 	void WindowGUI();
+
 	void ShowContentDrawer();
 	void ShowHierarchy();
 	void ShowInspector();
 	void ShowGameView();
+	void ShowConsole();
+
 	void SettingWindow();
 
 	bool dockNeedsReset = false;
 	bool ShowSettingsWindow = false;
+	bool ShowConsoleWindow = false;
 private:
 	static EditrGUI* instance;
 private:

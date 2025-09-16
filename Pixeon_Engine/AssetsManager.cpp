@@ -84,8 +84,8 @@ void AssetWatcher::WatchThread(){
 
     // 最初のタイムスタンプを取得
     std::filesystem::path filePath = m_dir + "\\" + m_file;
+    if (!std::filesystem::exists(filePath))return;
     auto lastWrite = std::filesystem::last_write_time(filePath);
-
     while (m_running) {
         DWORD wait = WaitForSingleObject(hChange, 500); // 500ms毎にチェック
         if (wait == WAIT_OBJECT_0) {
