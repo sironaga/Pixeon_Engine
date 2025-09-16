@@ -177,7 +177,11 @@ void EditrGUI::WindowGUI()
         if(ImGui::BeginMenu(ShiftJISToUTF8("ツール").c_str()))
         {
 			if (ImGui::MenuItem(ShiftJISToUTF8("コンソール").c_str()))ShowConsoleWindow = !ShowConsoleWindow;
-            ImGui::MenuItem(ShiftJISToUTF8("アセット管理").c_str());
+            if (ImGui::MenuItem(ShiftJISToUTF8("アセット管理").c_str())) {
+                std::string Path = GetExePath();
+				Path += SettingManager::GetInstance()->GetAssetsFilePath();
+				OpenExplorer(Path);
+            }
             ImGui::EndMenu();
 		}
         ImGui::EndMenuBar();

@@ -4,6 +4,7 @@
 
 #include <Windows.h>
 #include <d3d11.h>
+#include <string> 
 
 struct EngineConfig {
 	HWND hWnd;
@@ -25,6 +26,9 @@ void EditeUpdate();
 void InGameUpdate();
 void EditeDraw();
 void InGamDraw();
+
+void OpenExplorer(const std::string& path);
+std::string GetExePath();
 
 void AssetsUpdate();
 HWND GetWindowHandle();

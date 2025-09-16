@@ -103,3 +103,25 @@ HWND GetWindowHandle(){
 ID3D11ShaderResourceView* GetGameRender(){
 	return gGameRenderTarget->GetShaderResourceView();
 }
+
+void OpenExplorer(const std::string& path)
+{
+	ShellExecuteA(
+		NULL,           // ウィンドウハンドル
+		"open",         // 動作（openでOK）
+		"explorer.exe", // 実行ファイル
+		path.c_str(),   // パラメータ（開きたいパス）
+		NULL,           // ディレクトリ（NULLでOK）
+		SW_SHOWNORMAL   // ウィンドウ表示方法
+	);
+}
+
+std::string GetExePath() {
+	char path[MAX_PATH];
+	DWORD length = GetModuleFileNameA(nullptr, path, MAX_PATH);
+	if (length == 0 || length == MAX_PATH) {
+		// 取得失敗
+		return "";
+	}
+	return std::string(path, length);
+}
