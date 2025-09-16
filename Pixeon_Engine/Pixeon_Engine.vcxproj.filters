@@ -98,6 +98,9 @@
     <ClCompile Include="EditrGUI.cpp">
       <Filter>ソース ファイル\GUI\View</Filter>
     </ClCompile>
+    <ClCompile Include="SettingManager.cpp">
+      <Filter>ソース ファイル\Manager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -165,6 +168,9 @@
     </ClInclude>
     <ClInclude Include="PostEffectBase.h">
       <Filter>ソース ファイル\BaseClass</Filter>
+    </ClInclude>
+    <ClInclude Include="SettingManager.h">
+      <Filter>ソース ファイル\Manager</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -148,6 +148,7 @@
     <ClInclude Include="PostEffectBase.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneManger.h" />
+    <ClInclude Include="SettingManager.h" />
     <ClInclude Include="Struct.h" />
     <ClInclude Include="System.h" />
     <ClInclude Include="Main.h" />
@@ -170,6 +171,7 @@
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneManger.cpp" />
+    <ClCompile Include="SettingManager.cpp" />
     <ClCompile Include="StartUp.cpp" />
     <ClCompile Include="System.cpp" />
   </ItemGroup>
