@@ -288,6 +288,7 @@ void EditrGUI::SettingWindow()
 		char assetsBuffer[256];
 		strncpy_s(assetsBuffer, assetsPath.c_str(), sizeof(assetsBuffer));
         if (ImGui::InputText(ShiftJISToUTF8("アセットフォルダ").c_str(), assetsBuffer, sizeof(assetsBuffer)))SettingManager::GetInstance()->SetAssetsFilePath(assetsBuffer);
+		ImGui::Text(ShiftJISToUTF8("* アセットフォルダパスを変えた場合再起動してください").c_str());
 		std::string archivePath = SettingManager::GetInstance()->GetArchiveFilePath();
 		char archiveBuffer[256];
         strncpy_s(archiveBuffer, archivePath.c_str(), sizeof(archiveBuffer));
