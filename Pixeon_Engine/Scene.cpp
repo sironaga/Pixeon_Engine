@@ -1,5 +1,6 @@
 #include "Scene.h"
 #include "Object.h"
+#include "Main.h"
 #include <thread>
 #include <mutex>
 #include <nlohmann/json.hpp>
@@ -16,7 +17,6 @@ void Scene::Init(){
 	_ToBeAdded.clear();
 	_ToBeRemoved.clear();
 	_SaveObjects.clear();
-
 }
 
 void Scene::BeginPlay(){
@@ -55,7 +55,7 @@ void Scene::EditUpdate(){
 
 	// オブジェクトの更新
 	for (auto& obj : _objects) if (obj)obj->EditUpdate();
-
+	
 	// オブジェクトの削除処理
 
 }
@@ -83,7 +83,7 @@ void Scene::PlayUpdate(){
 	// オブジェクトの削除処理
 }
 
-void Scene::Draw(){
+void Scene::Draw() {
 
 	// オブジェクトの描画
 	std::vector<Object*> sortedList = _objects;
@@ -107,8 +107,30 @@ bool Scene::AddObject(Object* obj)
 
 // シーンの保存　json形式の状態のまま拡張子を.sceneに変更する
 void Scene::SaveToFile(){
-	
+	std::vector<Object*> SaveObjects;
+	if(IsInGame()){
+		SaveObjects = _SaveObjects;
+	}
+	else{
+		SaveObjects = _objects;
+	}
+	// 現在時刻の取得
+	auto Now = std::chrono::system_clock::now();
+	auto in_time_t = std::chrono::system_clock::to_time_t(Now);
+	std::tm localtime;
+	localtime_s(&localtime, &in_time_t);
 
+	nlohmann::json SceneData;
+	SceneData["SceneSettings"]["Name"] = _name;
+
+	// オブジェクトデータの保存
+	nlohmann::json ObjectArray	= nlohmann::json::array();
+	nlohmann::json Prefab		= nlohmann::json::array();
+	for (const auto& Object : SaveObjects) {
+		if (Object) {
+		}
+	}
+	
 }
 
 void Scene::LoadToFile(){

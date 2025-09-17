@@ -97,16 +97,20 @@ void InGamDraw(){
 	DirectX11::GetInstance()->EndDraw();
 }
 
-void AssetsUpdate() {
-
-}
-
 HWND GetWindowHandle(){
 	return ghWnd;
 }
 
 ID3D11ShaderResourceView* GetGameRender(){
 	return gGameRenderTarget->GetShaderResourceView();
+}
+
+bool IsInGame(){
+	return bInGame;
+}
+
+void SetInGame(bool inGame){
+	bInGame = inGame;
 }
 
 void OpenExplorer(const std::string& path)

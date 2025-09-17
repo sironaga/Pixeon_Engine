@@ -32,7 +32,9 @@ std::string GetExePath();
 std::string RemoveExeFromPath(const std::string& exePath);
 bool CallAssetPacker(const std::string& toolPath, const std::string& assetDir, const std::string& outputPak);
 bool RunArchiveTool(const std::string& toolExePath, const std::string& assetDir, const std::string& archivePath);
-void AssetsUpdate();
 HWND GetWindowHandle();
 
 ID3D11ShaderResourceView* GetGameRender();
+
+bool IsInGame();
+void SetInGame(bool inGame);
