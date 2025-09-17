@@ -57,7 +57,7 @@ void SceneManger::EditUpdate(){
 	if (_currentScene)_currentScene->EditUpdate();
 
 	// オートセーブの処理
-	DWORD nowTime = GetTickCount();
+	DWORD nowTime = GetTickCount64();
 	_AutoNowTime = SettingManager::GetInstance()->GetAutoSaveInterval() * 1000;
 	if (nowTime - _AutoSaveCurrentTime >= _AutoNowTime) {
 		Save();
@@ -135,6 +135,17 @@ std::vector<std::string> SceneManger::ListSceneFiles(){
 	return sceneFiles;
 }
 
+SceneManger::SceneManger()
+{
+}
+
+SceneManger::~SceneManger(){
+	if (_currentScene){
+		delete _currentScene;
+		_currentScene = nullptr;
+	}
+}
+
 // ファイル名の変更
 bool SceneManger::RenameFileInDirectory(const std::string& oldName, const std::string& newName){
 	std::string oldPath = SettingManager::GetInstance()->GetSceneFilePath() + oldName;
@@ -147,7 +158,9 @@ bool SceneManger::RenameFileInDirectory(const std::string& oldName, const std::s
 }
 
 void SceneManger::Save(){
-
+	if (_currentScene){
+		_currentScene->SaveToFile();
+	}
 }
 
 void SceneManger::Load(){

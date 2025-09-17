@@ -97,6 +97,7 @@ void Scene::Draw() {
 
 // シーンの保存　json形式の状態のまま拡張子を.sceneに変更する
 void Scene::SaveToFile(){
+	MessageBox(nullptr, "シーンを保存しますか？", "シーン保存", MB_OKCANCEL);
 	std::vector<Object*> SaveObjects;
 	if(IsInGame()){
 		SaveObjects = _SaveObjects;
@@ -146,7 +147,7 @@ void Scene::SaveToFile(){
 
 	// ファイル名の生成
 	std::string File;
-	File = SettingManager::GetInstance()->GetSceneFilePath() + "/" + _name + ".scene";
+	File = SettingManager::GetInstance()->GetSceneFilePath() + _name + ".scene";
 	std::ofstream outFile(File);
 	if(outFile.is_open()) {
 		outFile << SceneData.dump(4); // インデント幅4で保存

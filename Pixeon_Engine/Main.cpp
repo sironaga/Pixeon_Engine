@@ -60,7 +60,11 @@ void Draw(){
 
 void UnInit(){
 	watcher->Stop();
+	delete watcher;
+	SceneManger::GetInstance()->Save();
+	SceneManger::DestroyInstance();
 	SettingManager::GetInstance()->SaveConfig();
+	SettingManager::DestroyInstance();
 	DirectX11::DestroyInstance();
 }
 

@@ -40,8 +40,8 @@ private:
 	std::vector<std::string> ListSceneFiles();
 
 private:
-	SceneManger() {}
-	~SceneManger() {}
+	SceneManger();
+	~SceneManger();
 
 private:
 	// シーンリスト

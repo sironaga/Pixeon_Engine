@@ -45,7 +45,7 @@
     <Filter Include="ソース ファイル\Drawing">
       <UniqueIdentifier>{47a24c30-a7c9-4049-9471-04a08c063b48}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\BaseClass\Build">
+    <Filter Include="ソース ファイル\Build">
       <UniqueIdentifier>{29a1df0a-7715-475e-b585-e94b358d5269}</UniqueIdentifier>
     </Filter>
   </ItemGroup>

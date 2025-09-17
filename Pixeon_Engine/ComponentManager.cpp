@@ -2,6 +2,22 @@
 #include "Component.h"
 #include <Windows.h>
 
+ComponentManager* ComponentManager::_instance;
+
+ComponentManager* ComponentManager::GetInstance(){
+	if (_instance == nullptr) {
+		_instance = new ComponentManager();
+	}
+	return _instance;
+}
+
+void ComponentManager::DestroyInstance(){
+	if (_instance) {
+		delete _instance;
+		_instance = nullptr;
+	}
+}
+
 Component* ComponentManager::AddComponent(Object* owner, COMPONENT_TYPE type){
 
 	if (!owner) return nullptr;
