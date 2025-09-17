@@ -24,6 +24,7 @@ int Init(const EngineConfig& InPut){
 	ArchivePath += "assets.PixAssets";
 
 	//　アセットマネージャーの起動
+	AssetsManager::GetInstance()->SetLoadMode(AssetsManager::LoadMode::FromSource);
 	AssetsManager::GetInstance()->Open(ArchivePath);
 	watcher = new AssetWatcher(SettingManager::GetInstance()->GetArchiveFilePath(), "assets.PixAssets",
 		[&]() {
@@ -151,7 +152,47 @@ bool CallAssetPacker(const std::string& toolPath, const std::string& assetDir, c
 
 	if (!result) return false;
 
+	MessageBoxA(NULL, "アーカイブ化を開始しました。完了までしばらくお待ちください。", "情報", MB_OK | MB_ICONINFORMATION);
+
 	// プロセス終了まで待機
+	WaitForSingleObject(pi.hProcess, INFINITE);
+
+	DWORD exitCode = 0;
+	GetExitCodeProcess(pi.hProcess, &exitCode);
+
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+
+	return (exitCode == 0);
+}
+
+bool RunArchiveTool(const std::string& toolExePath, const std::string& assetDir, const std::string& archivePath)
+{
+	// コマンドライン例: "SceneRoot/Tool/Tool.exe" "SceneRoot/Assets" "SceneRoot/Archive/assets.PixAssets"
+	std::string cmd = "\"" + toolExePath + "\" \"" + assetDir + "\" \"" + archivePath + "\"";
+
+	STARTUPINFOA si = { sizeof(si) };
+	PROCESS_INFORMATION pi;
+	BOOL result = CreateProcessA(
+		nullptr,            // lpApplicationName
+		(LPSTR)cmd.c_str(), // lpCommandLine
+		nullptr,            // lpProcessAttributes
+		nullptr,            // lpThreadAttributes
+		FALSE,              // bInheritHandles
+		CREATE_NO_WINDOW,   // dwCreationFlags
+		nullptr,            // lpEnvironment
+		nullptr,            // lpCurrentDirectory
+		&si,                // lpStartupInfo
+		&pi                 // lpProcessInformation
+	);
+
+	if (!result) {
+		std::string ErrorMsg = "ツールの起動に失敗: " + std::to_string(GetLastError());
+		MessageBoxA(NULL, ErrorMsg.c_str(), "エラー", MB_OK | MB_ICONERROR);
+		return false;
+	}
+
+	// 起動後終了まで待機
 	WaitForSingleObject(pi.hProcess, INFINITE);
 
 	DWORD exitCode = 0;

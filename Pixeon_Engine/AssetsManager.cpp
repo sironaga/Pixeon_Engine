@@ -1,5 +1,6 @@
 // アセット管理クラスの実装
 #include "AssetsManager.h"
+#include "SettingManager.h"
 
 AssetsManager* AssetsManager::instance = nullptr;
 
@@ -41,12 +42,26 @@ bool AssetsManager::Open(const std::string& filepath){
 }
 
 bool AssetsManager::LoadAsset(const std::string& name, std::vector<uint8_t>& outData){
-    auto it = m_index.find(name);
-    if (it == m_index.end()) return false;
-    m_file.seekg(it->second.offset, std::ios::beg);
-    outData.resize(static_cast<size_t>(it->second.size));
-    m_file.read(reinterpret_cast<char*>(outData.data()), it->second.size);
-    return true;
+    if (m_loadMode == LoadMode::FromArchive) {
+        // PixAssetsから抽出
+        auto it = m_index.find(name);
+        if (it == m_index.end()) return false;
+        m_file.seekg(it->second.offset, std::ios::beg);
+        outData.resize(static_cast<size_t>(it->second.size));
+        m_file.read(reinterpret_cast<char*>(outData.data()), it->second.size);
+        return true;
+    }
+    else {
+        // 元データ（Assetsフォルダ）から直接読み込み
+        std::ifstream file(SettingManager::GetInstance()->GetAssetsFilePath() + name, std::ios::binary);
+        if (!file) return false;
+        file.seekg(0, std::ios::end);
+        size_t size = file.tellg();
+        outData.resize(size);
+        file.seekg(0, std::ios::beg);
+        file.read(reinterpret_cast<char*>(outData.data()), size);
+        return true;
+    }
 }
 
 std::vector<std::string> AssetsManager::ListAssets() const{

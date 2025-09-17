@@ -19,16 +19,14 @@ EditrGUI* EditrGUI::GetInstance()
     return instance;
 }
 
-void EditrGUI::DestroyInstance()
-{
+void EditrGUI::DestroyInstance(){
     if (instance) {
         delete instance;
         instance = nullptr;
     }
 }
 
-void EditrGUI::Init()
-{
+void EditrGUI::Init(){
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     auto& io = ImGui::GetIO();
@@ -79,8 +77,7 @@ void EditrGUI::Init()
 
 }
 
-void EditrGUI::Update()
-{
+void EditrGUI::Update(){
 }
 
 void EditrGUI::Draw()
@@ -179,7 +176,7 @@ void EditrGUI::WindowGUI()
             if (ImGui::MenuItem(ShiftJISToUTF8("アーカイブ化").c_str())) {
                 ShowArchiveWindow = true;
             }
-			if (ImGui::MenuItem(ShiftJISToUTF8("コンソール").c_str()))ShowConsoleWindow = !ShowConsoleWindow;
+			/*if (ImGui::MenuItem(ShiftJISToUTF8("コンソール").c_str()))ShowConsoleWindow = !ShowConsoleWindow;*/
             if (ImGui::MenuItem(ShiftJISToUTF8("フォルダ").c_str())) {
                 std::string Path = GetExePath();
                 Path = RemoveExeFromPath(Path);
@@ -200,9 +197,24 @@ void EditrGUI::WindowGUI()
         ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
         ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
         if (ImGui::Begin(ShiftJISToUTF8("アーカイブ化").c_str(), &ShowArchiveWindow, flags)){
+
+			ImGui::Text(ShiftJISToUTF8("ツールパス:").c_str());
+			ImGui::SameLine();
+            ImGui::Text(ShiftJISToUTF8(SettingManager::GetInstance()->GetPackingToolFilePath()).c_str());
+			ImGui::Text(ShiftJISToUTF8("アセットフォルダ:").c_str());
+			ImGui::SameLine();
+			ImGui::Text(ShiftJISToUTF8(SettingManager::GetInstance()->GetAssetsFilePath()).c_str());
+			ImGui::Text(ShiftJISToUTF8("アーカイブ出力先:").c_str());
+			ImGui::SameLine();
+			ImGui::Text(ShiftJISToUTF8(SettingManager::GetInstance()->GetArchiveFilePath() + "/assets.PixAssets").c_str());
+			ImGui::Separator();
+			ImGui::Text(ShiftJISToUTF8("説明").c_str());
+			ImGui::TextWrapped(ShiftJISToUTF8("アセットフォルダ内のファイルを一つのアーカイブファイルにまとめます。アーカイブ化には時間がかかる場合があります。").c_str());
             if (ImGui::Button(ShiftJISToUTF8("アーカイブ化実行").c_str(), ImVec2(120, 0))) {
                 bool OK = false;
-                OK = CallAssetPacker(SettingManager::GetInstance()->GetPackingToolFilePath(),"../Assets", "assets.PixAssets");
+                OK = RunArchiveTool(SettingManager::GetInstance()->GetPackingToolFilePath(),
+                    SettingManager::GetInstance()->GetAssetsFilePath(),
+                    SettingManager::GetInstance()->GetArchiveFilePath() + "/assets.PixAssets");
                 if(OK)
 					MessageBoxA(NULL, "アーカイブ化に成功しました。", "成功", MB_OK | MB_ICONINFORMATION);
 				else

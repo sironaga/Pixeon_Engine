@@ -17,7 +17,13 @@ public:
 	static AssetsManager* GetInstance();
 	static void DestroyInstance();
 public:
+	enum class LoadMode {
+		FromArchive,
+		FromSource,
+	};
+public:
 	bool Open(const std::string& filepath);
+	void SetLoadMode(LoadMode mode) { m_loadMode = mode; }
 	bool LoadAsset(const std::string& name, std::vector<uint8_t>& outData);
 	std::vector<std::string> ListAssets() const;
 private:
@@ -29,6 +35,7 @@ private:
 	std::ifstream m_file;
 private:
 	static AssetsManager* instance;
+	LoadMode m_loadMode = LoadMode::FromArchive;
 };
 
 
