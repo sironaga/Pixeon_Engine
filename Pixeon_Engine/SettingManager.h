@@ -45,7 +45,6 @@ private:
 	std::string SceneFilePath	= "SceneRoot/Scene";
 	std::string PackingTool		= "SceneRoot/Tool/Asset packaging tool.exe";
 
-
 	bool bZBuffer = true;
 	int AutoSaveInterval = 5; // ©“®•Û‘¶ŠÔŠui•ªj
 

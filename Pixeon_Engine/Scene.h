@@ -31,6 +31,7 @@ public: // Setter And Getter
 	std::vector<Object*> GetObjects() { return _objects; }
 private://“à•”ˆ—
 	void ProcessThreadSafeAdditions();
+	void AddObjectLocal(Object* obj);
 
 private:
 	std::string _name = "DefaultScene";

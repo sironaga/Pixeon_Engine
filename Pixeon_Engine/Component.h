@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include "ComponentManager.h"
 
 class Object;
 
@@ -33,9 +34,15 @@ public:
 	std::string GetComponentName() const { return _ComponentName; }
 	void SetComponentName(const std::string& name) { _ComponentName = name; }
 
+	ComponentManager::COMPONENT_TYPE GetComponentType() const { return _Type; }
+	void SetComponentType(ComponentManager::COMPONENT_TYPE type) { _Type = type; }
+
+
+
 protected:
 	std::string _ComponentName;
 	Object* _Parent;
 	ComponetKinds _Kind;
+	ComponentManager::COMPONENT_TYPE _Type = ComponentManager::COMPONENT_TYPE::NONE;
 };
 

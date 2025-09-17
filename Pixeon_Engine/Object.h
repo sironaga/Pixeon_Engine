@@ -68,6 +68,8 @@ public:
 	// コンポーネントの削除
 	void RemoveComponent(Component* comp);
 
+	std::vector<Component*> GetComponents() { return _components; }
+
 	void SetParentScene(Scene* scene) { _ParentScene = scene; }
 	Scene* GetParentScene() const { return _ParentScene; }
 
