@@ -82,10 +82,10 @@ void InGameUpdate(){
 void EditeDraw(){
 
 	gGameRenderTarget->Begin(DirectX11::GetInstance()->GetContext());
-	//SceneManger::GetInstance()->Draw();
+	SceneManger::GetInstance()->Draw();
 	gGameRenderTarget->End();
 
-	    ID3D11DeviceContext* ctx = DirectX11::GetInstance()->GetContext();
+	ID3D11DeviceContext* ctx = DirectX11::GetInstance()->GetContext();
     ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
     ctx->PSSetShaderResources(0, 1, nullSRV);
 

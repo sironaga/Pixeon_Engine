@@ -28,12 +28,13 @@ void SceneManger::Init(){
 	{
 		std::string sceneName = fileName.substr(0, fileName.find_last_of('.'));
 		if (CreateAndRegisterScene(sceneName)){
-			std::cout << "Registered scene: " << sceneName << std::endl;
 		}
 		else{
-			std::cout << "Scene already exists: " << sceneName << std::endl;
+			MessageBox(nullptr, "SceneManagerにてInitエラー", "Error", MB_OK);
 		}
 	}
+
+	ChangeScene("SampleScene");
 }
 
 // シーン開始
@@ -46,14 +47,15 @@ void SceneManger::BeginPlay(){
 
 // 更新
 void SceneManger::EditUpdate(){
-	// シーンの切り替え
+	//// シーンの切り替え
 	if (_nextScene) {
 		if (_currentScene)delete _currentScene;
 		_currentScene = _nextScene;
 		_currentScene->Init();
 		_currentScene->LoadToFile();
+		_nextScene = nullptr;
 	}
-	// 更新
+	//// 更新
 	if (_currentScene)_currentScene->EditUpdate();
 
 	// オートセーブの処理
@@ -70,6 +72,7 @@ void SceneManger::PlayUpdate(){
 	if (_nextScene) {
 		if (_currentScene)delete _currentScene;
 		_currentScene = _nextScene;
+		_nextScene = nullptr;
 		_currentScene->Init();
 		_currentScene->LoadToFile();
 		_currentScene->BeginPlay();
@@ -122,7 +125,10 @@ std::vector<std::string> SceneManger::ListSceneFiles(){
 
 	if (hFind == INVALID_HANDLE_VALUE) {
 		// シーンファイルが見つからない場合
-		CreateAndRegisterScene("SampleScene");
+		MessageBox(nullptr, "シーンが見つからないため\n自動作成を行います", "Info", MB_OK);	
+		if (!CreateAndRegisterScene("SampleScene")) {
+			MessageBox(nullptr, "正常に作成ができませんでした", "Error", MB_OK);
+		}
 	}
 
 	do {
