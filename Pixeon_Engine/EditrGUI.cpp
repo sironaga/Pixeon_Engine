@@ -353,6 +353,15 @@ void EditrGUI::SettingWindow()
             SettingManager::GetInstance()->SetAutoSaveInterval(autoSaveInterval);
         }
 
+        ImGui::Text(ShiftJISToUTF8("バックグラウンドカラーを変更").c_str());
+        DirectX::XMFLOAT4 Color;
+        Color = SettingManager::GetInstance()->GetBackgroundColor();
+		float color[4] = { Color.x, Color.y, Color.z, Color.w };
+        if (ImGui::ColorEdit4(ShiftJISToUTF8("背景色").c_str(), color)) {
+            SettingManager::GetInstance()->SetBackgroundColor(DirectX::XMFLOAT4(color[0], color[1], color[2], color[3]));
+		}
+
+
 
     }
     ImGui::End();

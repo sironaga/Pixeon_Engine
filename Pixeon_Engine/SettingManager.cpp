@@ -50,6 +50,12 @@ void SettingManager::LoadConfig(){
 	if (configJson.contains("AutoSaveInterval")) {
 		AutoSaveInterval = configJson["AutoSaveInterval"].get<int>();
 	}
+	if (configJson.contains("BackgroundColor") && configJson["BackgroundColor"].is_array() && configJson["BackgroundColor"].size() == 4) {
+		BackgroundColor.x = configJson["BackgroundColor"][0].get<float>();
+		BackgroundColor.y = configJson["BackgroundColor"][1].get<float>();
+		BackgroundColor.z = configJson["BackgroundColor"][2].get<float>();
+		BackgroundColor.w = configJson["BackgroundColor"][3].get<float>();
+	}
 }
 
 void SettingManager::SaveConfig(){
@@ -60,6 +66,8 @@ void SettingManager::SaveConfig(){
 	configJson["SceneFilePath"] = SceneFilePath;
 	configJson["bZBuffer"] = bZBuffer;
 	configJson["AutoSaveInterval"] = AutoSaveInterval;
+	configJson["BackgroundColor"] = { BackgroundColor.x, BackgroundColor.y, BackgroundColor.z, BackgroundColor.w };
+
 	// JSONÉtÉ@ÉCÉãÇ…èëÇ´çûÇﬁ
 	std::ofstream configFile(CONFIG_FILE_PATH);
 	if (configFile.is_open()) {

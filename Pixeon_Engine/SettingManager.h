@@ -4,7 +4,7 @@
 
 #pragma once
 #include <string>
-
+#include "System.h"
 
 class SettingManager
 {
@@ -36,6 +36,9 @@ public:
 	std::string GetPackingToolFilePath() const { return PackingTool; }
 	void SetPackingToolFilePath(const std::string& path) { PackingTool = path; }
 
+	DirectX::XMFLOAT4 GetBackgroundColor() const { return BackgroundColor; }
+	void SetBackgroundColor(const DirectX::XMFLOAT4& color) { BackgroundColor = color; }
+
 private:
 	static SettingManager* instance;
 private:
@@ -44,6 +47,8 @@ private:
 	std::string ArchiveFilePath = "SceneRoot/Archive";
 	std::string SceneFilePath	= "SceneRoot/Scene";
 	std::string PackingTool		= "SceneRoot/Tool/Asset packaging tool.exe";
+	DirectX::XMFLOAT4 BackgroundColor = DirectX::XMFLOAT4(0.1f, 0.1f, 0.1f,0.1);
+	
 
 	bool bZBuffer = true;
 	int AutoSaveInterval = 5; // é©ìÆï€ë∂ä‘äuÅiï™Åj

@@ -2,6 +2,8 @@
 #include "DirectXTex/TextureLoad.h"
 #include "IMGUI/imgui.h"
 #include "IMGUI/imgui_impl_dx11.h"
+#include "Main.h"
+#include "SettingManager.h"
 
 // DirectX11 class
 
@@ -180,7 +182,16 @@ void DirectX11::Uninit()
 
 void DirectX11::BeginDraw()
 {
+
 	float color[4] = { 0.5f, 0.5f, 0.5f, 1.0f };
+	if (IsInGame) {
+		DirectX::XMFLOAT4 Temp;
+		Temp = SettingManager::GetInstance()->GetBackgroundColor();
+		color[0] = Temp.x;
+		color[1] = Temp.y;
+		color[2] = Temp.z;
+		color[3] = Temp.w;
+	}
 	g_pRTV->Clear(color);
 	g_pDSV->Clear();
 }

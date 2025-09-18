@@ -1,5 +1,6 @@
 #include "GameRenderTarget.h"
 #include "System.h"
+#include "SettingManager.h"
 
 void GameRenderTarget::Init(ID3D11Device* device, int width, int height)
 {
@@ -162,7 +163,9 @@ void GameRenderTarget::Begin(ID3D11DeviceContext* context)
     context->RSSetViewports(1, &m_viewport);
 
     DirectX::XMFLOAT4 Temp;
-    float clearColor[4] = { 1.0f, 0.1f, 0.3f, 1.0f };
+    Temp = SettingManager::GetInstance()->GetBackgroundColor();
+    float clearColor[4] = { Temp.x, Temp.y, Temp.y, Temp.z };
+    
 
     context->ClearRenderTargetView(m_pRTV, clearColor);
     if (m_pDSV)
