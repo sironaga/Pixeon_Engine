@@ -164,7 +164,7 @@ void GameRenderTarget::Begin(ID3D11DeviceContext* context)
 
     DirectX::XMFLOAT4 Temp;
     Temp = SettingManager::GetInstance()->GetBackgroundColor();
-    float clearColor[4] = { Temp.x, Temp.y, Temp.y, Temp.z };
+    float clearColor[4] = { Temp.x, Temp.y, Temp.z, Temp.w };
     
 
     context->ClearRenderTargetView(m_pRTV, clearColor);
