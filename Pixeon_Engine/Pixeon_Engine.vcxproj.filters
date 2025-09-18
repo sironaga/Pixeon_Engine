@@ -110,6 +110,15 @@
     <ClCompile Include="ComponentManager.cpp">
       <Filter>ソース ファイル\Manager</Filter>
     </ClCompile>
+    <ClCompile Include="EditrGUI_Content.cpp">
+      <Filter>ソース ファイル\GUI\View</Filter>
+    </ClCompile>
+    <ClCompile Include="EditrGUI_Hierarchy.cpp">
+      <Filter>ソース ファイル\GUI\View</Filter>
+    </ClCompile>
+    <ClCompile Include="EditrGUI_Inspector.cpp">
+      <Filter>ソース ファイル\GUI\View</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">

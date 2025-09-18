@@ -161,6 +161,9 @@
     <ClCompile Include="ComponentManager.cpp" />
     <ClCompile Include="content_Item.cpp" />
     <ClCompile Include="EditrGUI.cpp" />
+    <ClCompile Include="EditrGUI_Content.cpp" />
+    <ClCompile Include="EditrGUI_Hierarchy.cpp" />
+    <ClCompile Include="EditrGUI_Inspector.cpp" />
     <ClCompile Include="GameRenderTarget.cpp" />
     <ClCompile Include="IMGUI\imgui.cpp" />
     <ClCompile Include="IMGUI\imgui_demo.cpp" />

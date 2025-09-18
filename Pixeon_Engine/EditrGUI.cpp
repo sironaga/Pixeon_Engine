@@ -267,26 +267,6 @@ void EditrGUI::WindowGUI()
     ShowConsole();
 }
 
-void EditrGUI::ShowContentDrawer()
-{
-    ImGui::Begin(ShiftJISToUTF8("コンテンツドロワー").c_str());
-    ImGui::Text(ShiftJISToUTF8("ここにアセット一覧を表示します。").c_str());
-    ImGui::End();
-}
-
-void EditrGUI::ShowHierarchy()
-{
-    ImGui::Begin(ShiftJISToUTF8("ヒエラルキー").c_str());
-    ImGui::Text(ShiftJISToUTF8("ここにシーンのオブジェクト階層を表示します。").c_str());
-    ImGui::End();
-}
-
-void EditrGUI::ShowInspector()
-{
-    ImGui::Begin(ShiftJISToUTF8("インスペクター").c_str());
-    ImGui::Text(ShiftJISToUTF8("ここに選択オブジェクトの詳細情報を表示します。").c_str());
-    ImGui::End();
-}
 
 void EditrGUI::ShowGameView()
 {
