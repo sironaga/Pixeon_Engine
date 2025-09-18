@@ -117,3 +117,4 @@ void AssetWatcher::WatchThread(){
     FindCloseChangeNotification(hChange);
 }
 
+
