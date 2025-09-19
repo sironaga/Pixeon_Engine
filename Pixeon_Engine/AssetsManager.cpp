@@ -1,5 +1,7 @@
 #include "AssetsManager.h"
 #include "SettingManager.h"
+#include <unordered_map>
+#include <unordered_set>
 
 AssetsManager* AssetsManager::instance = nullptr;
 
@@ -40,7 +42,6 @@ bool AssetsManager::Open(const std::string& filepath) {
     return true;
 }
 
-// キャッシュ優先でアセットを取得
 bool AssetsManager::LoadAsset(const std::string& name, std::vector<uint8_t>& outData) {
     auto cacheIt = m_assetCache.find(name);
     if (cacheIt != m_assetCache.end()) {
@@ -72,7 +73,6 @@ bool AssetsManager::LoadAsset(const std::string& name, std::vector<uint8_t>& out
     }
 }
 
-// ファイルパスでキャッシュ化（監視イベントで使用）
 void AssetsManager::CacheAsset(const std::string& filepath) {
     std::ifstream file(filepath, std::ios::binary);
     if (!file) return;
@@ -93,9 +93,17 @@ void AssetsManager::ClearCache() {
 }
 
 std::vector<std::string> AssetsManager::ListAssets() const {
-    std::vector<std::string> list;
-    for (const auto& p : m_index) list.push_back(p.first);
-    return list;
+    std::unordered_set<std::string> allNames;
+    // アーカイブのアセット名を追加
+    for (const auto& p : m_index) {
+        allNames.insert(p.first);
+    }
+    // キャッシュのアセット名も追加（重複は無視される）
+    for (const auto& p : m_assetCache) {
+        allNames.insert(p.first);
+    }
+    // vectorに詰め替えて返す
+    return std::vector<std::string>(allNames.begin(), allNames.end());
 }
 
 // アセット管理クラス
@@ -133,7 +141,6 @@ void AssetWatcher::WatchThread() {
             // フォルダ内の全ファイルをチェック
             for (const auto& entry : std::filesystem::directory_iterator(m_dir)) {
                 if (entry.is_regular_file()) {
-					MessageBoxA(NULL, entry.path().string().c_str(), "File Changed", MB_OK | MB_ICONINFORMATION);
                     if (m_callback) m_callback(entry.path().string()); // ファイルパスをコールバック
                 }
             }

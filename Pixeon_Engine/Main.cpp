@@ -13,27 +13,23 @@ GameRenderTarget* gGameRenderTarget;
 bool bInGame;
 std::vector<PostEffectBase*> gPostEffects;
 
+void OnAssetChanged(const std::string& filepath) {
+	AssetsManager::GetInstance()->CacheAsset(filepath);
+}
+
+
 int Init(const EngineConfig& InPut){
+
 	// DirectX11の初期化
 	ghWnd = InPut.hWnd;
 	HRESULT hr = DirectX11::GetInstance()->Init(InPut.hWnd, InPut.screenWidth, InPut.screenHeight, InPut.fullscreen);
 	if (FAILED(hr)) return -1;
 	// 設定の読み込み
 	SettingManager::GetInstance()->LoadConfig();
-	std::string ArchivePath = SettingManager::GetInstance()->GetArchiveFilePath();
-	ArchivePath += "assets.PixAssets";
-
 	//　アセットマネージャーの起動
 	AssetsManager::GetInstance()->SetLoadMode(AssetsManager::LoadMode::FromSource);
 	AssetsManager::GetInstance()->CacheAsset(SettingManager::GetInstance()->GetAssetsFilePath());
-	watcher = new AssetWatcher(SettingManager::GetInstance()->GetAssetsFilePath(), 
-		[](const std::string& file) {
-			AssetsManager::GetInstance()->CacheAsset(file);
-		});
-
-
-
-
+	watcher = new AssetWatcher(SettingManager::GetInstance()->GetAssetsFilePath(), OnAssetChanged);
 	// 非同期監視開始
 	watcher->Start();
 	// ゲームレンダリングターゲットの初期化
@@ -64,6 +60,8 @@ void Draw(){
 void UnInit(){
 	watcher->Stop();
 	delete watcher;
+	AssetsManager::GetInstance()->ClearCache();
+	AssetsManager::DestroyInstance();
 	SceneManger::GetInstance()->Save();
 	SceneManger::DestroyInstance();
 	SettingManager::GetInstance()->SaveConfig();

@@ -4,13 +4,7 @@
 #include <vector>
 #include <map>
 #include <fstream>
-
-#pragma once
-#include <string>
-#include <vector>
-#include <map>
 #include <unordered_map>
-#include <fstream>
 
 struct AssetEntry {
     std::string name;
