@@ -8,6 +8,7 @@
 #include "Main.h"
 #include "StartUp.h"
 #include "SettingManager.h"
+#pragma comment(lib, "windowscodecs.lib")
 
 EditrGUI* EditrGUI::instance = nullptr;
 
@@ -74,6 +75,10 @@ void EditrGUI::Init(){
     // タブのテキスト色（アクティブのみ白寄り・非アクティブはグレー寄りで差をつける）
     colors[ImGuiCol_Text] = ImVec4(0.88f, 0.90f, 0.94f, 1.00f);
     colors[ImGuiCol_TextDisabled] = ImVec4(0.45f, 0.48f, 0.54f, 1.00f);
+
+	img     = LoadImg(L"SceneRoot/Editor/texture/img.png", DirectX11::GetInstance()->GetDevice());
+	Sound   = LoadImg(L"SceneRoot/Editor/texture/Sound.png", DirectX11::GetInstance()->GetDevice());
+	fbx     = LoadImg(L"SceneRoot/Editor/texture/fbx.png", DirectX11::GetInstance()->GetDevice());
 
 }
 
@@ -366,3 +371,53 @@ void EditrGUI::SettingWindow()
     }
     ImGui::End();
 }
+
+ID3D11ShaderResourceView* EditrGUI::LoadImg(const std::wstring& filename, ID3D11Device* device)
+{
+    IWICImagingFactory* factory = nullptr;
+    IWICBitmapDecoder* decoder = nullptr;
+    IWICBitmapFrameDecode* frame = nullptr;
+    IWICFormatConverter* converter = nullptr;
+    ID3D11ShaderResourceView* srv = nullptr;
+
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    if (SUCCEEDED(hr)) hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
+    if (SUCCEEDED(hr)) hr = factory->CreateDecoderFromFilename(filename.c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnDemand, &decoder);
+    if (SUCCEEDED(hr)) hr = decoder->GetFrame(0, &frame);
+    if (SUCCEEDED(hr)) hr = factory->CreateFormatConverter(&converter);
+    if (SUCCEEDED(hr)) hr = converter->Initialize(frame, GUID_WICPixelFormat32bppRGBA, WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom);
+
+    UINT width = 0, height = 0;
+    if (SUCCEEDED(hr)) hr = frame->GetSize(&width, &height);
+
+    std::vector<BYTE> buffer;
+    if (SUCCEEDED(hr)) {
+        buffer.resize(width * height * 4);
+        hr = converter->CopyPixels(nullptr, width * 4, (UINT)buffer.size(), buffer.data());
+    }
+    if (SUCCEEDED(hr)) {
+        D3D11_TEXTURE2D_DESC desc = {};
+        desc.Width = width;
+        desc.Height = height;
+        desc.MipLevels = 1;
+        desc.ArraySize = 1;
+        desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        desc.SampleDesc.Count = 1;
+        desc.Usage = D3D11_USAGE_DEFAULT;
+        desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        D3D11_SUBRESOURCE_DATA initData = { buffer.data(), width * 4, 0 };
+        ID3D11Texture2D* tex = nullptr;
+        hr = device->CreateTexture2D(&desc, &initData, &tex);
+        if (SUCCEEDED(hr)) hr = device->CreateShaderResourceView(tex, nullptr, &srv);
+        if (tex) tex->Release();
+    }
+
+    if (converter) converter->Release();
+    if (frame) frame->Release();
+    if (decoder) decoder->Release();
+    if (factory) factory->Release();
+    CoUninitialize();
+
+    return srv;
+}
+

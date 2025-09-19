@@ -17,6 +17,13 @@ void OnAssetChanged(const std::string& filepath) {
 	AssetsManager::GetInstance()->CacheAsset(filepath);
 }
 
+void CacheAllAssetsOnStartup(const std::string& assetsDir) {
+	for (const auto& entry : std::filesystem::directory_iterator(assetsDir)) {
+		if (entry.is_regular_file()) {
+			AssetsManager::GetInstance()->CacheAsset(entry.path().string());
+		}
+	}
+}
 
 int Init(const EngineConfig& InPut){
 
@@ -29,6 +36,7 @@ int Init(const EngineConfig& InPut){
 	//　アセットマネージャーの起動
 	AssetsManager::GetInstance()->SetLoadMode(AssetsManager::LoadMode::FromSource);
 	AssetsManager::GetInstance()->CacheAsset(SettingManager::GetInstance()->GetAssetsFilePath());
+	CacheAllAssetsOnStartup(SettingManager::GetInstance()->GetAssetsFilePath());
 	watcher = new AssetWatcher(SettingManager::GetInstance()->GetAssetsFilePath(), OnAssetChanged);
 	// 非同期監視開始
 	watcher->Start();
