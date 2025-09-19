@@ -1,24 +1,23 @@
-// アセット管理クラスの実装
 #include "AssetsManager.h"
 #include "SettingManager.h"
 
 AssetsManager* AssetsManager::instance = nullptr;
 
-AssetsManager* AssetsManager::GetInstance(){
-	if (instance == nullptr) {
-		instance = new AssetsManager();
-	}
-	return instance;
+AssetsManager* AssetsManager::GetInstance() {
+    if (instance == nullptr) {
+        instance = new AssetsManager();
+    }
+    return instance;
 }
 
-void AssetsManager::DestroyInstance(){
-	if (instance) {
-		delete instance;
-		instance = nullptr;
-	}
+void AssetsManager::DestroyInstance() {
+    if (instance) {
+        delete instance;
+        instance = nullptr;
+    }
 }
 
-bool AssetsManager::Open(const std::string& filepath){
+bool AssetsManager::Open(const std::string& filepath) {
     m_file.open(filepath, std::ios::binary);
     if (!m_file) return false;
     m_index.clear();
@@ -41,18 +40,25 @@ bool AssetsManager::Open(const std::string& filepath){
     return true;
 }
 
-bool AssetsManager::LoadAsset(const std::string& name, std::vector<uint8_t>& outData){
+// キャッシュ優先でアセットを取得
+bool AssetsManager::LoadAsset(const std::string& name, std::vector<uint8_t>& outData) {
+    auto cacheIt = m_assetCache.find(name);
+    if (cacheIt != m_assetCache.end()) {
+        outData = cacheIt->second;
+        return true;
+    }
+
     if (m_loadMode == LoadMode::FromArchive) {
-        // PixAssetsから抽出
         auto it = m_index.find(name);
         if (it == m_index.end()) return false;
         m_file.seekg(it->second.offset, std::ios::beg);
         outData.resize(static_cast<size_t>(it->second.size));
         m_file.read(reinterpret_cast<char*>(outData.data()), it->second.size);
+        // キャッシュに保存
+        m_assetCache[name] = outData;
         return true;
     }
     else {
-        // 元データ（Assetsフォルダ）から直接読み込み
         std::ifstream file(SettingManager::GetInstance()->GetAssetsFilePath() + name, std::ios::binary);
         if (!file) return false;
         file.seekg(0, std::ios::end);
@@ -60,11 +66,33 @@ bool AssetsManager::LoadAsset(const std::string& name, std::vector<uint8_t>& out
         outData.resize(size);
         file.seekg(0, std::ios::beg);
         file.read(reinterpret_cast<char*>(outData.data()), size);
+        // キャッシュに保存
+        m_assetCache[name] = outData;
         return true;
     }
 }
 
-std::vector<std::string> AssetsManager::ListAssets() const{
+// ファイルパスでキャッシュ化（監視イベントで使用）
+void AssetsManager::CacheAsset(const std::string& filepath) {
+    std::ifstream file(filepath, std::ios::binary);
+    if (!file) return;
+    file.seekg(0, std::ios::end);
+    size_t size = file.tellg();
+    file.seekg(0, std::ios::beg);
+    std::vector<uint8_t> data(size);
+    file.read(reinterpret_cast<char*>(data.data()), size);
+
+    // ファイル名抽出（Assets/以降の名前をキャッシュキーに）
+    auto pos = filepath.find_last_of("/\\");
+    std::string name = (pos != std::string::npos) ? filepath.substr(pos + 1) : filepath;
+    m_assetCache[name] = std::move(data);
+}
+
+void AssetsManager::ClearCache() {
+    m_assetCache.clear();
+}
+
+std::vector<std::string> AssetsManager::ListAssets() const {
     std::vector<std::string> list;
     for (const auto& p : m_index) list.push_back(p.first);
     return list;
@@ -72,49 +100,46 @@ std::vector<std::string> AssetsManager::ListAssets() const{
 
 // アセット管理クラス
 #include <windows.h>
-#include <chrono>
 #include <filesystem>
-AssetWatcher::AssetWatcher(const std::string& dir, const std::string& file, Callback onChange)
-    : m_dir(dir), m_file(file), m_callback(onChange), m_running(false) {}
+#include <chrono>
 
-AssetWatcher::~AssetWatcher(){
+AssetWatcher::AssetWatcher(const std::string& dir, Callback onChange)
+    : m_dir(dir), m_callback(onChange), m_running(false) {
+}
+
+AssetWatcher::~AssetWatcher() {
     Stop();
 }
 
-void AssetWatcher::Start(){
+void AssetWatcher::Start() {
     if (m_running) return;
     m_running = true;
     m_thread = std::thread(&AssetWatcher::WatchThread, this);
 }
 
-void AssetWatcher::Stop(){
+void AssetWatcher::Stop() {
     m_running = false;
     if (m_thread.joinable()) m_thread.join();
 }
 
-void AssetWatcher::WatchThread(){
+void AssetWatcher::WatchThread() {
     HANDLE hChange = FindFirstChangeNotificationA(
-        m_dir.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE);
+        m_dir.c_str(), TRUE, FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE);
     if (hChange == INVALID_HANDLE_VALUE) return;
 
-    // 最初のタイムスタンプを取得
-    std::filesystem::path filePath = m_dir + "/" + m_file;
-    if (!std::filesystem::exists(filePath))return;
-    auto lastWrite = std::filesystem::last_write_time(filePath);
     while (m_running) {
-        DWORD wait = WaitForSingleObject(hChange, 500); // 500ms毎にチェック
+        DWORD wait = WaitForSingleObject(hChange, 500);
         if (wait == WAIT_OBJECT_0) {
-            // ファイルのタイムスタンプが変わったか確認
-            auto nowWrite = std::filesystem::last_write_time(filePath);
-            if (nowWrite != lastWrite) {
-                lastWrite = nowWrite;
-                if (m_callback) m_callback(); // 変更検知コールバック
+            // フォルダ内の全ファイルをチェック
+            for (const auto& entry : std::filesystem::directory_iterator(m_dir)) {
+                if (entry.is_regular_file()) {
+					MessageBoxA(NULL, entry.path().string().c_str(), "File Changed", MB_OK | MB_ICONINFORMATION);
+                    if (m_callback) m_callback(entry.path().string()); // ファイルパスをコールバック
+                }
             }
             FindNextChangeNotification(hChange);
         }
-        // 途中でStop()された場合break
     }
     FindCloseChangeNotification(hChange);
 }
-
 

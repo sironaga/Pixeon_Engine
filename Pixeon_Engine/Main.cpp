@@ -25,12 +25,15 @@ int Init(const EngineConfig& InPut){
 
 	//　アセットマネージャーの起動
 	AssetsManager::GetInstance()->SetLoadMode(AssetsManager::LoadMode::FromSource);
-	AssetsManager::GetInstance()->Open(ArchivePath);
-	watcher = new AssetWatcher(SettingManager::GetInstance()->GetArchiveFilePath(), "assets.PixAssets",
-		[&]() {
-			AssetsManager::GetInstance()->Open(ArchivePath);
-		}
-	);
+	AssetsManager::GetInstance()->CacheAsset(SettingManager::GetInstance()->GetAssetsFilePath());
+	watcher = new AssetWatcher(SettingManager::GetInstance()->GetAssetsFilePath(), 
+		[](const std::string& file) {
+			AssetsManager::GetInstance()->CacheAsset(file);
+		});
+
+
+
+
 	// 非同期監視開始
 	watcher->Start();
 	// ゲームレンダリングターゲットの初期化
