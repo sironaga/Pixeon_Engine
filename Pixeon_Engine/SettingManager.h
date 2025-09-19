@@ -39,6 +39,9 @@ public:
 	DirectX::XMFLOAT4 GetBackgroundColor() const { return BackgroundColor; }
 	void SetBackgroundColor(const DirectX::XMFLOAT4& color) { BackgroundColor = color; }
 
+	std::string GetExternelToolPath() const { return ExternelTool; }
+	void SetExternelToolPath(const std::string& path) { ExternelTool = path; }
+
 private:
 	static SettingManager* instance;
 private:
@@ -47,6 +50,7 @@ private:
 	std::string ArchiveFilePath = "SceneRoot/Archive";
 	std::string SceneFilePath	= "SceneRoot/Scene";
 	std::string PackingTool		= "SceneRoot/Tool/Asset packaging tool.exe";
+	std::string ExternelTool	= "SceneRoot/Tool/IN/";
 	DirectX::XMFLOAT4 BackgroundColor = DirectX::XMFLOAT4(0.1f, 0.1f, 0.1f,0.1);
 	
 

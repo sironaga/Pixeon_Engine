@@ -146,19 +146,13 @@ void EditrGUI::WindowGUI()
             ImGui::MenuItem(ShiftJISToUTF8("新規シーン").c_str());
             ImGui::MenuItem(ShiftJISToUTF8("開く...").c_str());
             ImGui::MenuItem(ShiftJISToUTF8("保存").c_str());
+            if (ImGui::MenuItem(ShiftJISToUTF8("環境設定").c_str())){
+                ShowSettingsWindow = true;
+            }
             ImGui::Separator();
             if (ImGui::MenuItem(ShiftJISToUTF8("終了").c_str())) {
 				SetRun(false);
             }
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu(ShiftJISToUTF8("設定").c_str()))
-        {
-            if (ImGui::MenuItem(ShiftJISToUTF8("環境設定").c_str()))
-            {
-				ShowSettingsWindow = true;
-            }
-
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu(ShiftJISToUTF8("編集").c_str()))
@@ -181,12 +175,17 @@ void EditrGUI::WindowGUI()
             if (ImGui::MenuItem(ShiftJISToUTF8("アーカイブ化").c_str())) {
                 ShowArchiveWindow = true;
             }
-			/*if (ImGui::MenuItem(ShiftJISToUTF8("コンソール").c_str()))ShowConsoleWindow = !ShowConsoleWindow;*/
+
             if (ImGui::MenuItem(ShiftJISToUTF8("フォルダ").c_str())) {
                 std::string Path = GetExePath();
                 Path = RemoveExeFromPath(Path);
 				OpenExplorer(Path);
             }
+
+            if (ImGui::MenuItem(ShiftJISToUTF8("外部ツール").c_str())) {
+				ShowExternalToolsWindow = true;
+            }
+
             ImGui::EndMenu();
 		}
         ImGui::EndMenuBar();
@@ -229,6 +228,8 @@ void EditrGUI::WindowGUI()
         ImGui::End();
     }
 
+    ExternalToolsWindow();
+    
     // DockSpaceを作成
     ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
     ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
@@ -321,6 +322,27 @@ void EditrGUI::ShowConsole(){
 	ImGui::End();
 }
 
+void EditrGUI::ExternalToolsWindow(){
+	if (!ShowExternalToolsWindow)return;
+    ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
+    if (ImGui::Begin(ShiftJISToUTF8("外部ツール管理").c_str(), &ShowExternalToolsWindow, flags)) {
+		ImGui::Text(ShiftJISToUTF8("外部ツール管理ウインドウです").c_str());
+		std::string ExternelTool = SettingManager::GetInstance()->GetExternelToolPath();
+		ImGui::Text(ShiftJISToUTF8("外部ツールフォルダ:").c_str());
+		ImGui::SameLine();
+		ImGui::Text(ShiftJISToUTF8(ExternelTool).c_str());
+		ImGui::Separator();
+		ImGui::Text(ShiftJISToUTF8("説明").c_str());
+		ImGui::TextWrapped(ShiftJISToUTF8("外部ツールフォルダにある実行ファイルを一覧表示します。").c_str());
+		ImGui::TextWrapped(ShiftJISToUTF8("実行ファイルをクリックすると外部ツールが起動します。").c_str());
+		ImGui::Separator();
+
+        ImGui::End();
+    }
+
+}
+
 void EditrGUI::SettingWindow()
 {
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
@@ -347,6 +369,11 @@ void EditrGUI::SettingWindow()
         strncpy_s(PackingToolBuffer, PackingTool.c_str(), sizeof(PackingToolBuffer));
         if (ImGui::InputText(ShiftJISToUTF8("PackingTool").c_str(), PackingToolBuffer, sizeof(PackingToolBuffer)))SettingManager::GetInstance()->SetPackingToolFilePath(PackingToolBuffer);
         
+		char ExternelToolBuffer[256];
+		std::string ExternelTool = SettingManager::GetInstance()->GetExternelToolPath();
+		strncpy_s(ExternelToolBuffer, ExternelTool.c_str(), sizeof(ExternelToolBuffer));
+		if (ImGui::InputText(ShiftJISToUTF8("外部ツールフォルダ").c_str(), ExternelToolBuffer, sizeof(ExternelToolBuffer)))SettingManager::GetInstance()->SetExternelToolPath(ExternelToolBuffer);
+
 		ImGui::Text(ShiftJISToUTF8("レンダリング設定").c_str());
 		ImGui::Separator();
 		bool bZBuffer = SettingManager::GetInstance()->GetZBuffer();

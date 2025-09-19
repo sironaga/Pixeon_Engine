@@ -6,12 +6,15 @@
 #include "EditrGUI.h"
 #include "PostEffectBase.h"
 #include "SettingManager.h"
+#include "Object.h"
+
 
 HWND ghWnd;
 AssetWatcher *watcher;
 GameRenderTarget* gGameRenderTarget;
 bool bInGame;
 std::vector<PostEffectBase*> gPostEffects;
+std::vector<Object*> gContentsObjects;
 
 void OnAssetChanged(const std::string& filepath) {
 	AssetsManager::GetInstance()->CacheAsset(filepath);
@@ -48,6 +51,8 @@ int Init(const EngineConfig& InPut){
 	bInGame = false;
 	// シーンマネージャーの初期化
 	SceneManger::GetInstance()->Init();
+	// ContentsObjectsの初期化
+	gContentsObjects.clear();
 
 	return 0;
 }
@@ -124,6 +129,25 @@ bool IsInGame(){
 
 void SetInGame(bool inGame){
 	bInGame = inGame;
+}
+
+std::vector<Object*> GetContentsObjects(){
+	return gContentsObjects;
+}
+
+void AddContentsObject(Object* obj){
+	Object* CloneObj;
+	CloneObj = obj->Clone();
+	gContentsObjects.push_back(CloneObj);
+}
+
+void RemoveContentsObject(Object* obj){
+	auto it = std::remove(gContentsObjects.begin(), gContentsObjects.end(), obj);
+	if(it != gContentsObjects.end()) {
+		gContentsObjects.erase(it, gContentsObjects.end());
+		obj->UInit();
+		delete obj;
+	}
 }
 
 void OpenExplorer(const std::string& path)

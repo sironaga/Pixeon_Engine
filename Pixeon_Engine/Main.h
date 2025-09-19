@@ -5,6 +5,9 @@
 #include <Windows.h>
 #include <d3d11.h>
 #include <string> 
+#include <vector>
+
+class Object;
 
 struct EngineConfig {
 	HWND hWnd;
@@ -38,3 +41,8 @@ ID3D11ShaderResourceView* GetGameRender();
 
 bool IsInGame();
 void SetInGame(bool inGame);
+
+std::vector<Object*> GetContentsObjects();
+void AddContentsObject(Object* obj);
+void RemoveContentsObject(Object* obj);
+

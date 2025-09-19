@@ -56,6 +56,10 @@ void SettingManager::LoadConfig(){
 		BackgroundColor.z = configJson["BackgroundColor"][2].get<float>();
 		BackgroundColor.w = configJson["BackgroundColor"][3].get<float>();
 	}
+	if (configJson.contains("ExternelTool")) {
+		ExternelTool = configJson["ExternelTool"].get<std::string>();
+	}
+	
 }
 
 void SettingManager::SaveConfig(){
@@ -67,6 +71,7 @@ void SettingManager::SaveConfig(){
 	configJson["bZBuffer"] = bZBuffer;
 	configJson["AutoSaveInterval"] = AutoSaveInterval;
 	configJson["BackgroundColor"] = { BackgroundColor.x, BackgroundColor.y, BackgroundColor.z, BackgroundColor.w };
+	configJson["ExternelTool"] = ExternelTool;
 
 	// JSONÉtÉ@ÉCÉãÇ…èëÇ´çûÇﬁ
 	std::ofstream configFile(CONFIG_FILE_PATH);
