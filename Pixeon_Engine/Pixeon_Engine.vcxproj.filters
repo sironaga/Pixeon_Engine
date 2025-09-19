@@ -194,4 +194,9 @@
       <Filter>ソース ファイル\Manager</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="実装リスト.txt">
+      <Filter>リソース ファイル\Text</Filter>
+    </Text>
+  </ItemGroup>
 </Project>
