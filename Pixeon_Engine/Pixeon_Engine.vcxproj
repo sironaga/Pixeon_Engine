@@ -150,6 +150,7 @@
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneManger.h" />
     <ClInclude Include="SettingManager.h" />
+    <ClInclude Include="ShaderManager.h" />
     <ClInclude Include="Struct.h" />
     <ClInclude Include="System.h" />
     <ClInclude Include="Main.h" />
@@ -177,6 +178,7 @@
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneManger.cpp" />
     <ClCompile Include="SettingManager.cpp" />
+    <ClCompile Include="ShaderManager.cpp" />
     <ClCompile Include="StartUp.cpp" />
     <ClCompile Include="System.cpp" />
   </ItemGroup>

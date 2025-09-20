@@ -119,6 +119,9 @@
     <ClCompile Include="EditrGUI_Inspector.cpp">
       <Filter>ソース ファイル\GUI\View</Filter>
     </ClCompile>
+    <ClCompile Include="ShaderManager.cpp">
+      <Filter>ソース ファイル\Manager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -191,6 +194,9 @@
       <Filter>ソース ファイル\Manager</Filter>
     </ClInclude>
     <ClInclude Include="ComponentManager.h">
+      <Filter>ソース ファイル\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderManager.h">
       <Filter>ソース ファイル\Manager</Filter>
     </ClInclude>
   </ItemGroup>

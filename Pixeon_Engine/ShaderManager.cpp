@@ -1,0 +1,140 @@
+#include "ShaderManager.h"
+#include <fstream>
+#include <d3dcompiler.h>
+
+ShaderManager* ShaderManager::instance = nullptr;
+
+ShaderManager& ShaderManager::GetInstance() {
+    static ShaderManager instance;
+    return instance;
+}
+
+void ShaderManager::DestroyInstance() {
+    if (instance) {
+        delete instance;
+        instance = nullptr;
+    }
+}
+
+void ShaderManager::Initialize(ID3D11Device* device) {
+    m_device = device;
+    UpdateAndCompileShaders();
+}
+
+void ShaderManager::Finalize() {
+    for (auto& kv : m_vsShaders) if (kv.second) kv.second->Release();
+    for (auto& kv : m_psShaders) if (kv.second) kv.second->Release();
+    m_vsShaders.clear();
+    m_psShaders.clear();
+}
+
+bool ShaderManager::CreateHLSLTemplate(const std::string& shaderName, const std::string& type) {
+    std::string path = "SceneRoot/Shader/hlsl/" + shaderName + ".hlsl";
+    std::ofstream ofs(path);
+    if (!ofs) return false;
+    if (type == "VS") {
+        ofs << "struct VS_INPUT { float3 pos : POSITION; };\n"
+            "struct VS_OUTPUT { float4 pos : SV_POSITION; };\n"
+            "VS_OUTPUT main(VS_INPUT input) {\n"
+            "    VS_OUTPUT output;\n"
+            "    output.pos = float4(input.pos, 1.0f);\n"
+            "    return output;\n"
+            "}\n";
+    }
+    else if (type == "PS") {
+        ofs << "float4 main(float4 pos : SV_POSITION) : SV_Target {\n"
+            "    return float4(1,1,1,1);\n"
+            "}\n";
+    }
+    return true;
+}
+
+bool ShaderManager::CompileHLSL(const std::string& hlslPath, const std::string& entry, const std::string& target, const std::string& csoPath) {
+    ID3DBlob* code = nullptr;
+    ID3DBlob* error = nullptr;
+    HRESULT hr = D3DCompileFromFile(
+        std::wstring(hlslPath.begin(), hlslPath.end()).c_str(),
+        nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE,
+        entry.c_str(), target.c_str(),
+        0, 0, &code, &error);
+    if (FAILED(hr)) {
+        if (error) {
+            MessageBoxA(nullptr, (char*)error->GetBufferPointer(), "HLSL Compile Error", MB_ICONERROR);
+            error->Release();
+        }
+        if (code) code->Release();
+        return false;
+    }
+    std::ofstream ofs(csoPath, std::ios::binary);
+    ofs.write((char*)code->GetBufferPointer(), code->GetBufferSize());
+    code->Release();
+    return true;
+}
+
+void ShaderManager::UpdateAndCompileShaders() {
+    std::string hlslDir = "SceneRoot/Shader/hlsl/";
+    std::string csoDir = "SceneRoot/Shader/cso/";
+
+    for (const auto& entry : std::filesystem::directory_iterator(hlslDir)) {
+        std::string hlslPath = entry.path().string();
+        std::string shaderName = entry.path().stem().string();
+
+        // ファイル更新検知
+        WIN32_FILE_ATTRIBUTE_DATA fileInfo;
+        GetFileAttributesExA(hlslPath.c_str(), GetFileExInfoStandard, &fileInfo);
+        auto it = m_hlslUpdateTimes.find(hlslPath);
+        if (it == m_hlslUpdateTimes.end() || CompareFileTime(&it->second, &fileInfo.ftLastWriteTime) < 0) {
+            // VS/PS判定（ファイル名やメタなどで判定する必要あり）
+            std::string target = "vs_5_0"; // 仮: VSのみの場合
+            std::string entryFunc = "main";
+            std::string csoPath = csoDir + shaderName + ".cso";
+            if (CompileHLSL(hlslPath, entryFunc, target, csoPath)) {
+                LoadCSO(csoPath, "VS", shaderName);
+            }
+            m_hlslUpdateTimes[hlslPath] = fileInfo.ftLastWriteTime;
+        }
+    }
+}
+
+bool ShaderManager::LoadCSO(const std::string& csoPath, const std::string& type, const std::string& name) {
+    std::ifstream ifs(csoPath, std::ios::binary | std::ios::ate);
+    if (!ifs) return false;
+    std::streamsize size = ifs.tellg();
+    ifs.seekg(0, std::ios::beg);
+    std::vector<char> buffer(size);
+    if (!ifs.read(buffer.data(), size)) return false;
+
+    HRESULT hr = S_OK;
+    if (type == "VS") {
+        ID3D11VertexShader* vs = nullptr;
+        hr = m_device->CreateVertexShader(buffer.data(), size, nullptr, &vs);
+        if (SUCCEEDED(hr)) m_vsShaders[name] = vs;
+    }
+    else if (type == "PS") {
+        ID3D11PixelShader* ps = nullptr;
+        hr = m_device->CreatePixelShader(buffer.data(), size, nullptr, &ps);
+        if (SUCCEEDED(hr)) m_psShaders[name] = ps;
+    }
+    return SUCCEEDED(hr);
+}
+
+std::vector<std::string> ShaderManager::GetShaderList(const std::string& type) const {
+    std::vector<std::string> result;
+    if (type == "VS") {
+        for (const auto& kv : m_vsShaders) result.push_back(kv.first);
+    }
+    else if (type == "PS") {
+        for (const auto& kv : m_psShaders) result.push_back(kv.first);
+    }
+    return result;
+}
+
+ID3D11VertexShader* ShaderManager::GetVertexShader(const std::string& name) {
+    auto it = m_vsShaders.find(name);
+    return (it != m_vsShaders.end()) ? it->second : nullptr;
+}
+
+ID3D11PixelShader* ShaderManager::GetPixelShader(const std::string& name) {
+    auto it = m_psShaders.find(name);
+    return (it != m_psShaders.end()) ? it->second : nullptr;
+}
