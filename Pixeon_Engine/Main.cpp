@@ -6,6 +6,7 @@
 #include "EditrGUI.h"
 #include "PostEffectBase.h"
 #include "SettingManager.h"
+#include "ShaderManager.h"
 #include "Object.h"
 
 
@@ -53,17 +54,17 @@ int Init(const EngineConfig& InPut){
 	SceneManger::GetInstance()->Init();
 	// ContentsObjectsの初期化
 	gContentsObjects.clear();
+	// シェーダーマネージャーの初期化
+	ShaderManager::GetInstance()->Initialize(DirectX11::GetInstance()->GetDevice());
 
 	return 0;
 }
 
 void Update(){
 	if(bInGame){
-		InGameUpdate();
-	}
+		InGameUpdate();}
 	else{
-		EditeUpdate();
-	}
+		EditeUpdate();}
 }
 
 void Draw(){
@@ -85,6 +86,7 @@ void UnInit(){
 // 内部処理
 
 void EditeUpdate(){
+	ShaderManager::GetInstance()->UpdateAndCompileShaders();
 	EditrGUI::GetInstance()->Update();
 	SceneManger::GetInstance()->EditUpdate();
 }

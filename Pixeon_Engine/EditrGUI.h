@@ -32,15 +32,18 @@ private:
 	void ShowGameView();
 	void ShowConsole();
 
-
+	void ShaderListWindow();
 	void ExternalToolsWindow();
 	void SettingWindow();
+	void ShaderEditorWindow();
 
-	bool dockNeedsReset = false;
-	bool ShowSettingsWindow = false;
-	bool ShowConsoleWindow = false;
-	bool ShowArchiveWindow = false;
-	bool ShowExternalToolsWindow = false;
+	bool dockNeedsReset				= false;
+	bool ShowSettingsWindow			= false;
+	bool ShowConsoleWindow			= false;
+	bool ShowArchiveWindow			= false;
+	bool ShowExternalToolsWindow	= false;
+	bool ShowShaderEditorWindow		= false;
+	bool ShowShaderListWindow		= false;
 
 private:
 	static ID3D11ShaderResourceView* LoadImg(const std::wstring& filename, ID3D11Device* device);

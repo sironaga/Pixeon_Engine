@@ -8,6 +8,7 @@
 #include "Main.h"
 #include "StartUp.h"
 #include "SettingManager.h"
+#include "ShaderManager.h"
 #pragma comment(lib, "windowscodecs.lib")
 
 EditrGUI* EditrGUI::instance = nullptr;
@@ -149,6 +150,9 @@ void EditrGUI::WindowGUI()
             if (ImGui::MenuItem(ShiftJISToUTF8("環境設定").c_str())){
                 ShowSettingsWindow = true;
             }
+            if (ImGui::MenuItem(ShiftJISToUTF8("シェーダーリスト").c_str())) {
+                ShowShaderListWindow = true;
+            }
             ImGui::Separator();
             if (ImGui::MenuItem(ShiftJISToUTF8("終了").c_str())) {
 				SetRun(false);
@@ -169,12 +173,15 @@ void EditrGUI::WindowGUI()
             }
             ImGui::EndMenu();
         }
-
         if(ImGui::BeginMenu(ShiftJISToUTF8("ツール").c_str()))
         {
             if (ImGui::MenuItem(ShiftJISToUTF8("アーカイブ化").c_str())) {
                 ShowArchiveWindow = true;
             }
+
+            if (ImGui::MenuItem(ShiftJISToUTF8("シェーダーエディタ").c_str())) {
+                ShowShaderEditorWindow = true;
+			}
 
             if (ImGui::MenuItem(ShiftJISToUTF8("フォルダ").c_str())) {
                 std::string Path = GetExePath();
@@ -267,6 +274,8 @@ void EditrGUI::WindowGUI()
     ImGui::PopStyleVar();
 
     ShowContentDrawer();
+    ShaderEditorWindow();
+	ShaderListWindow();
     ShowHierarchy();
     ShowInspector();
     ShowGameView();
@@ -320,6 +329,28 @@ void EditrGUI::ShowConsole(){
 
 
 	ImGui::End();
+}
+
+void EditrGUI::ShaderListWindow(){
+	if (!ShowShaderListWindow)return;
+    ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
+    if (ImGui::Begin(ShiftJISToUTF8("シェーダーリスト").c_str(), &ShowShaderListWindow, flags)) {
+        static int shaderListType = 0;
+        const char* shaderListTypes[] = { "Vertex Shader", "Pixel Shader" };
+        ImGui::Combo(ShiftJISToUTF8("シェーダーリスト").c_str(), &shaderListType, shaderListTypes, IM_ARRAYSIZE(shaderListTypes));
+		ImGui::Separator();
+		std::vector<std::string> ShaderList;
+        ShaderList.clear();
+		if (shaderListType == 0)
+			ShaderList = ShaderManager::GetInstance()->GetShaderList("VS");
+		else
+			ShaderList = ShaderManager::GetInstance()->GetShaderList("PS");
+		for (const auto& shaderName : ShaderList) {
+			ImGui::Text(ShiftJISToUTF8(shaderName).c_str());
+		}
+        ImGui::End();
+    }
 }
 
 void EditrGUI::ExternalToolsWindow(){
@@ -405,6 +436,55 @@ void EditrGUI::SettingWindow()
 
     }
     ImGui::End();
+}
+
+void EditrGUI::ShaderEditorWindow(){
+    if (!ShowShaderEditorWindow)return;
+    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
+    if (
+        ImGui::Begin(ShiftJISToUTF8("シェーダー作成").c_str(), &ShowShaderEditorWindow, flags)) {
+		ImGui::Text(ShiftJISToUTF8("シェーダーエディターウインドウです").c_str());
+		ImGui::Text(ShiftJISToUTF8("シェーダーファイルフォルダ:").c_str());
+		ImGui::SameLine();
+		ImGui::Text(ShiftJISToUTF8(SettingManager::GetInstance()->GetShaderFilePath()).c_str());
+		ImGui::Separator();
+		ImGui::Text(ShiftJISToUTF8("説明").c_str());
+		ImGui::TextWrapped(ShiftJISToUTF8("シェーダーファイルを編集した後、保存すると自動的にコンパイルされます。").c_str());
+		ImGui::TextWrapped(ShiftJISToUTF8("コンパイルエラーが発生した場合、メッセージボックスで通知されます。").c_str());
+		static char shaderName[128] = "";
+		ImGui::InputText(ShiftJISToUTF8("シェーダー名").c_str(), shaderName, sizeof(shaderName));
+		static int shaderType = 0;
+		const char* shaderTypes[] = { "Vertex Shader", "Pixel Shader" };
+		ImGui::Combo(ShiftJISToUTF8("シェーダータイプ").c_str(), &shaderType, shaderTypes, IM_ARRAYSIZE(shaderTypes));
+        if (ImGui::Button(ShiftJISToUTF8("新規シェーダーファイル作成").c_str(), ImVec2(180, 0))) {
+            if (strlen(shaderName) == 0) {
+                MessageBoxA(NULL, "シェーダー名を入力してください。", "エラー", MB_OK | MB_ICONERROR);
+            }
+            else {
+                std::string name = shaderName;
+                if (shaderType == 0) {
+                    name = "VS_" + name;
+                    if (ShaderManager::GetInstance()->CreateHLSLTemplate(name, "VS")) {
+                        MessageBoxA(NULL, "頂点シェーダーのテンプレートを作成しました。", "成功", MB_OK | MB_ICONINFORMATION);
+                    }
+                    else {
+                        MessageBoxA(NULL, "シェーダーファイルの作成に失敗しました。", "エラー", MB_OK | MB_ICONERROR);
+                    }
+                }
+                else {
+                    name = "PS_" + name;
+                    if (ShaderManager::GetInstance()->CreateHLSLTemplate(name, "PS")) {
+                        MessageBoxA(NULL, "ピクセルシェーダーのテンプレートを作成しました。", "成功", MB_OK | MB_ICONINFORMATION);
+                    }
+                    else {
+                        MessageBoxA(NULL, "シェーダーファイルの作成に失敗しました。", "エラー", MB_OK | MB_ICONERROR);
+                    }
+                }
+            }
+		}
+		ImGui::End();
+    }
 }
 
 ID3D11ShaderResourceView* EditrGUI::LoadImg(const std::wstring& filename, ID3D11Device* device)

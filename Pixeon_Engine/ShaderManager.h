@@ -8,25 +8,33 @@
 
 class ShaderManager {
 public:
-    static ShaderManager& GetInstance();
-	static void DestroyInstance();
+    static ShaderManager* GetInstance();
+    static void DestroyInstance();
 
     void Initialize(ID3D11Device* device);
     void Finalize();
 
-    // HLSL新規作成
-    bool CreateHLSLTemplate(const std::string& shaderName, const std::string& type); // type: "VS" or "PS"
+    // HLSLテンプレート作成
+    bool CreateHLSLTemplate(const std::string& shaderName, const std::string& type);
 
-    // HLSL更新検知 & コンパイル
+    // HLSL更新＆コンパイル
     void UpdateAndCompileShaders();
-
-    // シェーダー選択リスト取得 (VS/PS)
-    std::vector<std::string> GetShaderList(const std::string& type) const;
 
     // シェーダー取得
     ID3D11VertexShader* GetVertexShader(const std::string& name);
     ID3D11PixelShader* GetPixelShader(const std::string& name);
 
+    // バッファ生成
+    bool CreateConstantBuffer(const std::string& shaderName, UINT bufferSize);
+
+    // バッファ書き込み（WriteBuffer相当）
+    bool WriteBuffer(const std::string& shaderName, UINT slot, void* pData, UINT dataSize);
+
+    // バッファ取得
+    ID3D11Buffer* GetConstantBuffer(const std::string& shaderName, UINT slot);
+
+
+    std::vector<std::string> GetShaderList(const std::string& type) const;
 private:
     ShaderManager() = default;
     ~ShaderManager() {};
@@ -38,8 +46,10 @@ private:
     std::unordered_map<std::string, ID3D11VertexShader*> m_vsShaders;
     std::unordered_map<std::string, ID3D11PixelShader*> m_psShaders;
 
-    // HLSL更新時刻記録
+    // シェーダーごとにバッファを管理
+    std::unordered_map<std::string, std::vector<ID3D11Buffer*>> m_constantBuffers;
+
     std::unordered_map<std::string, FILETIME> m_hlslUpdateTimes;
 
-	static ShaderManager* instance;
+    static ShaderManager* instance;
 };

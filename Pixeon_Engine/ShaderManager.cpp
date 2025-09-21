@@ -5,9 +5,11 @@
 
 ShaderManager* ShaderManager::instance = nullptr;
 
-ShaderManager& ShaderManager::GetInstance() {
-    static ShaderManager instance;
-    return instance;
+ShaderManager* ShaderManager::GetInstance() {
+    if (instance == nullptr) {
+        instance = new ShaderManager();
+    }
+	return instance;
 }
 
 void ShaderManager::DestroyInstance() {
@@ -148,4 +150,41 @@ ID3D11VertexShader* ShaderManager::GetVertexShader(const std::string& name) {
 ID3D11PixelShader* ShaderManager::GetPixelShader(const std::string& name) {
     auto it = m_psShaders.find(name);
     return (it != m_psShaders.end()) ? it->second : nullptr;
+}
+
+bool ShaderManager::CreateConstantBuffer(const std::string& shaderName, UINT bufferSize) {
+    if (!m_device) return false;
+    D3D11_BUFFER_DESC desc = {};
+    desc.ByteWidth = bufferSize;
+    desc.Usage = D3D11_USAGE_DEFAULT; // UpdateSubresourceで書き込む場合
+    desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+
+    ID3D11Buffer* buffer = nullptr;
+    HRESULT hr = m_device->CreateBuffer(&desc, nullptr, &buffer);
+    if (FAILED(hr)) return false;
+
+    m_constantBuffers[shaderName].push_back(buffer);
+    return true;
+}
+
+bool ShaderManager::WriteBuffer(const std::string& shaderName, UINT slot, void* pData, UINT dataSize) {
+    auto it = m_constantBuffers.find(shaderName);
+    if (it == m_constantBuffers.end()) return false;
+    if (slot >= it->second.size()) return false;
+
+    ID3D11DeviceContext* pContext = nullptr;
+    m_device->GetImmediateContext(&pContext);
+    if (!pContext) return false;
+
+    // バッファ書き込み
+    pContext->UpdateSubresource(it->second[slot], 0, nullptr, pData, 0, 0);
+    pContext->Release();
+    return true;
+}
+
+ID3D11Buffer* ShaderManager::GetConstantBuffer(const std::string& shaderName, UINT slot) {
+    auto it = m_constantBuffers.find(shaderName);
+    if (it == m_constantBuffers.end()) return nullptr;
+    if (slot >= it->second.size()) return nullptr;
+    return it->second[slot];
 }
