@@ -364,6 +364,14 @@ void EditrGUI::SettingWindow()
         char sceneBuffer[256];
 		strncpy_s(sceneBuffer, scenePath.c_str(), sizeof(sceneBuffer));
 		if (ImGui::InputText(ShiftJISToUTF8("シーンフォルダ").c_str(), sceneBuffer, sizeof(sceneBuffer)))SettingManager::GetInstance()->SetSceneFilePath(sceneBuffer);
+		std::string shaderPath = SettingManager::GetInstance()->GetShaderFilePath();
+		char shaderBuffer[256];
+		strncpy_s(shaderBuffer, shaderPath.c_str(), sizeof(shaderBuffer));
+		if (ImGui::InputText(ShiftJISToUTF8("シェーダーフォルダ").c_str(), shaderBuffer, sizeof(shaderBuffer)))SettingManager::GetInstance()->SetShaderFilePath(shaderBuffer);
+		std::string csoPath = SettingManager::GetInstance()->GetCSOFilePath();
+		char csoBuffer[256];
+		strncpy_s(csoBuffer, csoPath.c_str(), sizeof(csoBuffer));
+		if (ImGui::InputText(ShiftJISToUTF8("CSOフォルダ").c_str(), csoBuffer, sizeof(csoBuffer)))SettingManager::GetInstance()->SetCSOFilePath(csoBuffer);
         std::string PackingTool = SettingManager::GetInstance()->GetPackingToolFilePath();
         char PackingToolBuffer[256];
         strncpy_s(PackingToolBuffer, PackingTool.c_str(), sizeof(PackingToolBuffer));

@@ -42,6 +42,12 @@ public:
 	std::string GetExternelToolPath() const { return ExternelTool; }
 	void SetExternelToolPath(const std::string& path) { ExternelTool = path; }
 
+	std::string GetShaderFilePath() const { return ShaderFilePath; }
+	void SetShaderFilePath(const std::string& path) { ShaderFilePath = path; }
+
+	std::string GetCSOFilePath() const { return CSOFilePath; }
+	void SetCSOFilePath(const std::string& path) { CSOFilePath = path; }
+
 private:
 	static SettingManager* instance;
 private:
@@ -51,6 +57,8 @@ private:
 	std::string SceneFilePath	= "SceneRoot/Scene";
 	std::string PackingTool		= "SceneRoot/Tool/Asset packaging tool.exe";
 	std::string ExternelTool	= "SceneRoot/Tool/IN/";
+	std::string ShaderFilePath	= "SceneRoot/Shader/hlsl/";
+	std::string CSOFilePath		= "SceneRoot/Shader/cso/";
 	DirectX::XMFLOAT4 BackgroundColor = DirectX::XMFLOAT4(0.1f, 0.1f, 0.1f,0.1);
 	
 

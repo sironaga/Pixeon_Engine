@@ -1,4 +1,5 @@
 #include "ShaderManager.h"
+#include "SettingManager.h"
 #include <fstream>
 #include <d3dcompiler.h>
 
@@ -11,6 +12,7 @@ ShaderManager& ShaderManager::GetInstance() {
 
 void ShaderManager::DestroyInstance() {
     if (instance) {
+		instance->Finalize();
         delete instance;
         instance = nullptr;
     }
@@ -29,7 +31,7 @@ void ShaderManager::Finalize() {
 }
 
 bool ShaderManager::CreateHLSLTemplate(const std::string& shaderName, const std::string& type) {
-    std::string path = "SceneRoot/Shader/hlsl/" + shaderName + ".hlsl";
+    std::string path = SettingManager::GetInstance()->GetShaderFilePath() + shaderName + ".hlsl";
     std::ofstream ofs(path);
     if (!ofs) return false;
     if (type == "VS") {
@@ -72,24 +74,33 @@ bool ShaderManager::CompileHLSL(const std::string& hlslPath, const std::string& 
 }
 
 void ShaderManager::UpdateAndCompileShaders() {
-    std::string hlslDir = "SceneRoot/Shader/hlsl/";
-    std::string csoDir = "SceneRoot/Shader/cso/";
+	std::string hlslDir = SettingManager::GetInstance()->GetShaderFilePath();
+	std::string csoDir = SettingManager::GetInstance()->GetCSOFilePath();
 
     for (const auto& entry : std::filesystem::directory_iterator(hlslDir)) {
         std::string hlslPath = entry.path().string();
         std::string shaderName = entry.path().stem().string();
 
-        // ファイル更新検知
         WIN32_FILE_ATTRIBUTE_DATA fileInfo;
         GetFileAttributesExA(hlslPath.c_str(), GetFileExInfoStandard, &fileInfo);
         auto it = m_hlslUpdateTimes.find(hlslPath);
         if (it == m_hlslUpdateTimes.end() || CompareFileTime(&it->second, &fileInfo.ftLastWriteTime) < 0) {
-            // VS/PS判定（ファイル名やメタなどで判定する必要あり）
-            std::string target = "vs_5_0"; // 仮: VSのみの場合
-            std::string entryFunc = "main";
-            std::string csoPath = csoDir + shaderName + ".cso";
-            if (CompileHLSL(hlslPath, entryFunc, target, csoPath)) {
-                LoadCSO(csoPath, "VS", shaderName);
+            // ファイル名に"_VS"または"_PS"が含まれている場合で判別
+            if (shaderName.find("VS_") != std::string::npos) {
+                std::string target = "vs_5_0";
+                std::string entryFunc = "main";
+                std::string csoPath = csoDir + shaderName + ".cso";
+                if (CompileHLSL(hlslPath, entryFunc, target, csoPath)) {
+                    LoadCSO(csoPath, "VS", shaderName);
+                }
+            }
+            else if (shaderName.find("PS_") != std::string::npos) {
+                std::string target = "ps_5_0";
+                std::string entryFunc = "main";
+                std::string csoPath = csoDir + shaderName + ".cso";
+                if (CompileHLSL(hlslPath, entryFunc, target, csoPath)) {
+                    LoadCSO(csoPath, "PS", shaderName);
+                }
             }
             m_hlslUpdateTimes[hlslPath] = fileInfo.ftLastWriteTime;
         }
