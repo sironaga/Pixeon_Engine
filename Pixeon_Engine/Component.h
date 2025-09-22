@@ -21,6 +21,8 @@ public:
 	virtual void InGameUpdate()		{}
 	virtual void Draw()				{}
 	virtual void UInit()			{}
+	virtual void DrawInspector()	{}
+
 
 public:
 	virtual void SaveToFile(std::ostream& out) {}
