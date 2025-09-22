@@ -15,19 +15,37 @@
 void EditrGUI::ShowHierarchy()
 {
     ImGui::Begin(ShiftJISToUTF8("ヒエラルキー").c_str());
+    // シーン内のオブジェクトをリスト表示
+    Scene* currentScene = SceneManger::GetInstance()->GetCurrentScene();
     // 右クリックでコンテキストメニュー表示
     if (ImGui::BeginPopupContextWindow("HierarchyContextMenu", ImGuiPopupFlags_MouseButtonRight))
     {
         if (ImGui::MenuItem(ShiftJISToUTF8("オブジェクトの追加").c_str())) {
             Object* newObj = new Object();
-            newObj->SetObjectName("NewObject");
+			// 名前を比較、同じ名前付けられないようにする
+			int suffix = 1;
+			std::string baseName = "NewObject";
+			std::string newName = baseName;
+			bool nameExists = true;
+			while (nameExists) {
+				nameExists = false;
+				for (const auto& obj : currentScene->GetObjects()) {
+					if (obj->GetObjectName() == newName) {
+						nameExists = true;
+						break;
+					}
+				}
+				if (nameExists) {
+					newName = baseName + std::to_string(suffix);
+					suffix++;
+				}
+			}
+            newObj->SetObjectName(newName);
             SceneManger::GetInstance()->GetCurrentScene()->AddObjectLocal(newObj);
         }
         ImGui::EndPopup();
     }
 
-    // シーン内のオブジェクトをリスト表示
-    Scene* currentScene = SceneManger::GetInstance()->GetCurrentScene();
     if (currentScene) {
         std::vector<Object*> objects = currentScene->GetObjects();
         for (size_t i = 0; i < objects.size(); ++i) {
