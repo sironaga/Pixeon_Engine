@@ -13,6 +13,7 @@ class ComponentManager
 public:
 	enum class COMPONENT_TYPE {
 		NONE = -1,
+		CAMERA,
 		MAX,
 	};
 

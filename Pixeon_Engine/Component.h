@@ -10,11 +10,6 @@ class Object;
 class Component
 {
 public:
-	enum class ComponetKinds
-	{
-		NONE,
-	};
-public:
 	virtual void Init(Object* Prt)	{}
 	virtual void BeginPlay()		{}
 	virtual void EditUpdate()		{}
@@ -27,9 +22,6 @@ public:
 public:
 	virtual void SaveToFile(std::ostream& out) {}
 	virtual void LoadFromFile(std::istream& in){}
-
-	ComponetKinds GetComponentKind()			{ return _Kind; }
-	void SetComponentKind(ComponetKinds Kind)	{ _Kind = Kind; }
 
 	Object* GetParent() const { return _Parent; }
 
@@ -44,7 +36,6 @@ public:
 protected:
 	std::string _ComponentName;
 	Object* _Parent;
-	ComponetKinds _Kind;
 	ComponentManager::COMPONENT_TYPE _Type = ComponentManager::COMPONENT_TYPE::NONE;
 };
 
