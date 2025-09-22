@@ -132,6 +132,7 @@
   <ItemGroup>
     <ClInclude Include="ApplicationFeedbackSystem.h" />
     <ClInclude Include="AssetsManager.h" />
+    <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="ComponentManager.h" />
     <ClInclude Include="content_Item.h" />
@@ -159,6 +160,7 @@
   <ItemGroup>
     <ClCompile Include="ApplicationFeedbackSystem.cpp" />
     <ClCompile Include="AssetsManager.cpp" />
+    <ClCompile Include="CameraComponent.cpp" />
     <ClCompile Include="ComponentManager.cpp" />
     <ClCompile Include="content_Item.cpp" />
     <ClCompile Include="EditrGUI.cpp" />

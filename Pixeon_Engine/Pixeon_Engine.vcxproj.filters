@@ -48,6 +48,9 @@
     <Filter Include="ソース ファイル\Build">
       <UniqueIdentifier>{29a1df0a-7715-475e-b585-e94b358d5269}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\Component">
+      <UniqueIdentifier>{27dfb793-5b5a-4ad2-aafd-2cbf1dbe4f30}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="content_Item.cpp">
@@ -121,6 +124,9 @@
     </ClCompile>
     <ClCompile Include="ShaderManager.cpp">
       <Filter>ソース ファイル\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraComponent.cpp">
+      <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -198,6 +204,9 @@
     </ClInclude>
     <ClInclude Include="ShaderManager.h">
       <Filter>ソース ファイル\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraComponent.h">
+      <Filter>ソース ファイル\Component</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
