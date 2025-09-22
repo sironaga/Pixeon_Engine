@@ -60,7 +60,15 @@ void Scene::EditUpdate(){
 	for (auto& obj : _objects) if (obj)obj->EditUpdate();
 	
 	// オブジェクトの削除処理
-
+	for (auto& obj : _ToBeRemoved) {
+		if (!obj) continue;
+		auto it = std::find(_objects.begin(), _objects.end(), obj);
+		if (it != _objects.end()) {
+			_objects.erase(it);
+			delete obj;
+		}
+	}
+	_ToBeRemoved.clear();
 }
 
 void Scene::PlayUpdate(){
@@ -84,6 +92,15 @@ void Scene::PlayUpdate(){
 	for (auto& obj : _objects) if (obj)obj->InGameUpdate();
 
 	// オブジェクトの削除処理
+	for (auto& obj : _ToBeRemoved) {
+		if (!obj) continue;
+		auto it = std::find(_objects.begin(), _objects.end(), obj);
+		if (it != _objects.end()) {
+			_objects.erase(it);
+			delete obj;
+		}
+	}
+	_ToBeRemoved.clear();
 }
 
 void Scene::Draw() {
@@ -210,6 +227,11 @@ void Scene::AddObjectLocal(Object* obj){
 	if (obj) {
 		_ToBeAdded.push_back(obj);
 	}
+}
+
+void Scene::RemoveObject(Object* obj){
+	if (!obj) return;
+	_ToBeRemoved.push_back(obj);
 }
 
 // オブジェクトの非同期追加

@@ -4,8 +4,8 @@
     "AutoSaveInterval": 5,
     "BackgroundColor": [
         1.0,
-        0.0,
-        0.0,
+        0.16470588743686676,
+        0.16470588743686676,
         1.0
     ],
     "ExternelTool": "SceneRoot/Tool/IN/",

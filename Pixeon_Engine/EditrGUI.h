@@ -8,7 +8,8 @@
 #include "IMGUI/imgui_internal.h"
 #include <d3d11.h>
 #include <wincodec.h>
-#include <string>
+
+class Object;
 
 class EditrGUI
 {
@@ -53,6 +54,7 @@ private:
 	ID3D11ShaderResourceView* fbx;
 private:
 	static EditrGUI* instance;
+	Object* SelectedObject = nullptr;
 private:
 	EditrGUI() {}
 	~EditrGUI() {}

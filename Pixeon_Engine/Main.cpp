@@ -9,7 +9,6 @@
 #include "ShaderManager.h"
 #include "Object.h"
 
-
 HWND ghWnd;
 AssetWatcher *watcher;
 GameRenderTarget* gGameRenderTarget;

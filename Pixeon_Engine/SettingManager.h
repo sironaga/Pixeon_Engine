@@ -9,12 +9,12 @@
 class SettingManager
 {
 public:
+
 	static SettingManager* GetInstance();
 	static void DestroyInstance();
 
 	void LoadConfig();
 	void SaveConfig();
-
 
 public:
 	// 設定項目のゲッターとセッター
@@ -59,13 +59,10 @@ private:
 	std::string ExternelTool	= "SceneRoot/Tool/IN/";
 	std::string ShaderFilePath	= "SceneRoot/Shader/hlsl/";
 	std::string CSOFilePath		= "SceneRoot/Shader/cso/";
-	DirectX::XMFLOAT4 BackgroundColor = DirectX::XMFLOAT4(0.1f, 0.1f, 0.1f,0.1);
+	DirectX::XMFLOAT4 BackgroundColor = DirectX::XMFLOAT4(0.1f, 0.1f, 0.1f,1.0f);
 	
-
 	bool bZBuffer = true;
 	int AutoSaveInterval = 5; // 自動保存間隔（分）
-
-
 
 	SettingManager() {}
 	~SettingManager() {}

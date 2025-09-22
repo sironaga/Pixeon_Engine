@@ -8,10 +8,55 @@
 #include "Main.h"
 #include "StartUp.h"
 #include "SettingManager.h"
+#include "SceneManger.h"
+#include "Object.h"
+#include "Scene.h"
 
 void EditrGUI::ShowHierarchy()
 {
     ImGui::Begin(ShiftJISToUTF8("ヒエラルキー").c_str());
-    ImGui::Text(ShiftJISToUTF8("ここにシーンのオブジェクト階層を表示します。").c_str());
+    // 右クリックでコンテキストメニュー表示
+    if (ImGui::BeginPopupContextWindow("HierarchyContextMenu", ImGuiPopupFlags_MouseButtonRight))
+    {
+        if (ImGui::MenuItem(ShiftJISToUTF8("オブジェクトの追加").c_str())) {
+            Object* newObj = new Object();
+            newObj->SetObjectName("NewObject");
+            SceneManger::GetInstance()->GetCurrentScene()->AddObjectLocal(newObj);
+        }
+        ImGui::EndPopup();
+    }
+
+    // シーン内のオブジェクトをリスト表示
+    Scene* currentScene = SceneManger::GetInstance()->GetCurrentScene();
+    if (currentScene) {
+        std::vector<Object*> objects = currentScene->GetObjects();
+        for (size_t i = 0; i < objects.size(); ++i) {
+            Object* obj = objects[i];
+            ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+            if (obj == SelectedObject) {
+                flags |= ImGuiTreeNodeFlags_Selected;
+            }
+            bool nodeOpen = ImGui::TreeNodeEx((void*)(intptr_t)obj, flags, ShiftJISToUTF8(obj->GetObjectName()).c_str());
+            if (ImGui::IsItemClicked()) {
+                SelectedObject = obj;
+            }
+
+            // オブジェクトごとにユニークなラベルを作成
+            std::string popupLabel = "ObjectContextMenu_" + std::to_string((intptr_t)obj);
+
+            // 右クリックでコンテキストメニュー表示
+            if (ImGui::BeginPopupContextItem(popupLabel.c_str(), ImGuiPopupFlags_MouseButtonRight))
+            {
+                if (ImGui::MenuItem(ShiftJISToUTF8("削除").c_str())) {
+                    SceneManger::GetInstance()->GetCurrentScene()->RemoveObject(obj);
+                    SelectedObject = nullptr;
+                }
+                ImGui::EndPopup();
+            }
+            if (nodeOpen) {
+                ImGui::TreePop();
+            }
+        }
+    }
     ImGui::End();
 }

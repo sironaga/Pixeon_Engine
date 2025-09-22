@@ -24,6 +24,8 @@ public: // オブジェクトの追加と削除
 public: // セーブとロード
 	void SaveToFile();
 	void LoadToFile();
+	void AddObjectLocal(Object* obj);
+	void RemoveObject(Object* obj);
 public: // Setter And Getter
 	void SetName(std::string name) { _name = name; }
 	std::string GetName() { return _name; }
@@ -31,7 +33,6 @@ public: // Setter And Getter
 	std::vector<Object*> GetObjects() { return _objects; }
 private://内部処理
 	void ProcessThreadSafeAdditions();
-	void AddObjectLocal(Object* obj);
 
 private:
 	std::string _name = "DefaultScene";

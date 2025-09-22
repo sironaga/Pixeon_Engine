@@ -34,6 +34,8 @@ public:
 	void Save();
 	void Load();
 
+	Scene* GetCurrentScene() { return _currentScene; }
+
 private:
 	bool CreateAndRegisterScene(std::string SceneName);
 	void RegisterScene(std::string Name, std::function<Scene* ()> creator);

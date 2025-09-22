@@ -147,16 +147,10 @@ void EditrGUI::WindowGUI()
             ImGui::MenuItem(ShiftJISToUTF8("新規シーン").c_str());
             ImGui::MenuItem(ShiftJISToUTF8("開く...").c_str());
             ImGui::MenuItem(ShiftJISToUTF8("保存").c_str());
-            if (ImGui::MenuItem(ShiftJISToUTF8("環境設定").c_str())){
-                ShowSettingsWindow = true;
-            }
-            if (ImGui::MenuItem(ShiftJISToUTF8("シェーダーリスト").c_str())) {
-                ShowShaderListWindow = true;
-            }
+            if (ImGui::MenuItem(ShiftJISToUTF8("シェーダーリスト").c_str())) ShowShaderListWindow = true;
+            if (ImGui::MenuItem(ShiftJISToUTF8("環境設定").c_str())) ShowSettingsWindow = true;
             ImGui::Separator();
-            if (ImGui::MenuItem(ShiftJISToUTF8("終了").c_str())) {
-				SetRun(false);
-            }
+            if (ImGui::MenuItem(ShiftJISToUTF8("終了").c_str())) SetRun(false);
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu(ShiftJISToUTF8("編集").c_str()))
@@ -165,43 +159,32 @@ void EditrGUI::WindowGUI()
             ImGui::MenuItem(ShiftJISToUTF8("やり直し").c_str());
             ImGui::Separator();
             // レイアウト初期化
-            if (ImGui::MenuItem(ShiftJISToUTF8("レイアウトを初期状態に戻す").c_str()))
-            {
+            if (ImGui::MenuItem(ShiftJISToUTF8("レイアウトを初期状態に戻す").c_str())){
                 ImGui::GetIO().IniFilename = nullptr;
                 ImGui::LoadIniSettingsFromMemory("");
-                dockNeedsReset = true; // 次のフレームでDockレイアウト初期化
+                dockNeedsReset = true;
             }
             ImGui::EndMenu();
         }
         if(ImGui::BeginMenu(ShiftJISToUTF8("ツール").c_str()))
         {
-            if (ImGui::MenuItem(ShiftJISToUTF8("アーカイブ化").c_str())) {
-                ShowArchiveWindow = true;
-            }
-
-            if (ImGui::MenuItem(ShiftJISToUTF8("シェーダーエディタ").c_str())) {
-                ShowShaderEditorWindow = true;
-			}
-
+            if (ImGui::MenuItem(ShiftJISToUTF8("アーカイブ化").c_str())) ShowArchiveWindow = true;
+            if (ImGui::MenuItem(ShiftJISToUTF8("シェーダーエディタ").c_str())) ShowShaderEditorWindow = true;
+			
             if (ImGui::MenuItem(ShiftJISToUTF8("フォルダ").c_str())) {
                 std::string Path = GetExePath();
                 Path = RemoveExeFromPath(Path);
 				OpenExplorer(Path);
             }
 
-            if (ImGui::MenuItem(ShiftJISToUTF8("外部ツール").c_str())) {
-				ShowExternalToolsWindow = true;
-            }
-
+            if (ImGui::MenuItem(ShiftJISToUTF8("外部ツール").c_str())) ShowExternalToolsWindow = true;
+            
             ImGui::EndMenu();
 		}
         ImGui::EndMenuBar();
     }
 	// 環境設定ウィンドウ
-    if (ShowSettingsWindow)
-    {
-        SettingWindow();
-    }
+    if (ShowSettingsWindow) SettingWindow();
     // ツールウインドウ
     if (ShowArchiveWindow)
     {
