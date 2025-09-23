@@ -22,7 +22,13 @@
             }
         },
         {
-            "Components": [],
+            "Components": [
+                {
+                    "Data": "",
+                    "Name": "",
+                    "Type": 0
+                }
+            ],
             "Name": "NewObject2",
             "Transform": {
                 "Position": [

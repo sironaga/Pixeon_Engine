@@ -185,6 +185,7 @@
     <ClCompile Include="System.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="..\Pixeon_Engine仕様書.txt" />
     <Text Include="実装リスト.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

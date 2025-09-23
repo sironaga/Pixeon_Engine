@@ -13,7 +13,7 @@ public:
 	void EditUpdate()		override;
 	void InGameUpdate()		override;
 
-
+	void DrawInspector() override;
 
 
 
@@ -38,6 +38,8 @@ public:
 	void SetIsMove(bool isMove)		{ _IsKeyMove = isMove; }
 private:
 	Object* _Parent;
+	DirectX::XMFLOAT3 _Position;
+	DirectX::XMFLOAT3 _Rotation;
 	DirectX::XMFLOAT3 _Fixation;
 	DirectX::XMFLOAT3 _Up;
 	float _FOV;

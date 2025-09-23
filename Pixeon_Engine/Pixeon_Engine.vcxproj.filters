@@ -213,5 +213,8 @@
     <Text Include="実装リスト.txt">
       <Filter>リソース ファイル\Text</Filter>
     </Text>
+    <Text Include="..\Pixeon_Engine仕様書.txt">
+      <Filter>リソース ファイル\Text</Filter>
+    </Text>
   </ItemGroup>
 </Project>

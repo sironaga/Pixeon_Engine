@@ -20,7 +20,7 @@ public:
 public:
 	static ComponentManager* GetInstance();
 	static void DestroyInstance();
-
+	void Init();
 public:
 	Component* AddComponent(Object* owner, COMPONENT_TYPE type);
 	std::string GetComponentName(COMPONENT_TYPE type) { return _ComponentName[(int)type]; }

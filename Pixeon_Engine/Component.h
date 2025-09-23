@@ -3,9 +3,10 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include "IMGUI/imgui_impl_win32.h"
+#include "EditrGUI.h"
 #include "ComponentManager.h"
-
-class Object;
+#include "Object.h"
 
 class Component
 {

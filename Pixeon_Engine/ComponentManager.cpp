@@ -1,5 +1,6 @@
 #include "ComponentManager.h"
 #include "Component.h"
+#include "CameraComponent.h"
 #include <Windows.h>
 
 ComponentManager* ComponentManager::_instance;
@@ -18,6 +19,10 @@ void ComponentManager::DestroyInstance(){
 	}
 }
 
+void ComponentManager::Init(){
+	_ComponentName[(int)COMPONENT_TYPE::CAMERA] = "Camera";
+}
+
 Component* ComponentManager::AddComponent(Object* owner, COMPONENT_TYPE type){
 
 	if (!owner) return nullptr;
@@ -27,7 +32,10 @@ Component* ComponentManager::AddComponent(Object* owner, COMPONENT_TYPE type){
 	switch (type)
 	{
 	case ComponentManager::COMPONENT_TYPE::NONE:
-		MessageBox(nullptr, "例外な値です\nCode : CMMIN", "Error", MB_OK);
+
+		break;
+	case ComponentManager::COMPONENT_TYPE::CAMERA:
+		owner->AddComponent<CameraComponent>();
 		break;
 	case ComponentManager::COMPONENT_TYPE::MAX:
 		MessageBox(nullptr, "例外な値です\nCode : CMMAX", "Error", MB_OK);

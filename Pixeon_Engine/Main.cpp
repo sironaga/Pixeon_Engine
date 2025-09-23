@@ -7,6 +7,7 @@
 #include "PostEffectBase.h"
 #include "SettingManager.h"
 #include "ShaderManager.h"
+#include "ComponentManager.h"
 #include "Object.h"
 
 HWND ghWnd;
@@ -55,6 +56,7 @@ int Init(const EngineConfig& InPut){
 	gContentsObjects.clear();
 	// シェーダーマネージャーの初期化
 	ShaderManager::GetInstance()->Initialize(DirectX11::GetInstance()->GetDevice());
+	ComponentManager::GetInstance()->Init();
 
 	return 0;
 }
