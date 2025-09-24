@@ -1,6 +1,8 @@
 #include "SettingManager.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include <filesystem>
+#include "System.h"
 
 #define CONFIG_FILE_PATH "SceneRoot/config/config.json"
 
@@ -26,56 +28,99 @@ void SettingManager::DestroyInstance()
 
 
 void SettingManager::LoadConfig(){
-	// JSONƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚Ş
+	// JSONï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½Ç‚İï¿½ï¿½ï¿½
 	std::ifstream configFile(CONFIG_FILE_PATH);
 	if (!configFile.is_open()) {
-		// ƒtƒ@ƒCƒ‹‚ª‘¶İ‚µ‚È‚¢ê‡AƒfƒtƒHƒ‹ƒgİ’è‚ğg—p
+		// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‚ï¿½ï¿½È‚ï¿½ï¿½ê‡ï¿½Aï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½İ’ï¿½ï¿½ï¿½gï¿½p
 		return;
 	}
-	nlohmann::json configJson;
-	configFile >> configJson;
-	// İ’è€–Ú‚ğ“Ç‚İ‚Ş
-	if (configJson.contains("AssetsFilePath")) {
-		AssetsFilePath = configJson["AssetsFilePath"].get<std::string>();
+	
+	try {
+		nlohmann::json configJson;
+		configFile >> configJson;
+		configFile.close();
+		
+		// ï¿½İ’è€ï¿½Ú‚ï¿½Ç‚İï¿½ï¿½ï¿½
+		if (configJson.contains("AssetsFilePath")) {
+			AssetsFilePath = configJson["AssetsFilePath"].get<std::string>();
+		}
+		if (configJson.contains("ArchiveFilePath")) {
+			ArchiveFilePath = configJson["ArchiveFilePath"].get<std::string>();
+		}
+		if (configJson.contains("SceneFilePath")) {
+			SceneFilePath = configJson["SceneFilePath"].get<std::string>();
+		}
+		if (configJson.contains("bZBuffer")) {
+			bZBuffer = configJson["bZBuffer"].get<bool>();
+		}
+		if (configJson.contains("AutoSaveInterval")) {
+			AutoSaveInterval = configJson["AutoSaveInterval"].get<int>();
+		}
+		if (configJson.contains("BackgroundColor") && configJson["BackgroundColor"].is_array() && configJson["BackgroundColor"].size() == 4) {
+			BackgroundColor.x = configJson["BackgroundColor"][0].get<float>();
+			BackgroundColor.y = configJson["BackgroundColor"][1].get<float>();
+			BackgroundColor.z = configJson["BackgroundColor"][2].get<float>();
+			BackgroundColor.w = configJson["BackgroundColor"][3].get<float>();
+		}
+		if (configJson.contains("ExternelTool")) {
+			ExternelTool = configJson["ExternelTool"].get<std::string>();
+		}
 	}
-	if (configJson.contains("ArchiveFilePath")) {
-		ArchiveFilePath = configJson["ArchiveFilePath"].get<std::string>();
+	catch (const nlohmann::json::exception& e) {
+		// JSONï¿½pï¿½[ï¿½Xï¿½Gï¿½ï¿½ï¿½[ï¿½ÍŒxï¿½ï¿½ï¿½Æ‚ï¿½ï¿½Äƒfï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½İ’ï¿½ï¿½gï¿½p
+		MessageBox(nullptr, ("ï¿½İ’ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Ì“Ç‚İï¿½ï¿½ï¿½Gï¿½ï¿½ï¿½[ï¿½Aï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½İ’ï¿½ï¿½ï¿½gï¿½pï¿½ï¿½ï¿½Ü‚ï¿½: " + std::string(e.what())).c_str(), "ï¿½İ’ï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONWARNING);
 	}
-	if (configJson.contains("SceneFilePath")) {
-		SceneFilePath = configJson["SceneFilePath"].get<std::string>();
-	}
-	if (configJson.contains("bZBuffer")) {
-		bZBuffer = configJson["bZBuffer"].get<bool>();
-	}
-	if (configJson.contains("AutoSaveInterval")) {
-		AutoSaveInterval = configJson["AutoSaveInterval"].get<int>();
-	}
-	if (configJson.contains("BackgroundColor") && configJson["BackgroundColor"].is_array() && configJson["BackgroundColor"].size() == 4) {
-		BackgroundColor.x = configJson["BackgroundColor"][0].get<float>();
-		BackgroundColor.y = configJson["BackgroundColor"][1].get<float>();
-		BackgroundColor.z = configJson["BackgroundColor"][2].get<float>();
-		BackgroundColor.w = configJson["BackgroundColor"][3].get<float>();
-	}
-	if (configJson.contains("ExternelTool")) {
-		ExternelTool = configJson["ExternelTool"].get<std::string>();
+	catch (const std::exception& e) {
+		// ï¿½ï¿½ï¿½Ì‘ï¿½ï¿½ÌƒGï¿½ï¿½ï¿½[
+		MessageBox(nullptr, ("ï¿½İ’ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½Gï¿½ï¿½ï¿½[: " + std::string(e.what())).c_str(), "ï¿½İ’ï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONWARNING);
 	}
 	
 }
 
 void SettingManager::SaveConfig(){
-	// İ’è€–Ú‚ğJSONƒIƒuƒWƒFƒNƒg‚É•Û‘¶
-	nlohmann::json configJson;
-	configJson["AssetsFilePath"] = AssetsFilePath;
-	configJson["ArchiveFilePath"] = ArchiveFilePath;
-	configJson["SceneFilePath"] = SceneFilePath;
-	configJson["bZBuffer"] = bZBuffer;
-	configJson["AutoSaveInterval"] = AutoSaveInterval;
-	configJson["BackgroundColor"] = { BackgroundColor.x, BackgroundColor.y, BackgroundColor.z, BackgroundColor.w };
-	configJson["ExternelTool"] = ExternelTool;
+	try {
+		// ï¿½İ’è€ï¿½Ú‚ï¿½JSONï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½É•Û‘ï¿½
+		nlohmann::json configJson;
+		configJson["AssetsFilePath"] = AssetsFilePath;
+		configJson["ArchiveFilePath"] = ArchiveFilePath;
+		configJson["SceneFilePath"] = SceneFilePath;
+		configJson["bZBuffer"] = bZBuffer;
+		configJson["AutoSaveInterval"] = AutoSaveInterval;
+		configJson["BackgroundColor"] = { BackgroundColor.x, BackgroundColor.y, BackgroundColor.z, BackgroundColor.w };
+		configJson["ExternelTool"] = ExternelTool;
 
-	// JSONƒtƒ@ƒCƒ‹‚É‘‚«‚Ş
-	std::ofstream configFile(CONFIG_FILE_PATH);
-	if (configFile.is_open()) {
-		configFile << configJson.dump(4); // ƒCƒ“ƒfƒ“ƒg‚ğ4ƒXƒy[ƒX‚Éİ’è‚µ‚Ä•Û‘¶
+		// JSONï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Éï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		// ï¿½Úƒfï¿½Bï¿½ï¿½ï¿½Nï¿½gï¿½ï¿½ï¿½Ì•\ï¿½Ú‹ï¿½ï¿½ï¿½
+		std::filesystem::path configPath(CONFIG_FILE_PATH);
+		std::filesystem::path configDir = configPath.parent_path();
+		
+		if (!std::filesystem::exists(configDir)) {
+			try {
+				std::filesystem::create_directories(configDir);
+			}
+			catch (const std::filesystem::filesystem_error& e) {
+				MessageBox(nullptr, ("ï¿½İ’ï¿½fï¿½Bï¿½ï¿½ï¿½Nï¿½gï¿½ï¿½ï¿½Ìì¬ï¿½Éï¿½ï¿½s: " + std::string(e.what())).c_str(), "ï¿½İ’ï¿½ï¿½Zï¿½[ï¿½uï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
+				return;
+			}
+		}
+		
+		std::ofstream configFile(CONFIG_FILE_PATH);
+		if (configFile.is_open()) {
+			configFile << configJson.dump(4); // ï¿½Cï¿½ï¿½ï¿½fï¿½ï¿½ï¿½gï¿½ï¿½4ï¿½Xï¿½yï¿½[ï¿½Xï¿½Éİ’è‚µï¿½Ä•Û‘ï¿½
+			if (configFile.fail()) {
+				MessageBox(nullptr, "ï¿½İ’ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½sï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½", "ï¿½İ’ï¿½ï¿½Zï¿½[ï¿½uï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
+			}
+			configFile.close();
+		} else {
+			MessageBox(nullptr, "ï¿½İ’ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½Jï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½", "ï¿½İ’ï¿½ï¿½Zï¿½[ï¿½uï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
+		}
+	}
+	catch (const nlohmann::json::exception& e) {
+		// JSONï¿½Vï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½Cï¿½Yï¿½Gï¿½ï¿½ï¿½[
+		MessageBox(nullptr, ("ï¿½İ’ï¿½JSONï¿½ì¬ï¿½Gï¿½ï¿½ï¿½[: " + std::string(e.what())).c_str(), "ï¿½İ’ï¿½ï¿½Zï¿½[ï¿½uï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
+	}
+	catch (const std::exception& e) {
+		// ï¿½ï¿½ï¿½Ì‘ï¿½ï¿½ÌƒGï¿½ï¿½ï¿½[
+		MessageBox(nullptr, ("ï¿½İ’ï¿½ï¿½Zï¿½[ï¿½uï¿½Gï¿½ï¿½ï¿½[: " + std::string(e.what())).c_str(), "ï¿½İ’ï¿½ï¿½Zï¿½[ï¿½uï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
 	}
 }

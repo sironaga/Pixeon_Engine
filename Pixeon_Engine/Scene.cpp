@@ -9,13 +9,14 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
-// ŠJ•úˆ—
+// ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 Scene::~Scene(){
 }
 
 void Scene::Init(){
-	// “®“I”z—ñ‚Ì‰Šú‰»
+	// ï¿½ï¿½ï¿½Iï¿½zï¿½ï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½
 	_objects.clear();
 	_ToBeAdded.clear();
 	_ToBeRemoved.clear();
@@ -30,20 +31,20 @@ void Scene::BeginPlay(){
 		}
 	}
 
-	// •¨—‰‰Z‚ÉŠÖ‚·‚éƒR[ƒh
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½ÉŠÖ‚ï¿½ï¿½ï¿½Rï¿½[ï¿½h
 	
 	//
 
-	// BeginPlay‚ğŒÄ‚Ño‚·
+	// BeginPlayï¿½ï¿½ï¿½Ä‚Ñoï¿½ï¿½
 	for (auto& obj : _objects) {
 		if (obj)obj->BeginPlay();
 	}
 }
 
 void Scene::EditUpdate(){
-	// ”ñ“¯Šú’Ç‰Á‚Ìˆ—
+	// ï¿½ñ“¯Šï¿½ï¿½Ç‰ï¿½ï¿½Ìï¿½ï¿½ï¿½
 	ProcessThreadSafeAdditions();
-	// ƒIƒuƒWƒFƒNƒg‚Ì’Ç‰Áˆ—
+	// ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½Ì’Ç‰ï¿½ï¿½ï¿½ï¿½ï¿½
 	for (auto& obj : _ToBeAdded) {
 		if (obj) {
 			obj->SetParentScene(this);
@@ -52,14 +53,14 @@ void Scene::EditUpdate(){
 	}
 	_ToBeAdded.clear();
 
-	// ƒJƒƒ‰‚ÌXV
+	// ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½ÌXï¿½V
 
 	//
 
-	// ƒIƒuƒWƒFƒNƒg‚ÌXV
+	// ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½ÌXï¿½V
 	for (auto& obj : _objects) if (obj)obj->EditUpdate();
 	
-	// ƒIƒuƒWƒFƒNƒg‚Ìíœˆ—
+	// ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½Ìíœï¿½ï¿½ï¿½ï¿½
 	for (auto& obj : _ToBeRemoved) {
 		if (!obj) continue;
 		auto it = std::find(_objects.begin(), _objects.end(), obj);
@@ -72,9 +73,9 @@ void Scene::EditUpdate(){
 }
 
 void Scene::PlayUpdate(){
-	// ”ñ“¯Šú’Ç‰Á‚Ìˆ—
+	// ï¿½ñ“¯Šï¿½ï¿½Ç‰ï¿½ï¿½Ìï¿½ï¿½ï¿½
 	ProcessThreadSafeAdditions();
-	// ƒIƒuƒWƒFƒNƒg‚Ì’Ç‰Áˆ—
+	// ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½Ì’Ç‰ï¿½ï¿½ï¿½ï¿½ï¿½
 	for (auto& obj : _ToBeAdded) {
 		if (obj) {
 			obj->SetParentScene(this);
@@ -84,14 +85,14 @@ void Scene::PlayUpdate(){
 	}
 	_ToBeAdded.clear();
 
-	// ƒJƒƒ‰‚ÌXV
+	// ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½ÌXï¿½V
 
 	//
 
-	// ƒIƒuƒWƒFƒNƒg‚ÌXV
+	// ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½ÌXï¿½V
 	for (auto& obj : _objects) if (obj)obj->InGameUpdate();
 
-	// ƒIƒuƒWƒFƒNƒg‚Ìíœˆ—
+	// ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½Ìíœï¿½ï¿½ï¿½ï¿½
 	for (auto& obj : _ToBeRemoved) {
 		if (!obj) continue;
 		auto it = std::find(_objects.begin(), _objects.end(), obj);
@@ -105,14 +106,14 @@ void Scene::PlayUpdate(){
 
 void Scene::Draw() {
 
-	// ƒIƒuƒWƒFƒNƒg‚Ì•`‰æ
+	// ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½Ì•`ï¿½ï¿½
 	std::vector<Object*> sortedList = _objects;
 	if (true) {
 	}
 }
 
 
-// ƒV[ƒ“‚Ì•Û‘¶@jsonŒ`®‚Ìó‘Ô‚Ì‚Ü‚ÜŠg’£q‚ğ.scene‚É•ÏX‚·‚é
+// ï¿½Vï¿½[ï¿½ï¿½ï¿½Ì•Û‘ï¿½ï¿½@jsonï¿½`ï¿½ï¿½ï¿½Ìï¿½Ô‚Ì‚Ü‚ÜŠgï¿½ï¿½ï¿½qï¿½ï¿½.sceneï¿½É•ÏXï¿½ï¿½ï¿½ï¿½
 void Scene::SaveToFile(){
 	std::vector<Object*> SaveObjects;
 	if(IsInGame()){
@@ -121,7 +122,7 @@ void Scene::SaveToFile(){
 	else{
 		SaveObjects = _objects;
 	}
-	// Œ»İ‚Ìæ“¾
+	// ï¿½ï¿½ï¿½İï¿½ï¿½ï¿½ï¿½Ìæ“¾
 	auto Now = std::chrono::system_clock::now();
 	auto in_time_t = std::chrono::system_clock::to_time_t(Now);
 	std::tm localtime;
@@ -130,19 +131,19 @@ void Scene::SaveToFile(){
 	nlohmann::json SceneData;
 	SceneData["SceneSettings"]["Name"] = _name;
 
-	// ƒIƒuƒWƒFƒNƒgƒf[ƒ^‚Ì•Û‘¶
+	// ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½fï¿½[ï¿½^ï¿½Ì•Û‘ï¿½
 	nlohmann::json ObjectArray	= nlohmann::json::array();
 
 	for (const auto& Object : SaveObjects) {
 		if (Object) {
-			// ƒIƒuƒWƒFƒNƒg‚ÌŠî–{î•ñ‚Ì•Û‘¶
+			// ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½ÌŠï¿½{ï¿½ï¿½ï¿½Ì•Û‘ï¿½
 			nlohmann::json ObjectData;
 			ObjectData["Name"] = Object->GetObjectName();
 			ObjectData["Transform"]["Position"] = { Object->GetTransform().position.x, Object->GetTransform().position.y, Object->GetTransform().position.z };
 			ObjectData["Transform"]["Rotation"] = { Object->GetTransform().rotation.x, Object->GetTransform().rotation.y, Object->GetTransform().rotation.z };
 			ObjectData["Transform"]["Scale"] = { Object->GetTransform().scale.x,    Object->GetTransform().scale.y,    Object->GetTransform().scale.z };
 
-			// ƒRƒ“ƒ|[ƒlƒ“ƒgƒf[ƒ^‚Ì•Û‘¶
+			// ï¿½Rï¿½ï¿½ï¿½|ï¿½[ï¿½lï¿½ï¿½ï¿½gï¿½fï¿½[ï¿½^ï¿½Ì•Û‘ï¿½
 			nlohmann::json ComponentData = nlohmann::json::array();
 			for (const auto& comp : Object->GetComponents()) {
 				if (comp) {
@@ -161,56 +162,169 @@ void Scene::SaveToFile(){
 	}
 	SceneData["Objects"] = ObjectArray;
 
-	// ƒtƒ@ƒCƒ‹–¼‚Ì¶¬
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½Ìï¿½ï¿½ï¿½ - ï¿½pï¿½Xï¿½ï¿½ï¿½Ø‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½vï¿½ï¿½
 	std::string File;
-	File = SettingManager::GetInstance()->GetSceneFilePath() + _name + ".scene";
-	std::ofstream outFile(File);
-	if(outFile.is_open()) {
-		outFile << SceneData.dump(4); // ƒCƒ“ƒfƒ“ƒg•4‚Å•Û‘¶
-		outFile.close();
+	std::string sceneDir = SettingManager::GetInstance()->GetSceneFilePath();
+	// ï¿½pï¿½Xï¿½ï¿½ï¿½Ø‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½Í’Ç‰ï¿½ï¿½È‚ï¿½
+	if (!sceneDir.empty() && sceneDir.back() != '/' && sceneDir.back() != '\\') {
+		sceneDir += "/";
+	}
+	File = sceneDir + _name + ".scene";
+	
+	try {
+		// ï¿½Úƒfï¿½Bï¿½ï¿½ï¿½Nï¿½gï¿½ï¿½ï¿½Ì•\ï¿½Ú‹ï¿½ï¿½ï¿½
+		std::filesystem::path scenePath(File);
+		std::filesystem::path sceneParentDir = scenePath.parent_path();
+		
+		if (!std::filesystem::exists(sceneParentDir)) {
+			try {
+				std::filesystem::create_directories(sceneParentDir);
+			}
+			catch (const std::filesystem::filesystem_error& e) {
+				MessageBox(nullptr, ("ï¿½Vï¿½[ï¿½ï¿½ï¿½fï¿½Bï¿½ï¿½ï¿½Nï¿½gï¿½ï¿½ï¿½Ìì¬ï¿½Éï¿½ï¿½s: " + std::string(e.what())).c_str(), "ï¿½Zï¿½[ï¿½uï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
+				return;
+			}
+		}
+		
+		std::ofstream outFile(File);
+		if(outFile.is_open()) {
+			outFile << SceneData.dump(4); // ï¿½Cï¿½ï¿½ï¿½fï¿½ï¿½ï¿½gï¿½ï¿½4ï¿½Å•Û‘ï¿½
+			if (outFile.fail()) {
+				// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½sï¿½ÌƒGï¿½ï¿½ï¿½[ï¿½nï¿½ï¿½ï¿½hï¿½ï¿½ï¿½ï¿½ï¿½O
+				MessageBox(nullptr, ("ï¿½Vï¿½[ï¿½ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½sï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½: " + File).c_str(), "ï¿½Zï¿½[ï¿½uï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
+			}
+			outFile.close();
+		} else {
+			// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Iï¿½[ï¿½vï¿½ï¿½ï¿½Gï¿½ï¿½ï¿½[
+			MessageBox(nullptr, ("ï¿½Vï¿½[ï¿½ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Jï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½: " + File).c_str(), "ï¿½Zï¿½[ï¿½uï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
+		}
+	}
+	catch (const nlohmann::json::exception& e) {
+		// JSONï¿½Vï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½Cï¿½Yï¿½Gï¿½ï¿½ï¿½[
+		MessageBox(nullptr, ("JSONï¿½Vï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½Cï¿½Yï¿½Gï¿½ï¿½ï¿½[: " + std::string(e.what())).c_str(), "ï¿½Zï¿½[ï¿½uï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
+	}
+	catch (const std::exception& e) {
+		// ï¿½ï¿½ï¿½Ì‘ï¿½ï¿½ÌƒGï¿½ï¿½ï¿½[
+		MessageBox(nullptr, ("ï¿½Vï¿½[ï¿½ï¿½ï¿½Zï¿½[ï¿½uï¿½ï¿½ï¿½Gï¿½ï¿½ï¿½[: " + std::string(e.what())).c_str(), "ï¿½Zï¿½[ï¿½uï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
 	}
 }
 
 void Scene::LoadToFile(){
-	std::string filePath = SettingManager::GetInstance()->GetSceneFilePath() + "/" + _name + ".scene";
+	// ï¿½pï¿½Xï¿½ï¿½ï¿½ï¿½Ì“vï¿½ï¿½ - SaveToFileï¿½Æ“ï¿½ï¿½ï¿½pï¿½Xï¿½\ï¿½zï¿½ï¿½gï¿½p
+	std::string sceneDir = SettingManager::GetInstance()->GetSceneFilePath();
+	// ï¿½pï¿½Xï¿½ï¿½ï¿½Ø‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½Í’Ç‰ï¿½ï¿½È‚ï¿½
+	if (!sceneDir.empty() && sceneDir.back() != '/' && sceneDir.back() != '\\') {
+		sceneDir += "/";
+	}
+	std::string filePath = sceneDir + _name + ".scene";
+	
 	std::ifstream inFile(filePath);
 	if (!inFile.is_open()) {
-		// ƒtƒ@ƒCƒ‹‚ªŠJ‚¯‚È‚©‚Á‚½ê‡Afalse‚ğ•Ô‚·
+		// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½Jï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½Afalseï¿½ï¿½Ô‚ï¿½
 		return ;
 	}
 
-	nlohmann::json sceneData;
-	inFile >> sceneData;
-	inFile.close();
+	try {
+		nlohmann::json sceneData;
+		inFile >> sceneData;
+		inFile.close();
 
-	_name = sceneData["SceneSettings"]["Name"].get<std::string>();
-
-	// Objects‚Ì“Ç‚İ‚İ
-	for (const auto& objData : sceneData["Objects"]) {
-		Object* newObj = new Object();
-		newObj->SetObjectName(objData["Name"].get<std::string>());
-		// Transform‚Ì“Ç‚İ‚İ
-		auto pos = objData["Transform"]["Position"];
-		auto rot = objData["Transform"]["Rotation"];
-		auto scl = objData["Transform"]["Scale"];
-		Transform transform;
-		transform.position = { pos[0].get<float>(), pos[1].get<float>(), pos[2].get<float>() };
-		transform.rotation = { rot[0].get<float>(), rot[1].get<float>(), rot[2].get<float>() };
-		transform.scale = { scl[0].get<float>(), scl[1].get<float>(), scl[2].get<float>() };
-		newObj->SetTransform(transform);
-		// ƒRƒ“ƒ|[ƒlƒ“ƒg‚Ì“Ç‚İ‚İ
-		for (const auto& compData : objData["Components"]) {
-			auto type = static_cast<ComponentManager::COMPONENT_TYPE>(compData["Type"].get<int>());
-			auto name = compData["Name"].get<std::string>();
-			auto data = compData["Data"].get<std::string>();
-			Component* newComp = ComponentManager::GetInstance()->AddComponent(newObj,type);
-			if (newComp) {
-				newComp->SetComponentName(name);
-				std::istringstream iss(data);
-				newComp->LoadFromFile(iss);
-			}
+		// JSONï¿½Xï¿½Lï¿½[ï¿½}ï¿½Ì‘ï¿½ï¿½İ‚`ï¿½Fï¿½bï¿½N
+		if (!sceneData.contains("SceneSettings") || !sceneData["SceneSettings"].contains("Name")) {
+			MessageBox(nullptr, ("ï¿½Vï¿½[ï¿½ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Ìƒtï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½ï¿½ï¿½sï¿½ï¿½ï¿½Å‚ï¿½: " + filePath).c_str(), "ï¿½ï¿½ï¿½[ï¿½hï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
+			return;
 		}
-		AddObjectLocal(newObj);
+		if (!sceneData.contains("Objects") || !sceneData["Objects"].is_array()) {
+			MessageBox(nullptr, ("ï¿½Vï¿½[ï¿½ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ÉƒIï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½: " + filePath).c_str(), "ï¿½ï¿½ï¿½[ï¿½hï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
+			return;
+		}
+
+		_name = sceneData["SceneSettings"]["Name"].get<std::string>();
+
+	// Objectsï¿½Ì“Ç‚İï¿½ï¿½ï¿½
+	for (const auto& objData : sceneData["Objects"]) {
+		Object* newObj = nullptr;
+		try {
+			newObj = new Object();
+			
+			// ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½ï¿½ï¿½ÌŒï¿½ï¿½ï¿½ï¿½ï¿½
+			if (objData.contains("Name")) {
+				newObj->SetObjectName(objData["Name"].get<std::string>());
+			}
+			
+			// Transformï¿½Ì“Ç‚İï¿½ï¿½ï¿½
+			if (objData.contains("Transform")) {
+				const auto& transformData = objData["Transform"];
+				Transform transform;
+				
+				if (transformData.contains("Position") && transformData["Position"].is_array() && transformData["Position"].size() == 3) {
+					auto pos = transformData["Position"];
+					transform.position = { pos[0].get<float>(), pos[1].get<float>(), pos[2].get<float>() };
+				}
+				if (transformData.contains("Rotation") && transformData["Rotation"].is_array() && transformData["Rotation"].size() == 3) {
+					auto rot = transformData["Rotation"];
+					transform.rotation = { rot[0].get<float>(), rot[1].get<float>(), rot[2].get<float>() };
+				}
+				if (transformData.contains("Scale") && transformData["Scale"].is_array() && transformData["Scale"].size() == 3) {
+					auto scl = transformData["Scale"];
+					transform.scale = { scl[0].get<float>(), scl[1].get<float>(), scl[2].get<float>() };
+				}
+				newObj->SetTransform(transform);
+			}
+			
+			// ï¿½Rï¿½ï¿½ï¿½|ï¿½[ï¿½lï¿½ï¿½ï¿½gï¿½Ì“Ç‚İï¿½ï¿½ï¿½
+			if (objData.contains("Components") && objData["Components"].is_array()) {
+				for (const auto& compData : objData["Components"]) {
+					if (compData.contains("Type") && compData.contains("Name") && compData.contains("Data")) {
+						auto type = static_cast<ComponentManager::COMPONENT_TYPE>(compData["Type"].get<int>());
+						auto name = compData["Name"].get<std::string>();
+						auto data = compData["Data"].get<std::string>();
+						Component* newComp = ComponentManager::GetInstance()->AddComponent(newObj, type);
+						if (newComp) {
+							newComp->SetComponentName(name);
+							try {
+								std::istringstream iss(data);
+								newComp->LoadFromFile(iss);
+							}
+							catch (const std::exception& e) {
+								// ï¿½Rï¿½ï¿½ï¿½|ï¿½[ï¿½lï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½hï¿½Gï¿½ï¿½ï¿½[ï¿½ÍŒxï¿½ï¿½ï¿½Æ‚ï¿½ï¿½Äˆï¿½ï¿½ï¿½
+								MessageBox(nullptr, ("ï¿½Rï¿½ï¿½ï¿½|ï¿½[ï¿½lï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½hï¿½Gï¿½ï¿½ï¿½[: " + std::string(e.what())).c_str(), "ï¿½ï¿½ï¿½[ï¿½hï¿½xï¿½ï¿½", MB_OK | MB_ICONWARNING);
+							}
+						}
+					}
+				}
+			}
+			
+			AddObjectLocal(newObj);
+			newObj = nullptr; // ï¿½ï¿½ï¿½ï¿½É’Ç‰ï¿½ï¿½ï¿½ï¿½ê‚½ï¿½Ì‚Åï¿½ï¿½Lï¿½ï¿½ï¿½ï¿½nullï¿½ï¿½İ’ï¿½
+		}
+		catch (const nlohmann::json::exception& e) {
+			// JSONï¿½pï¿½[ï¿½Xï¿½Gï¿½ï¿½ï¿½[
+			if (newObj) {
+				delete newObj; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½ï¿½ï¿½íœ
+			}
+			MessageBox(nullptr, ("ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½fï¿½[ï¿½^ï¿½Ì‰ï¿½ï¿½ï¿½Gï¿½ï¿½ï¿½[: " + std::string(e.what())).c_str(), "ï¿½ï¿½ï¿½[ï¿½hï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONWARNING);
+			continue; // ï¿½ï¿½ï¿½ÌƒIï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½Ìï¿½ï¿½ï¿½ï¿½É‘ï¿½ï¿½ï¿½
+		}
+		catch (const std::exception& e) {
+			// ï¿½ï¿½ï¿½Ì‘ï¿½ï¿½ÌƒGï¿½ï¿½ï¿½[
+			if (newObj) {
+				delete newObj;
+			}
+			MessageBox(nullptr, ("ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½ì¬ï¿½Gï¿½ï¿½ï¿½[: " + std::string(e.what())).c_str(), "ï¿½ï¿½ï¿½[ï¿½hï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONWARNING);
+			continue;
+		}
+	}
+	}
+	catch (const nlohmann::json::exception& e) {
+		// JSONï¿½pï¿½[ï¿½Xï¿½Gï¿½ï¿½ï¿½[
+		MessageBox(nullptr, ("JSONï¿½pï¿½[ï¿½Xï¿½Gï¿½ï¿½ï¿½[: " + std::string(e.what())).c_str(), "ï¿½ï¿½ï¿½[ï¿½hï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
+		return;
+	}
+	catch (const std::exception& e) {
+		// ï¿½ï¿½ï¿½Ì‘ï¿½ï¿½ÌƒGï¿½ï¿½ï¿½[
+		MessageBox(nullptr, ("ï¿½Vï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½Gï¿½ï¿½ï¿½[: " + std::string(e.what())).c_str(), "ï¿½ï¿½ï¿½[ï¿½hï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
+		return;
 	}
 }
 
@@ -222,7 +336,7 @@ void Scene::ProcessThreadSafeAdditions(){
 	_ToBeAddedBuffer.clear();
 }
 
-// ƒ[ƒJƒ‹ƒXƒŒƒbƒh‚Å‚ÌƒIƒuƒWƒFƒNƒg’Ç‰Á
+// ï¿½ï¿½ï¿½[ï¿½Jï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½bï¿½hï¿½Å‚ÌƒIï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½Ç‰ï¿½
 void Scene::AddObjectLocal(Object* obj){
 	if (obj) {
 		_ToBeAdded.push_back(obj);
@@ -234,7 +348,7 @@ void Scene::RemoveObject(Object* obj){
 	_ToBeRemoved.push_back(obj);
 }
 
-// ƒIƒuƒWƒFƒNƒg‚Ì”ñ“¯Šú’Ç‰Á
+// ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½Ì”ñ“¯Šï¿½ï¿½Ç‰ï¿½
 bool Scene::AddObject(Object* obj)
 {
 	if (!obj) return false;
