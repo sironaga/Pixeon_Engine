@@ -6,7 +6,8 @@
 #include <Windows.h>
 #include <d3d11.h>
 
-
+// memo
+// WriteBufferを反射機能で実装
 
 enum class ShaderStage { VS, PS };
 
@@ -18,22 +19,21 @@ public:
     void Initialize(ID3D11Device* device);
     void Finalize();
 
-    // HLSLテンプレート作成（既存）
+
     bool CreateHLSLTemplate(const std::string& shaderName, const std::string& type);
 
-    // HLSL更新＆コンパイル（既存）
+
     void UpdateAndCompileShaders();
 
-    // シェーダー取得（既存）
     ID3D11VertexShader* GetVertexShader(const std::string& name);
     ID3D11PixelShader* GetPixelShader(const std::string& name);
 
-    // 既存の固定キー版CB（後方互換用）
+
     bool CreateConstantBuffer(const std::string& key, UINT bufferSize);
     bool WriteBuffer(const std::string& key, UINT slot, void* pData, UINT dataSize);
     ID3D11Buffer* GetConstantBuffer(const std::string& key, UINT slot);
 
-    // シェーダー一覧（既存）
+
     std::vector<std::string> GetShaderList(const std::string& type) const;
 
     // 入力レイアウト用にVSバイトコード取得
