@@ -14,7 +14,7 @@ public:
 	enum class COMPONENT_TYPE {
 		NONE = -1,
 		CAMERA,
-		GEOMETORY,
+		GEOMETRY,
 		MAX,
 	};
 

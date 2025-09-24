@@ -128,7 +128,7 @@
     <ClCompile Include="CameraComponent.cpp">
       <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
-    <ClCompile Include="Geometory.cpp">
+    <ClCompile Include="Geometry.cpp">
       <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
   </ItemGroup>
@@ -138,9 +138,6 @@
     </ClInclude>
     <ClInclude Include="Object.h">
       <Filter>ソース ファイル\BaseClass</Filter>
-    </ClInclude>
-    <ClInclude Include="Struct.h">
-      <Filter>ソース ファイル\Other</Filter>
     </ClInclude>
     <ClInclude Include="Component.h">
       <Filter>ソース ファイル\BaseClass</Filter>
@@ -211,7 +208,10 @@
     <ClInclude Include="CameraComponent.h">
       <Filter>ソース ファイル\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Geometory.h">
+    <ClInclude Include="Struct.h">
+      <Filter>ソース ファイル\Other</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry.h">
       <Filter>ソース ファイル\Component</Filter>
     </ClInclude>
   </ItemGroup>

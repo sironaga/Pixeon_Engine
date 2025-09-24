@@ -8,14 +8,15 @@
 void CameraComponent::Init(Object* Prt){
 	_Parent = Prt;
 	_ComponentName = "CameraComponent";
-	_Type			= ComponentManager::COMPONENT_TYPE::CAMERA;
-	_Fixation		= { 0.0f, 5.0f, 0.0f };
-	_Up				= { 0.0f, 1.0f, 0.0f };
-	_FOV			= DirectX::XMConvertToRadians(60.0f);
-	_AspectRatio	= 16.0f / 9.0f;
-	_NearPlane		= 30.0f * 0.01f;
-	_FarPlane		= 1000.0f;
-	_radius			= 5.0f;
+	_Type = ComponentManager::COMPONENT_TYPE::CAMERA;
+	_Position = { 0.0f, 5.0f, -10.0f };  // カメラを後方に配置
+	_Fixation = { 0.0f, 0.0f, 0.0f };    // 原点を見る
+	_Up = { 0.0f, 1.0f, 0.0f };
+	_FOV = DirectX::XMConvertToRadians(60.0f);
+	_AspectRatio = 16.0f / 9.0f;
+	_NearPlane = 0.1f;  // 近クリップ面を小さく
+	_FarPlane = 1000.0f;
+	_radius = 10.0f;  // 半径を大きく
 }
 
 
@@ -148,8 +149,8 @@ DirectX::XMFLOAT4X4 CameraComponent::GetViewMatrix(bool transpose){
 	DirectX::XMFLOAT4X4 Mat;
 	DirectX::XMMATRIX View;
 
-	DirectX::XMVECTOR Eye = DirectX::XMVectorSet(_Fixation.x, _Fixation.y, _Fixation.z, 0.0f);
-	DirectX::XMVECTOR At = DirectX::XMVectorSet(_Position.x, _Position.y, _Position.z, 0.0f);
+	DirectX::XMVECTOR Eye = DirectX::XMVectorSet(_Position.x, _Position.y, _Position.z, 0.0f);
+	DirectX::XMVECTOR At = DirectX::XMVectorSet(_Fixation.x, _Fixation.y, _Fixation.z, 0.0f);
 	DirectX::XMVECTOR Up = DirectX::XMVectorSet(_Up.x, _Up.y, _Up.z, 0.0f);
 
 	View = DirectX::XMMatrixLookAtLH(Eye, At, Up);

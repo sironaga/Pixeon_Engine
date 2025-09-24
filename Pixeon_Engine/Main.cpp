@@ -10,6 +10,7 @@
 #include "ComponentManager.h"
 #include "Object.h"
 
+
 HWND ghWnd;
 AssetWatcher *watcher;
 GameRenderTarget* gGameRenderTarget;

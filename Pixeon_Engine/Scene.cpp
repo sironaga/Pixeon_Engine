@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iostream>
 
+#include "System.h"
 // 開放処理
 Scene::~Scene(){
 }
@@ -69,6 +70,7 @@ void Scene::EditUpdate(){
 
 	if(_MainCamera)_MainCameraNumber = _MainCamera->GetCameraNumber();
 	else _MainCameraNumber = -1;
+
 
 	// オブジェクトの更新
 	for (auto& obj : _objects) if (obj)obj->EditUpdate();
@@ -132,6 +134,7 @@ void Scene::PlayUpdate(){
 }
 
 void Scene::Draw() {
+
 	// オブジェクトの描画
 	std::vector<Object*> sortedList = _objects;
 	if (_MainCamera) {
