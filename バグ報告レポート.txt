@@ -1,0 +1,58 @@
+===== Pixeon Engine バグ報告レポート =====
+日付: 2024年
+
+問題の概要:
+Geometoryコンポーネントで3Dグリッドが描画されるが、奥行きが正常に表示されない問題
+
+原因分析:
+CameraComponent.cppのGetViewMatrix()関数において、カメラの視点行列の計算に問題がありました。
+
+具体的な問題箇所:
+ファイル: /Pixeon_Engine/CameraComponent.cpp
+関数: GetViewMatrix()
+行数: 151-155
+
+問題のコード:
+```cpp
+DirectX::XMVECTOR Eye = DirectX::XMVectorSet(_Fixation.x, _Fixation.y, _Fixation.z, 0.0f);
+DirectX::XMVECTOR At = DirectX::XMVectorSet(_Position.x, _Position.y, _Position.z, 0.0f);
+```
+
+原因詳細:
+DirectXのXMMatrixLookAtLH関数を使用する際、パラメータの設定が逆になっていました。
+
+- Eye（視点位置）: 本来はカメラの位置（_Position）であるべきところが、注視点（_Fixation）になっていた
+- At（注視点）: 本来は注視点（_Fixation）であるべきところが、カメラの位置（_Position）になっていた
+
+この結果、カメラの視点変換行列が正しく計算されず、3D空間での奥行き感が失われていました。
+
+修正内容:
+EyeとAtのパラメータを正しい順序に修正しました。
+
+修正後のコード:
+```cpp
+DirectX::XMVECTOR Eye = DirectX::XMVectorSet(_Position.x, _Position.y, _Position.z, 0.0f);
+DirectX::XMVECTOR At = DirectX::XMVectorSet(_Fixation.x, _Fixation.y, _Fixation.z, 0.0f);
+```
+
+影響範囲:
+- Geometoryコンポーネントのグリッド描画
+- 3D空間での深度感の表示
+- カメラによる3Dシーンの描画全般
+
+修正により期待される効果:
+1. グリッドが正常な奥行きを持って表示される
+2. 3D空間での深度感が適切に表現される
+3. カメラの移動や回転が正しく反映される
+
+テスト項目:
+1. グリッドの3D描画確認
+2. カメラの移動・回転動作確認
+3. 他の3Dオブジェクトの描画確認
+
+重要度: 高
+分類: 描画・レンダリング
+ステータス: 修正完了
+
+備考:
+このバグはカメラの基本的な視点変換に関わる重要な問題でした。修正により、すべての3D描画において正しい奥行き表現が可能になります。

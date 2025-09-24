@@ -22,16 +22,16 @@ void CameraComponent::Init(Object* Prt){
 void CameraComponent::EditUpdate(){
 
 	if (_IsKeyMove) {
-		// ƒJƒƒ‰‘€ì
+		// ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	}
 	if (_IsChangeCalculation){
-		//@ƒJƒƒ‰‚ÌˆÊ’u‚©‚ç’‹“_‚ğŒvZ
+		//ï¿½@ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½ÌˆÊ’uï¿½ï¿½ï¿½ç’ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½vï¿½Z
 		_Fixation.x = _Position.x - cosf(_Rotation.y) * sinf(_Rotation.x) * _radius;
 		_Fixation.y = _Position.y - sinf(_Rotation.y) * _radius;
 		_Fixation.z = _Position.z - cosf(_Rotation.y) * cosf(_Rotation.x) * _radius;
 	}
 	else {
-		//@’‹“_‚©‚çƒJƒƒ‰‚ÌˆÊ’u‚ğŒvZ
+		//ï¿½@ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½ÌˆÊ’uï¿½ï¿½ï¿½vï¿½Z
 		_Position.x = cosf(_Rotation.y) * sinf(_Rotation.x) * _radius + _Fixation.x;
 		_Position.y = sinf(_Rotation.y) * _radius + _Fixation.y;
 		_Position.z = cosf(_Rotation.y) * cosf(_Rotation.x) * _radius + _Fixation.z;
@@ -40,17 +40,17 @@ void CameraComponent::EditUpdate(){
 
 void CameraComponent::InGameUpdate(){
 	if (_IsKeyMove) {
-		// ƒJƒƒ‰‘€ì
+		// ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	}
 
 	if (_IsChangeCalculation) {
-		//@ƒJƒƒ‰‚ÌˆÊ’u‚©‚ç’‹“_‚ğŒvZ
+		//ï¿½@ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½ÌˆÊ’uï¿½ï¿½ï¿½ç’ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½vï¿½Z
 		_Fixation.x = _Position.x - cosf(_Rotation.y) * sinf(_Rotation.x) * _radius;
 		_Fixation.y = _Position.y - sinf(_Rotation.y) * _radius;
 		_Fixation.z = _Position.z - cosf(_Rotation.y) * cosf(_Rotation.x) * _radius;
 	}
 	else {
-		//@’‹“_‚©‚çƒJƒƒ‰‚ÌˆÊ’u‚ğŒvZ
+		//ï¿½@ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½ÌˆÊ’uï¿½ï¿½ï¿½vï¿½Z
 		_Position.x = cosf(_Rotation.y) * sinf(_Rotation.x) * _radius + _Fixation.x;
 		_Position.y = sinf(_Rotation.y) * _radius + _Fixation.y;
 		_Position.z = cosf(_Rotation.y) * cosf(_Rotation.x) * _radius + _Fixation.z;
@@ -109,7 +109,7 @@ void CameraComponent::DrawInspector(){
 			ImGui::TableSetColumnIndex(1); ImGui::Checkbox("##IsChangeCalculation", &_IsChangeCalculation);
 
 			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0); ImGui::Text(EditrGUI::GetInstance()->ShiftJISToUTF8("Œ»İ‚ÌƒJƒƒ‰‚ğØ‚è‘Ö‚¦‚é").c_str());
+			ImGui::TableSetColumnIndex(0); ImGui::Text(EditrGUI::GetInstance()->ShiftJISToUTF8("ï¿½ï¿½ï¿½İ‚ÌƒJï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø‚ï¿½Ö‚ï¿½ï¿½ï¿½").c_str());
 			ImGui::TableSetColumnIndex(1);
 			if (ImGui::Button("Set Main Camera")) {
 				_Parent->GetParentScene()->SetMainCamera(this);
@@ -148,8 +148,8 @@ DirectX::XMFLOAT4X4 CameraComponent::GetViewMatrix(bool transpose){
 	DirectX::XMFLOAT4X4 Mat;
 	DirectX::XMMATRIX View;
 
-	DirectX::XMVECTOR Eye = DirectX::XMVectorSet(_Fixation.x, _Fixation.y, _Fixation.z, 0.0f);
-	DirectX::XMVECTOR At = DirectX::XMVectorSet(_Position.x, _Position.y, _Position.z, 0.0f);
+	DirectX::XMVECTOR Eye = DirectX::XMVectorSet(_Position.x, _Position.y, _Position.z, 0.0f);
+	DirectX::XMVECTOR At = DirectX::XMVectorSet(_Fixation.x, _Fixation.y, _Fixation.z, 0.0f);
 	DirectX::XMVECTOR Up = DirectX::XMVectorSet(_Up.x, _Up.y, _Up.z, 0.0f);
 
 	View = DirectX::XMMatrixLookAtLH(Eye, At, Up);
@@ -200,17 +200,17 @@ DirectX::XMFLOAT3 CameraComponent::GetForwardVector(){
 }
 
 DirectX::XMFLOAT3 CameraComponent::GetRightVector(){
-	// ã•ûŒü‚Íƒ[ƒ‹ƒh‚ÌY²
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Íƒï¿½ï¿½[ï¿½ï¿½ï¿½hï¿½ï¿½Yï¿½ï¿½
 	DirectX::XMFLOAT3 up = _Up;
 	DirectX::XMFLOAT3 forward = GetForwardVector();
 
-	// ŠOÏ right = up ~ forward
+	// ï¿½Oï¿½ï¿½ right = up ï¿½~ forward
 	DirectX::XMFLOAT3 right;
 	right.x = up.y * forward.z - up.z * forward.y;
 	right.y = up.z * forward.x - up.x * forward.z;
 	right.z = up.x * forward.y - up.y * forward.x;
 
-	// ³‹K‰»
+	// ï¿½ï¿½ï¿½Kï¿½ï¿½
 	float len = sqrtf(right.x * right.x + right.y * right.y + right.z * right.z);
 	if (len != 0.0f)
 	{
