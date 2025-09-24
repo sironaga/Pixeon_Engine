@@ -3,12 +3,39 @@
         {
             "Components": [
                 {
-                    "Data": "0 -2 5 0 0 0 0 -2 0 0 1 0 1.0472 1.77778 0.3 1000 5 0 0 0 ",
+                    "Data": "-2.806 0.903 0.741 0.55 -0.5 0.17 -5.09951 3.30013 -2.9998 0 1 0 1.277 1.45 0.3 1000 5 0 1 0 ",
                     "Name": "CameraComponent",
                     "Type": 0
                 }
             ],
             "Name": "NewObject",
+            "Transform": {
+                "Position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "Rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "Scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "Components": [
+                {
+                    "Data": "",
+                    "Name": "Geometory",
+                    "Type": 1
+                }
+            ],
+            "Name": "NewObject1",
             "Transform": {
                 "Position": [
                     0.0,

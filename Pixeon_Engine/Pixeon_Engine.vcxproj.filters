@@ -128,6 +128,9 @@
     <ClCompile Include="CameraComponent.cpp">
       <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
+    <ClCompile Include="Geometory.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -206,6 +209,9 @@
       <Filter>ソース ファイル\Manager</Filter>
     </ClInclude>
     <ClInclude Include="CameraComponent.h">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometory.h">
       <Filter>ソース ファイル\Component</Filter>
     </ClInclude>
   </ItemGroup>

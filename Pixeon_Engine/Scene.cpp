@@ -134,6 +134,20 @@ void Scene::PlayUpdate(){
 void Scene::Draw() {
 	// オブジェクトの描画
 	std::vector<Object*> sortedList = _objects;
+	if (_MainCamera) {
+			std::sort(sortedList.begin(), sortedList.end(), [this](Object* a, Object* b) {
+			if (!a || !b) return false;
+			// カメラからの距離を計算
+			DirectX::XMFLOAT3 camPos = _MainCamera->GetPosition();
+			DirectX::XMFLOAT3 posA = a->GetTransform().position;
+			DirectX::XMFLOAT3 posB = b->GetTransform().position;
+			float distA = (camPos.x - posA.x) * (camPos.x - posA.x) + (camPos.y - posA.y) * (camPos.y - posA.y) + (camPos.z - posA.z) * (camPos.z - posA.z);
+			float distB = (camPos.x - posB.x) * (camPos.x - posB.x) + (camPos.y - posB.y) * (camPos.y - posB.y) + (camPos.z - posB.z) * (camPos.z - posB.z);
+			// 距離が近い順にソート
+			return distA < distB;
+					});
+	}
+	for (auto& obj : sortedList) if (obj)obj->Draw();
 }
 
 

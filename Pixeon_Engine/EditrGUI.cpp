@@ -265,7 +265,6 @@ void EditrGUI::WindowGUI()
     ShowConsole();
 }
 
-
 void EditrGUI::ShowGameView()
 {
   ImGui::Begin(ShiftJISToUTF8("ゲームビュー").c_str());

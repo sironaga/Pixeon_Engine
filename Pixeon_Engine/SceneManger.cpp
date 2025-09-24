@@ -23,6 +23,7 @@ void SceneManger::DestroyInstance()
 }
 
 void SceneManger::Init(){
+	_StartSceneName = "SampleScene";
 	_sceneList = ListSceneFiles();
 	for (const auto& fileName : _sceneList)
 	{
@@ -33,7 +34,7 @@ void SceneManger::Init(){
 		}
 	}
 
-	ChangeScene("SampleScene");
+	ChangeScene(_StartSceneName);
 }
 
 // シーン開始
@@ -128,6 +129,7 @@ std::vector<std::string> SceneManger::ListSceneFiles(){
 		if (!CreateAndRegisterScene("SampleScene")) {
 			MessageBox(nullptr, "正常に作成ができませんでした", "Error", MB_OK);
 		}
+		_StartSceneName = "SampleScene";
 	}
 
 	do {

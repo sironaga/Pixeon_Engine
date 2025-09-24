@@ -26,6 +26,10 @@ public:
 	DirectX::XMFLOAT3 GetForwardVector();
 	DirectX::XMFLOAT3 GetRightVector();
 
+	DirectX::XMFLOAT3 GetPosition() const { return _Position; }
+	DirectX::XMFLOAT3 GetRotation() const { return _Rotation; }
+	void SetPosition(DirectX::XMFLOAT3 pos) { _Position = pos; }
+	void SetRotation(DirectX::XMFLOAT3 rot) { _Rotation = rot; }
 	DirectX::XMFLOAT3 GetFixation() const			{ return _Fixation; }
 	void SetFixation(DirectX::XMFLOAT3 fixation)	{ _Fixation = fixation; }
 

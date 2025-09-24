@@ -37,17 +37,36 @@ bool ShaderManager::CreateHLSLTemplate(const std::string& shaderName, const std:
     std::ofstream ofs(path);
     if (!ofs) return false;
     if (type == "VS") {
-        ofs << "struct VS_INPUT { float3 pos : POSITION; };\n"
-            "struct VS_OUTPUT { float4 pos : SV_POSITION; };\n"
+        ofs << "cbuffer CameraCB : register(b0)\n"
+            "{\n"
+            "    matrix view;\n"
+            "    matrix proj;\n"
+            "};\n"
+            "\n"
+            "struct VS_INPUT {\n"
+            "    float3 pos : POSITION;\n"
+            "    float4 color : COLOR0;\n"
+            "};\n"
+            "struct VS_OUTPUT {\n"
+            "    float4 pos : SV_POSITION;\n"
+            "    float4 color : COLOR0;\n"
+            "};\n"
             "VS_OUTPUT main(VS_INPUT input) {\n"
             "    VS_OUTPUT output;\n"
-            "    output.pos = float4(input.pos, 1.0f);\n"
+            "    float4 wpos = float4(input.pos, 1.0f);\n"
+            "    output.pos = mul(float4(input.pos, 1.0f), view);\n"
+            "    output.pos = mul(output.pos, proj);\n"
+            "    output.color = input.color;\n"
             "    return output;\n"
             "}\n";
     }
     else if (type == "PS") {
-        ofs << "float4 main(float4 pos : SV_POSITION) : SV_Target {\n"
-            "    return float4(1,1,1,1);\n"
+        ofs << "struct PS_INPUT {\n"
+            "    float4 pos : SV_POSITION;\n"
+            "    float4 color : COLOR0;\n"
+            "};\n"
+            "float4 main(PS_INPUT input) : SV_Target {\n"
+            "    return input.color;\n"
             "}\n";
     }
     return true;

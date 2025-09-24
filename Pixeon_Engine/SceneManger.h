@@ -53,6 +53,8 @@ private:
 	Scene* _currentScene = nullptr;
 	Scene* _nextScene = nullptr;
 
+	std::string _StartSceneName;
+
 	static SceneManger* instance;
 
 	DWORD _AutoSaveCurrentTime;
