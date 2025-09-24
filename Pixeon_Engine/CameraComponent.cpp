@@ -3,6 +3,7 @@
 #include <iostream>
 #include "CameraComponent.h"
 #include "Object.h"
+#include "Scene.h"
 
 void CameraComponent::Init(Object* Prt){
 	_Parent = Prt;
@@ -23,10 +24,18 @@ void CameraComponent::EditUpdate(){
 	if (_IsKeyMove) {
 		// カメラ操作
 	}
-
-	_Position.x = cosf(_Rotation.y) * sinf(_Rotation.x) * _radius + _Fixation.x;
-	_Position.y = sinf(_Rotation.y) * _radius + _Fixation.y;
-	_Position.z = cosf(_Rotation.y) * cosf(_Rotation.x) * _radius + _Fixation.z;
+	if (_IsChangeCalculation){
+		//　カメラの位置から注視点を計算
+		_Fixation.x = _Position.x - cosf(_Rotation.y) * sinf(_Rotation.x) * _radius;
+		_Fixation.y = _Position.y - sinf(_Rotation.y) * _radius;
+		_Fixation.z = _Position.z - cosf(_Rotation.y) * cosf(_Rotation.x) * _radius;
+	}
+	else {
+		//　注視点からカメラの位置を計算
+		_Position.x = cosf(_Rotation.y) * sinf(_Rotation.x) * _radius + _Fixation.x;
+		_Position.y = sinf(_Rotation.y) * _radius + _Fixation.y;
+		_Position.z = cosf(_Rotation.y) * cosf(_Rotation.x) * _radius + _Fixation.z;
+	}
 }
 
 void CameraComponent::InGameUpdate(){
@@ -34,17 +43,79 @@ void CameraComponent::InGameUpdate(){
 		// カメラ操作
 	}
 
-	_Position.x = cosf(_Rotation.y) * sinf(_Rotation.x) * _radius + _Fixation.x;
-	_Position.y = sinf(_Rotation.y) * _radius + _Fixation.y;
-	_Position.z = cosf(_Rotation.y) * cosf(_Rotation.x) * _radius + _Fixation.z;
+	if (_IsChangeCalculation) {
+		//　カメラの位置から注視点を計算
+		_Fixation.x = _Position.x - cosf(_Rotation.y) * sinf(_Rotation.x) * _radius;
+		_Fixation.y = _Position.y - sinf(_Rotation.y) * _radius;
+		_Fixation.z = _Position.z - cosf(_Rotation.y) * cosf(_Rotation.x) * _radius;
+	}
+	else {
+		//　注視点からカメラの位置を計算
+		_Position.x = cosf(_Rotation.y) * sinf(_Rotation.x) * _radius + _Fixation.x;
+		_Position.y = sinf(_Rotation.y) * _radius + _Fixation.y;
+		_Position.z = cosf(_Rotation.y) * cosf(_Rotation.x) * _radius + _Fixation.z;
+	}
 }
 
 void CameraComponent::DrawInspector(){
 	std::string label = EditrGUI::GetInstance()->ShiftJISToUTF8("CameraComponent");
 	std::string Ptr = std::to_string((uintptr_t)this);
 	label += "###" + Ptr;
-	if (ImGui::CollapsingHeader(EditrGUI::GetInstance()->ShiftJISToUTF8(label).c_str())) {
 
+	if (ImGui::CollapsingHeader(EditrGUI::GetInstance()->ShiftJISToUTF8(label).c_str())) {
+		if (ImGui::BeginTable("CameraTable", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV)) {
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0); ImGui::Text("Position");
+			ImGui::TableSetColumnIndex(1); ImGui::DragFloat3("##Position", &_Position.x, 0.1f);
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0); ImGui::Text("Rotation");
+			ImGui::TableSetColumnIndex(1); ImGui::DragFloat3("##Rotation", &_Rotation.x, 0.01f);
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0); ImGui::Text("Fixation");
+			ImGui::TableSetColumnIndex(1); ImGui::DragFloat3("##Fixation", &_Fixation.x, 0.1f);
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0); ImGui::Text("Up");
+			ImGui::TableSetColumnIndex(1); ImGui::DragFloat3("##Up", &_Up.x, 0.1f);
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0); ImGui::Text("FOV");
+			ImGui::TableSetColumnIndex(1); ImGui::DragFloat("##FOV", &_FOV, 0.01f, DirectX::XMConvertToRadians(1.0f), DirectX::XMConvertToRadians(179.0f), "%.3f");
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0); ImGui::Text("AspectRatio");
+			ImGui::TableSetColumnIndex(1); ImGui::DragFloat("##AspectRatio", &_AspectRatio, 0.01f, 0.1f, 4.0f, "%.3f");
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0); ImGui::Text("NearPlane");
+			ImGui::TableSetColumnIndex(1); ImGui::DragFloat("##NearPlane", &_NearPlane, 0.1f, 0.01f, 100.0f, "%.3f");
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0); ImGui::Text("FarPlane");
+			ImGui::TableSetColumnIndex(1); ImGui::DragFloat("##FarPlane", &_FarPlane, 1.0f, 10.0f, 10000.0f, "%.3f");
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0); ImGui::Text("Radius");
+			ImGui::TableSetColumnIndex(1); ImGui::DragFloat("##Radius", &_radius, 0.1f, 0.1f, 100.0f, "%.3f");
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0); ImGui::Text("IsKeyMove");
+			ImGui::TableSetColumnIndex(1); ImGui::Checkbox("##IsKeyMove", &_IsKeyMove);
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0); ImGui::Text("IsChangeCalculation");
+			ImGui::TableSetColumnIndex(1); ImGui::Checkbox("##IsChangeCalculation", &_IsChangeCalculation);
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0); ImGui::Text(EditrGUI::GetInstance()->ShiftJISToUTF8("現在のカメラを切り替える").c_str());
+			ImGui::TableSetColumnIndex(1);
+			if (ImGui::Button("Set Main Camera")) {
+				_Parent->GetParentScene()->SetMainCamera(this);
+			}
+			ImGui::EndTable();
+		}
 	}
 }
 
@@ -56,6 +127,8 @@ void CameraComponent::SaveToFile(std::ostream& out){
 	out << _FOV << " " << _AspectRatio << " " << _NearPlane << " " << _FarPlane << " ";
 	out << _radius << " ";
 	out << _IsKeyMove << " ";
+	out << _IsChangeCalculation << " ";
+	out << _CameraNumber << " ";
 
 }
 
@@ -67,6 +140,8 @@ void CameraComponent::LoadFromFile(std::istream& in){
 	in >> _FOV >> _AspectRatio >> _NearPlane >> _FarPlane;
 	in >> _radius;
 	in >> _IsKeyMove;
+	in >> _IsChangeCalculation;
+	in >> _CameraNumber;
 }
 
 DirectX::XMFLOAT4X4 CameraComponent::GetViewMatrix(bool transpose){

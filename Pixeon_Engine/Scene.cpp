@@ -52,9 +52,23 @@ void Scene::EditUpdate(){
 	}
 	_ToBeAdded.clear();
 
-	// カメラの更新
+	// カメラコンポーネントの更新
+	int i = 0;
+	for(auto& obj : _objects){
+		if(!obj) continue;
+		for(auto& comp : obj->GetComponents()){
+			if(!comp) continue;
+			if(comp->GetComponentType() == ComponentManager::COMPONENT_TYPE::CAMERA){
+				CameraComponent* cam = dynamic_cast<CameraComponent*>(comp);
+				cam->SetCameraNumber(i);
+				i++;
+				comp->EditUpdate();
+			}
+		}
+	}
 
-	//
+	if(_MainCamera)_MainCameraNumber = _MainCamera->GetCameraNumber();
+	else _MainCameraNumber = -1;
 
 	// オブジェクトの更新
 	for (auto& obj : _objects) if (obj)obj->EditUpdate();
@@ -84,9 +98,23 @@ void Scene::PlayUpdate(){
 	}
 	_ToBeAdded.clear();
 
-	// カメラの更新
+	// カメラコンポーネントの更新
+	int i = 0;
+	for (auto& obj : _objects) {
+		if (!obj) continue;
+		for (auto& comp : obj->GetComponents()) {
+			if (!comp) continue;
+			if (comp->GetComponentType() == ComponentManager::COMPONENT_TYPE::CAMERA) {
+				CameraComponent* cam = dynamic_cast<CameraComponent*>(comp);
+				cam->SetCameraNumber(i);
+				i++;
+				comp->EditUpdate();
+			}
+		}
+	}
 
-	//
+	if (_MainCamera)_MainCameraNumber = _MainCamera->GetCameraNumber();
+	else _MainCameraNumber = -1;
 
 	// オブジェクトの更新
 	for (auto& obj : _objects) if (obj)obj->InGameUpdate();
@@ -104,11 +132,8 @@ void Scene::PlayUpdate(){
 }
 
 void Scene::Draw() {
-
 	// オブジェクトの描画
 	std::vector<Object*> sortedList = _objects;
-	if (true) {
-	}
 }
 
 
@@ -129,6 +154,7 @@ void Scene::SaveToFile(){
 
 	nlohmann::json SceneData;
 	SceneData["SceneSettings"]["Name"] = _name;
+	SceneData["SceneSettings"]["MainCameraNumber"] = _MainCameraNumber;
 
 	// オブジェクトデータの保存
 	nlohmann::json ObjectArray	= nlohmann::json::array();
@@ -184,6 +210,7 @@ void Scene::LoadToFile(){
 	inFile.close();
 
 	_name = sceneData["SceneSettings"]["Name"].get<std::string>();
+	_MainCameraNumber = sceneData["SceneSettings"]["MainCameraNumber"].get<int>();
 
 	// Objectsの読み込み
 	for (const auto& objData : sceneData["Objects"]) {
@@ -214,6 +241,22 @@ void Scene::LoadToFile(){
 			}
 		}
 		AddObjectLocal(newObj);
+	}
+
+	// 登録されているメインカメラと同じ番号のカメラコンポーネントを探す
+	for (auto& obj : _objects) {
+		if (!obj) continue;
+		for (auto& comp : obj->GetComponents()) {
+			if (!comp) continue;
+			if (comp->GetComponentType() == ComponentManager::COMPONENT_TYPE::CAMERA) {
+				CameraComponent* cam = dynamic_cast<CameraComponent*>(comp);
+				if (cam->GetCameraNumber() == _MainCameraNumber) {
+					_MainCamera = cam;
+					break;
+				}
+			}
+		}
+		if (_MainCamera) break;
 	}
 }
 

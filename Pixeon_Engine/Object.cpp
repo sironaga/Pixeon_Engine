@@ -10,11 +10,19 @@ void Object::BeginPlay(){
 }
 
 void Object::EditUpdate(){
-	for(auto comp : _components)if(comp)comp->EditUpdate();
+	for (auto comp : _components) {
+		// カメラコンポーネントは更新しない
+		if (comp && comp->GetComponentType() == ComponentManager::COMPONENT_TYPE::CAMERA) continue;
+		if (comp)comp->EditUpdate();
+	}
 }
 
 void Object::InGameUpdate(){
-	for(auto comp : _components)if(comp)comp->InGameUpdate();
+	for (auto comp : _components) {
+		// カメラコンポーネントは更新しない
+		if (comp && comp->GetComponentType() == ComponentManager::COMPONENT_TYPE::CAMERA) continue;
+		if (comp)comp->InGameUpdate();
+	}
 }
 
 void Object::Draw(){

@@ -38,6 +38,10 @@ public:
 	float GetFar() const			{ return _FarPlane; }
 	bool IsMove() const				{ return _IsKeyMove; }
 	void SetIsMove(bool isMove)		{ _IsKeyMove = isMove; }
+	bool IsChangeCalculation() const { return _IsChangeCalculation; }
+	void SetIsChangeCalculation(bool isChange) { _IsChangeCalculation = isChange; }
+	int GetCameraNumber() const { return _CameraNumber; }
+	void SetCameraNumber(int num) { _CameraNumber = num; }
 private:
 	Object* _Parent;
 	DirectX::XMFLOAT3 _Position;
@@ -50,5 +54,7 @@ private:
 	float _FarPlane;
 	float _radius;
 	bool _IsKeyMove = false;
+	bool _IsChangeCalculation = false;
+	int _CameraNumber = -1;
 };
 
