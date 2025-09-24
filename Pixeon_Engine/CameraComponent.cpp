@@ -6,6 +6,7 @@
 
 void CameraComponent::Init(Object* Prt){
 	_Parent = Prt;
+	_ComponentName = "CameraComponent";
 	_Type			= ComponentManager::COMPONENT_TYPE::CAMERA;
 	_Fixation		= { 0.0f, 5.0f, 0.0f };
 	_Up				= { 0.0f, 1.0f, 0.0f };
@@ -55,6 +56,7 @@ void CameraComponent::SaveToFile(std::ostream& out){
 	out << _FOV << " " << _AspectRatio << " " << _NearPlane << " " << _FarPlane << " ";
 	out << _radius << " ";
 	out << _IsKeyMove << " ";
+
 }
 
 void CameraComponent::LoadFromFile(std::istream& in){

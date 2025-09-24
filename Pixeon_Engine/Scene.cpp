@@ -209,6 +209,9 @@ void Scene::LoadToFile(){
 				std::istringstream iss(data);
 				newComp->LoadFromFile(iss);
 			}
+			else{
+				MessageBox(nullptr, "コンポーネントの追加に失敗しました", "Error", MB_OK);
+			}
 		}
 		AddObjectLocal(newObj);
 	}

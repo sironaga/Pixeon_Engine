@@ -27,7 +27,7 @@ public:
 	Object* GetParent() const { return _Parent; }
 
 	std::string GetComponentName() const { return _ComponentName; }
-	void SetComponentName(const std::string& name) { _ComponentName = name; }
+	void SetComponentName(std::string name) { _ComponentName = name; }
 
 	ComponentManager::COMPONENT_TYPE GetComponentType() const { return _Type; }
 	void SetComponentType(ComponentManager::COMPONENT_TYPE type) { _Type = type; }
