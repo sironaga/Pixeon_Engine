@@ -30,7 +30,6 @@ void SceneManger::Init(){
 		if (CreateAndRegisterScene(sceneName)){
 		}
 		else{
-			MessageBox(nullptr, "SceneManager‚É‚ÄInitƒGƒ‰[", "Error", MB_OK);
 		}
 	}
 

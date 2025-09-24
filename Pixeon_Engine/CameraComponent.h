@@ -15,6 +15,8 @@ public:
 
 	void DrawInspector() override;
 
+	void SaveToFile(std::ostream& out) override;
+	void LoadFromFile(std::istream& in) override;
 
 
 	DirectX::XMFLOAT4X4 GetViewMatrix(bool transpose = true);

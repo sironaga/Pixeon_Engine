@@ -1,3 +1,6 @@
+#include <fstream>
+#include <sstream>
+#include <iostream>
 #include "CameraComponent.h"
 #include "Object.h"
 
@@ -42,6 +45,26 @@ void CameraComponent::DrawInspector(){
 	if (ImGui::CollapsingHeader(EditrGUI::GetInstance()->ShiftJISToUTF8(label).c_str())) {
 
 	}
+}
+
+void CameraComponent::SaveToFile(std::ostream& out){
+	out << _Position.x << " " << _Position.y << " " << _Position.z << " ";
+	out << _Rotation.x << " " << _Rotation.y << " " << _Rotation.z << " ";
+	out << _Fixation.x << " " << _Fixation.y << " " << _Fixation.z << " ";
+	out << _Up.x << " " << _Up.y << " " << _Up.z << " ";
+	out << _FOV << " " << _AspectRatio << " " << _NearPlane << " " << _FarPlane << " ";
+	out << _radius << " ";
+	out << _IsKeyMove << " ";
+}
+
+void CameraComponent::LoadFromFile(std::istream& in){
+	in >> _Position.x >> _Position.y >> _Position.z;
+	in >> _Rotation.x >> _Rotation.y >> _Rotation.z;
+	in >> _Fixation.x >> _Fixation.y >> _Fixation.z;
+	in >> _Up.x >> _Up.y >> _Up.z;
+	in >> _FOV >> _AspectRatio >> _NearPlane >> _FarPlane;
+	in >> _radius;
+	in >> _IsKeyMove;
 }
 
 DirectX::XMFLOAT4X4 CameraComponent::GetViewMatrix(bool transpose){
