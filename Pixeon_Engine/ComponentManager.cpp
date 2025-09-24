@@ -35,7 +35,7 @@ Component* ComponentManager::AddComponent(Object* owner, COMPONENT_TYPE type){
 
 		break;
 	case ComponentManager::COMPONENT_TYPE::CAMERA:
-		owner->AddComponent<CameraComponent>();
+		component = owner->AddComponent<CameraComponent>();
 		break;
 	case ComponentManager::COMPONENT_TYPE::MAX:
 		MessageBox(nullptr, "—áŠO‚È’l‚Å‚·\nCode : CMMAX", "Error", MB_OK);
@@ -44,5 +44,5 @@ Component* ComponentManager::AddComponent(Object* owner, COMPONENT_TYPE type){
 		MessageBox(nullptr, "“o˜^‚³‚ê‚Ä‚¢‚Ü‚¹‚ñ\nCode CMFIND", "Error", MB_OK);
 		break;
 	}
-  
+	return component;
 }

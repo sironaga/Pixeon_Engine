@@ -1,0 +1,34 @@
+{
+    "Objects": [
+        {
+            "Components": [
+                {
+                    "Data": "5.5102e-38 5 5 1.10204e-38 8.44901e-39 9.09183e-39 0 5 0 0 1 0 1.0472 1.77778 0.3 1000 5 0 ",
+                    "Name": "CameraComponent",
+                    "Type": 0
+                }
+            ],
+            "Name": "NewObject",
+            "Transform": {
+                "Position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "Rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "Scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        }
+    ],
+    "SceneSettings": {
+        "Name": "SampleScene"
+    }
+}
