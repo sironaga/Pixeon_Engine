@@ -1,0 +1,56 @@
+// シーンクラス
+// オブジェクトなどの管理を行う
+
+#pragma once
+#include "CameraComponent.h"
+#include <string>
+#include <vector>
+#include <mutex>
+
+class Object;
+
+class Scene
+{
+public:
+	Scene() {}
+	virtual ~Scene();
+	virtual void Init();
+	virtual void BeginPlay();
+	virtual void EditUpdate();
+	virtual void PlayUpdate();
+	virtual void Draw();
+
+public: // オブジェクトの追加と削除
+	bool AddObject(Object* obj);
+public: // セーブとロード
+	void SaveToFile();
+	void LoadToFile();
+	void AddObjectLocal(Object* obj);
+	void RemoveObject(Object* obj);
+public: // Setter And Getter
+	void SetName(std::string name) { _name = name; }
+	std::string GetName() { return _name; }
+	// すべてのオブジェクトを取得
+	std::vector<Object*> GetObjects() { return _objects; }
+
+	CameraComponent* GetMainCamera() { return _MainCamera; }
+	void SetMainCamera(CameraComponent* camera) { _MainCamera = camera; }
+	int GetMainCameraNumber() { return _MainCameraNumber; }
+	void SetMainCameraNumber(int num) { _MainCameraNumber = num; }
+
+private://内部処理
+	void ProcessThreadSafeAdditions();
+
+private:
+	std::string _name = "DefaultScene";
+
+	std::vector<Object*> _objects;
+	std::vector<Object*> _SaveObjects;
+	std::vector<Object*> _ToBeRemoved;
+	std::vector<Object*> _ToBeAdded;
+	std::vector<Object*> _ToBeAddedBuffer;
+	std::mutex _mtx;
+	CameraComponent* _MainCamera = nullptr;
+	int _MainCameraNumber = -1;
+};
+
