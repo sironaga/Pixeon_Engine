@@ -58,6 +58,7 @@ private:
 	ID3D11ShaderResourceView* scriptIcon;
 	ID3D11ShaderResourceView* JsonIcon;
 	ID3D11ShaderResourceView* archiveIcon;
+	ID3D11ShaderResourceView* ExeIcon;
 
 private:
 	static EditrGUI* instance;

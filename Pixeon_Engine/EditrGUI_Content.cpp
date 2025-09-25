@@ -24,6 +24,7 @@ ImTextureID EditrGUI::GetAssetIcon(EditrGUI* gui, const std::string& name) {
     if (ext == ".cpp" || ext == ".h" || ext == ".cs") return (ImTextureID)scriptIcon;
 	if (ext == ".json") return (ImTextureID)JsonIcon;
 	if (ext == ".PixAssets") return (ImTextureID)archiveIcon;
+	if (ext == ".exe") return (ImTextureID)ExeIcon;
     return (ImTextureID)nullptr;
 }
 
