@@ -131,6 +131,9 @@
     <ClCompile Include="Geometry.cpp">
       <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
+    <ClCompile Include="ModelComponent.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -212,6 +215,9 @@
       <Filter>ソース ファイル\Other</Filter>
     </ClInclude>
     <ClInclude Include="Geometry.h">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelComponent.h">
       <Filter>ソース ファイル\Component</Filter>
     </ClInclude>
   </ItemGroup>

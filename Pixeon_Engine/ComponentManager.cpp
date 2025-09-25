@@ -2,6 +2,7 @@
 #include "Component.h"
 #include "CameraComponent.h"
 #include "Geometry.h"
+#include "ModelComponent.h"
 #include <Windows.h>
 
 ComponentManager* ComponentManager::_instance;
@@ -23,7 +24,7 @@ void ComponentManager::DestroyInstance(){
 void ComponentManager::Init(){
 	_ComponentName[(int)COMPONENT_TYPE::CAMERA]		= "Camera";
 	_ComponentName[(int)COMPONENT_TYPE::GEOMETRY]   = "Geometry";
-
+	_ComponentName[(int)COMPONENT_TYPE::MODEL]		= "Model";
 }
 
 Component* ComponentManager::AddComponent(Object* owner, COMPONENT_TYPE type){
@@ -42,6 +43,9 @@ Component* ComponentManager::AddComponent(Object* owner, COMPONENT_TYPE type){
 		break;
 	case ComponentManager::COMPONENT_TYPE::GEOMETRY:
 		component = owner->AddComponent<Geometry>();
+		break;
+	case ComponentManager::COMPONENT_TYPE::MODEL:
+		component = owner->AddComponent<ModelComponent>();
 		break;
 	case ComponentManager::COMPONENT_TYPE::MAX:
 		MessageBox(nullptr, "—áŠO‚È’l‚Å‚·\nCode : CMMAX", "Error", MB_OK);
