@@ -16,7 +16,13 @@ void EditrGUI::ShowInspector()
 {
     ImGui::Begin(ShiftJISToUTF8("インスペクター").c_str());
     if (SelectedObject){
-		ImGui::Text(ShiftJISToUTF8("オブジェクト名: %s").c_str(), SelectedObject->GetObjectName().c_str());
+		ImGui::Text(ShiftJISToUTF8("オブジェクト名:").c_str());
+		ImGui::SameLine();
+		char buf[256];
+		strcpy_s(buf, SelectedObject->GetObjectName().c_str());
+		if (ImGui::InputText(ShiftJISToUTF8("##オブジェクト名").c_str(), buf, sizeof(buf))) {
+			SelectedObject->SetObjectName(buf);
+		}
 		ImGui::Separator();
 		ImGui::BeginChild("InspectorChild", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 		if (ImGui::CollapsingHeader(ShiftJISToUTF8("Transform").c_str())) {
@@ -32,13 +38,36 @@ void EditrGUI::ShowInspector()
 			}
 		}
 		ImGui::Separator();
-		for (auto& comp : SelectedObject->GetComponents()) {
-			if (comp) 
+
+		int removeComponentIndex = -1;
+
+		auto components = SelectedObject->GetComponents();
+		for (int i = 0; i < components.size(); ++i) {
+			auto& comp = components[i];
+			if (comp)
 			{
 				comp->DrawInspector();
+
+				// コンポーネントごとに右クリックポップアップを割り当て
+				if (ImGui::BeginPopupContextItem(comp->GetComponentName().c_str())) {
+					ImGui::Text(ShiftJISToUTF8("コンポーネント:").c_str());
+					ImGui::SameLine();
+					ImGui::Text(ShiftJISToUTF8(comp->GetComponentName()).c_str());
+					ImGui::Separator();
+					if (ImGui::Button(ShiftJISToUTF8("削除").c_str())) {
+						SelectedObject->RemoveComponent(comp);
+						removeComponentIndex = i;
+						ImGui::CloseCurrentPopup();
+					}
+					ImGui::EndPopup();
+				}
 			}
 		}
 
+		// 削除処理
+		if (removeComponentIndex >= 0) {
+
+		}
 
 		//　コンポーネント追加UI
 		std::string ComponentList[(int)ComponentManager::COMPONENT_TYPE::MAX];
