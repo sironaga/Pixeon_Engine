@@ -52,6 +52,13 @@ private:
 	ID3D11ShaderResourceView* img;
 	ID3D11ShaderResourceView* Sound;
 	ID3D11ShaderResourceView* fbx;
+	ID3D11ShaderResourceView* sceneIcon;
+	ID3D11ShaderResourceView* folderIcon;
+	ID3D11ShaderResourceView* shaderIcon;
+	ID3D11ShaderResourceView* scriptIcon;
+	ID3D11ShaderResourceView* JsonIcon;
+	ID3D11ShaderResourceView* archiveIcon;
+
 private:
 	static EditrGUI* instance;
 	Object* SelectedObject = nullptr;
