@@ -286,3 +286,13 @@ void Geometry::Draw()
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
     context->Draw((UINT)m_lineVertices.size(), 0);
 }
+
+void Geometry::SaveToFile(std::ostream& out){
+
+
+}
+
+void Geometry::LoadFromFile(std::istream& in){
+
+
+}

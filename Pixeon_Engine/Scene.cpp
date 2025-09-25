@@ -261,14 +261,14 @@ void Scene::LoadToFile(){
 	}
 
 	// 登録されているメインカメラと同じ番号のカメラコンポーネントを探す
-	for (auto& obj : _objects) {
+	for (auto& obj : _ToBeAdded) {
 		if (!obj) continue;
 		for (auto& comp : obj->GetComponents()) {
 			if (!comp) continue;
 			if (comp->GetComponentType() == ComponentManager::COMPONENT_TYPE::CAMERA) {
 				CameraComponent* cam = dynamic_cast<CameraComponent*>(comp);
 				if (cam->GetCameraNumber() == _MainCameraNumber) {
-					_MainCamera = cam;
+					SetMainCamera(cam);
 					break;
 				}
 			}

@@ -15,6 +15,9 @@ public:
     void DrawInspector() override;
     void Draw() override;
 
+    void SaveToFile(std::ostream& out) override;
+    void LoadFromFile(std::istream& in) override;
+
     float m_gridSize = 1.0f;
     int   m_gridCount = 10;
     DirectX::XMFLOAT4 m_gridColor = { 0.3f, 0.8f, 0.3f, 1.0f };

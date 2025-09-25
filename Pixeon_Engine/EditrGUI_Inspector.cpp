@@ -46,7 +46,7 @@ void EditrGUI::ShowInspector()
 			ComponentList[i] = ComponentManager::GetInstance()->GetComponentName((ComponentManager::COMPONENT_TYPE)i);
 		}
 		static int CurrentComponent = 0;
-		ImGui::Combo(ShiftJISToUTF8("コンポーネント追加").c_str(), &CurrentComponent, [](void* data, int idx, const char** out_text) {
+		ImGui::Combo(ShiftJISToUTF8("##Component追加").c_str(), &CurrentComponent, [](void* data, int idx, const char** out_text) {
 			std::string* items = (std::string*)data;
 			if (out_text) { *out_text = items[idx].c_str(); }
 			return true;

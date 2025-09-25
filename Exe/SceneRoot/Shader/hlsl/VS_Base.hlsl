@@ -6,18 +6,19 @@ cbuffer CameraCB : register(b0)
 };
 
 struct VS_INPUT {
-    float3 pos : POSITION;
+    float3 pos   : POSITION;
     float4 color : COLOR0;
 };
 struct VS_OUTPUT {
-    float4 pos : SV_POSITION;
+    float4 pos   : SV_POSITION;
     float4 color : COLOR0;
 };
 VS_OUTPUT main(VS_INPUT input) {
-    VS_OUTPUT output;
-    float4 worldPos = mul(float4(input.pos, 1.0f), world);
-    float4 viewPos = mul(worldPos, view);
-    output.pos = mul(viewPos, proj);
-    output.color = input.color;
-    return output;
+    VS_OUTPUT o;
+    float4 p = float4(input.pos, 1.0f);
+    p = mul(p, world);
+    p = mul(p, view);
+    o.pos = mul(p, proj);
+    o.color = input.color;
+    return o;
 }
