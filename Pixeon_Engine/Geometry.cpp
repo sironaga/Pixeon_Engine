@@ -287,12 +287,32 @@ void Geometry::Draw()
     context->Draw((UINT)m_lineVertices.size(), 0);
 }
 
+// Geometryのセーブ
 void Geometry::SaveToFile(std::ostream& out){
-
-
+    out << m_gridSize << " " << m_gridCount << " "
+        << m_gridColor.x << " " << m_gridColor.y << " " << m_gridColor.z << " " << m_gridColor.w << " "
+        << m_cubeCenter.x << " " << m_cubeCenter.y << " " << m_cubeCenter.z << " "
+        << m_cubeSize << " "
+        << m_cubeColor.x << " " << m_cubeColor.y << " " << m_cubeColor.z << " " << m_cubeColor.w << " "
+        << m_selectedVS << " "
+		<< m_selectedPS << "\n";
 }
-
+// Geometryのロード
 void Geometry::LoadFromFile(std::istream& in){
-
-
+    in >> m_gridSize >> m_gridCount
+        >> m_gridColor.x >> m_gridColor.y >> m_gridColor.z >> m_gridColor.w
+        >> m_cubeCenter.x >> m_cubeCenter.y >> m_cubeCenter.z
+        >> m_cubeSize
+        >> m_cubeColor.x >> m_cubeColor.y >> m_cubeColor.z >> m_cubeColor.w
+        >> m_selectedVS
+        >> m_selectedPS;
+    m_needsUpdate = true;
+    UpdateGridVertices();
+    UpdateCubeVertices();
+    UpdateVertexBuffer();
+    m_vsShader = ShaderManager::GetInstance()->GetVertexShader(m_selectedVS);
+    m_psShader = ShaderManager::GetInstance()->GetPixelShader(m_selectedPS);
+    _selectNowVS = m_selectedVS;
+    _selectNowPS = m_selectedPS;
+	RebuildInputLayoutForCurrentVS();
 }
