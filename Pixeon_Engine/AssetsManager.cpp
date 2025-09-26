@@ -76,3 +76,43 @@ void PreloadRecursive(const std::string& root, const std::vector<std::string>& e
         // アクセス不可は無視
     }
 }
+
+AssetWatcher::AssetWatcher(const std::string& dir, Callback onChange)
+    : m_dir(dir), m_callback(onChange), m_running(false) {
+}
+
+AssetWatcher::~AssetWatcher() {
+    Stop();
+}
+
+void AssetWatcher::Start() {
+    if (m_running) return;
+    m_running = true;
+    m_thread = std::thread(&AssetWatcher::WatchThread, this);
+}
+
+void AssetWatcher::Stop() {
+    m_running = false;
+    if (m_thread.joinable()) m_thread.join();
+}
+
+void AssetWatcher::WatchThread() {
+    HANDLE hChange = FindFirstChangeNotificationA(
+        m_dir.c_str(), TRUE, FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE);
+    if (hChange == INVALID_HANDLE_VALUE) return;
+
+    while (m_running) {
+        DWORD wait = WaitForSingleObject(hChange, 500);
+        if (wait == WAIT_OBJECT_0) {
+            // フォルダ内の全ファイルをチェック
+            for (const auto& entry : std::filesystem::directory_iterator(m_dir)) {
+                if (entry.is_regular_file()) {
+                    if (m_callback) m_callback(entry.path().string()); // ファイルパスをコールバック
+                }
+            }
+            FindNextChangeNotification(hChange);
+        }
+    }
+    FindCloseChangeNotification(hChange);
+}
+
