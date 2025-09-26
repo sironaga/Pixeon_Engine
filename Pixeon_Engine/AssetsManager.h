@@ -49,6 +49,30 @@ private:
 
 void PreloadRecursive(const std::string& root, const std::vector<std::string>& extsLower);
 
+
+#include <functional>
+#include <thread>
+#include <atomic>
+
+class AssetWatcher {
+public:
+    using Callback = std::function<void(const std::string& file)>;
+
+    AssetWatcher(const std::string& dir, Callback onChange);
+    ~AssetWatcher();
+
+    void Start();
+    void Stop();
+
+private:
+    void WatchThread();
+
+    std::string m_dir;
+    Callback m_callback;
+    std::atomic<bool> m_running;
+    std::thread m_thread;
+};
+
 #include <string>
 #include <filesystem>
 #include "SettingManager.h"
