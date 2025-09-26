@@ -131,6 +131,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFeedbackSystem.h" />
+    <ClInclude Include="ArchiveFormat.h" />
     <ClInclude Include="AssetsManager.h" />
     <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="Component.h" />
@@ -139,6 +140,7 @@
     <ClInclude Include="EditrGUI.h" />
     <ClInclude Include="GameRenderTarget.h" />
     <ClInclude Include="Geometry.h" />
+    <ClInclude Include="HashUtill.h" />
     <ClInclude Include="IMGUI\imconfig.h" />
     <ClInclude Include="IMGUI\imgui.h" />
     <ClInclude Include="IMGUI\imgui_impl_dx11.h" />
@@ -170,6 +172,7 @@
     <ClCompile Include="EditrGUI_Inspector.cpp" />
     <ClCompile Include="GameRenderTarget.cpp" />
     <ClCompile Include="Geometry.cpp" />
+    <ClCompile Include="HashUtill.cpp" />
     <ClCompile Include="IMGUI\imgui.cpp" />
     <ClCompile Include="IMGUI\imgui_demo.cpp" />
     <ClCompile Include="IMGUI\imgui_draw.cpp" />

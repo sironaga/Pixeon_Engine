@@ -51,6 +51,9 @@
     <Filter Include="ソース ファイル\Component">
       <UniqueIdentifier>{27dfb793-5b5a-4ad2-aafd-2cbf1dbe4f30}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\Archive">
+      <UniqueIdentifier>{694d96e6-a20e-4058-8d62-c8138137cc42}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="content_Item.cpp">
@@ -130,6 +133,9 @@
     </ClCompile>
     <ClCompile Include="Geometry.cpp">
       <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="HashUtill.cpp">
+      <Filter>ソース ファイル\Archive</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -213,6 +219,12 @@
     </ClInclude>
     <ClInclude Include="Geometry.h">
       <Filter>ソース ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="ArchiveFormat.h">
+      <Filter>ソース ファイル\Archive</Filter>
+    </ClInclude>
+    <ClInclude Include="HashUtill.h">
+      <Filter>ソース ファイル\Archive</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
