@@ -3,7 +3,7 @@
 #include "ModelRuntimeResource.h"
 #include "ModelAnimationController.h"
 #include "ShaderManager.h"
-#include "AssetsManager.h"          // NEW: キャッシュ列挙に利用
+#include "AssetsManager.h"
 #include <unordered_map>
 #include <deque>
 
@@ -49,9 +49,12 @@ private:
     void DrawSection_Parts();
     void DrawSection_Info();
 
-    // === NEW: メモリ展開済みモデル選択支援 ===
+    // キャッシュ済みモデル選択 UI
     void RefreshCachedModelAssetList(bool force = false);
     bool IsModelAsset(const std::string& name) const;
+
+    // エラーメッセージ表示
+    void ShowErrorMessage(const char* title, const std::string& msg);
 
 private:
     std::shared_ptr<ModelRuntimeResource> m_resource;
@@ -77,9 +80,11 @@ private:
     std::deque<std::string> m_cacheOrder;
     void TouchCacheOrder(const std::string& key);
 
-    // === NEW: モデルキャッシュ UI 状態 ===
-    std::vector<std::string> m_cachedModelAssets;  // メモリ展開済み（ListCachedAssets）からフィルタ
+    std::vector<std::string> m_cachedModelAssets;
     int  m_cachedAssetSelected = -1;
-    char m_modelFilter[64]{};                      // 部分一致フィルタ
-    double m_lastRefreshTime = 0.0;                // 自動リフレッシュ間隔制御用（任意）
+    char m_modelFilter[64]{};
+    double m_lastRefreshTime = 0.0;
+
+    // 選択保持用（インデックス再構築時の安定化）
+    std::string m_selectedCachedAssetName;
 };

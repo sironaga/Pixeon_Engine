@@ -40,20 +40,7 @@ static std::string GetLowerExt(const std::string& path) {
 // 監視変更コールバック
 void OnAssetChanged(const std::string& filepath) {
     // 個別ファイルを再キャッシュ
-    AssetsManager::GetInstance()->CacheAsset(filepath);
-
-    // 必要なら以下のように親ディレクトリ単位で再帰プリロードも可能
-    // std::string parent = std::filesystem::path(filepath).parent_path().string();
-    // PreloadRecursive(parent, kPreloadExts);
-}
-
-// 既存: 直下のみのキャッシュ関数（再帰版導入で不要なら削除可）
-void CacheAllAssetsOnStartup(const std::string& assetsDir) {
-    for (const auto& entry : std::filesystem::directory_iterator(assetsDir)) {
-        if (entry.is_regular_file()) {
-            AssetsManager::GetInstance()->CacheAsset(entry.path().string());
-        }
-    }
+    AssetsManager::GetInstance()->CacheAssetFullPath(filepath);
 }
 
 int Init(const EngineConfig& InPut) {
@@ -68,12 +55,6 @@ int Init(const EngineConfig& InPut) {
 
     // アセットマネージャ FromSource モード
     AssetsManager::GetInstance()->SetLoadMode(AssetsManager::LoadMode::FromSource);
-
-    // (旧) 誤ったディレクトリ指定の CacheAsset 呼び出しを削除
-    // AssetsManager::GetInstance()->CacheAsset(SettingManager::GetInstance()->GetAssetsFilePath());
-
-    // (旧) 直下のみキャッシュ → 再帰版と重複するためコメントアウト
-    // CacheAllAssetsOnStartup(SettingManager::GetInstance()->GetAssetsFilePath());
 
     // 新規: 再帰プリロード（起動時一括）
     {

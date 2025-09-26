@@ -10,13 +10,14 @@
 using namespace DirectX;
 
 constexpr size_t TEXCACHE_LIMIT = 256;
+
 static bool CaseInsensitiveEndsWith(const std::string& s, const std::string& ext) {
     if (s.size() < ext.size()) return false;
-    auto a = s.substr(s.size() - ext.size());
-    std::string al = a, el = ext;
-    std::transform(al.begin(), al.end(), al.begin(), ::tolower);
-    std::transform(el.begin(), el.end(), el.begin(), ::tolower);
-    return al == el;
+    std::string tail = s.substr(s.size() - ext.size());
+    std::transform(tail.begin(), tail.end(), tail.begin(), ::tolower);
+    std::string lExt = ext;
+    std::transform(lExt.begin(), lExt.end(), lExt.begin(), ::tolower);
+    return tail == lExt;
 }
 
 AdvancedModelComponent::AdvancedModelComponent() {
@@ -26,12 +27,15 @@ AdvancedModelComponent::AdvancedModelComponent() {
     m_unifiedPS = "PS_ModelPBR";
     for (int i = (int)MeshPartType::HEAD; i <= (int)MeshPartType::OTHER; ++i)
         m_partVisible[(MeshPartType)i] = true;
-
     m_modelFilter[0] = '\0';
 }
 
 AdvancedModelComponent::~AdvancedModelComponent() {
     Clear();
+}
+
+void AdvancedModelComponent::ShowErrorMessage(const char* title, const std::string& msg) {
+    MessageBoxA(nullptr, msg.c_str(), title, MB_ICONERROR | MB_OK);
 }
 
 void AdvancedModelComponent::Init(Object* Prt) { _Parent = Prt; }
@@ -44,36 +48,48 @@ void AdvancedModelComponent::Clear() {
     m_currentAsset.clear();
     m_cachedModelAssets.clear();
     m_cachedAssetSelected = -1;
+    m_selectedCachedAssetName.clear();
 }
 
 bool AdvancedModelComponent::LoadModel(const std::string& assetName, bool force) {
     if (m_loaded && !force && assetName == m_currentAsset) return true;
+
     Clear();
     m_resource = std::make_shared<ModelRuntimeResource>();
     if (!m_resource->LoadFromAsset(assetName)) {
+        ShowErrorMessage("Model Load Error", "[LoadModel] Asset 読み込み失敗: " + assetName);
         m_resource.reset();
         return false;
     }
     if (!m_resource->BuildGPU(DirectX11::GetInstance()->GetDevice())) {
+        ShowErrorMessage("Model GPU Error", "[LoadModel] GPU バッファ作成失敗: " + assetName);
         m_resource.reset();
         return false;
     }
+
     m_animCtrl.SetResource(m_resource);
     if (!m_resource->animations.empty()) {
-        m_animCtrl.Play(0, true, 1.0);
-        m_selectedClip = 0;
+        if (!m_animCtrl.Play(0, true, 1.0)) {
+            ShowErrorMessage("Animation Error", "[LoadModel] 最初のアニメーション再生に失敗");
+        }
+        else {
+            m_selectedClip = 0;
+        }
     }
     SetUnifiedShader(m_unifiedVS, m_unifiedPS);
-    ResolveAndLoadMaterialTextures();
+    if (!ResolveAndLoadMaterialTextures()) {
+        ShowErrorMessage("Material Load Warning", "[LoadModel] マテリアルテクスチャ解決の一部に失敗");
+    }
     ClassifySubMeshes();
     m_loaded = true;
     m_currentAsset = assetName;
 
-    // 再びキャッシュリストを更新して現在選択を同期
+    // 選択保持
     RefreshCachedModelAssetList(true);
     for (int i = 0; i < (int)m_cachedModelAssets.size(); ++i) {
         if (m_cachedModelAssets[i] == assetName) {
             m_cachedAssetSelected = i;
+            m_selectedCachedAssetName = assetName;
             break;
         }
     }
@@ -97,7 +113,7 @@ void AdvancedModelComponent::EnsureInputLayout(const std::string& vs) {
     if (vs.empty()) return;
     const void* bc = nullptr; size_t sz = 0;
     if (!ShaderManager::GetInstance()->GetVSBytecode(vs, &bc, &sz)) {
-        OutputDebugStringA(("[AdvModel] VS bytecode not found: " + vs + "\n").c_str());
+        ShowErrorMessage("Shader Error", "[EnsureInputLayout] VS Bytecode 未取得: " + vs);
         return;
     }
     auto dev = DirectX11::GetInstance()->GetDevice();
@@ -111,7 +127,7 @@ void AdvancedModelComponent::EnsureInputLayout(const std::string& vs) {
     };
     m_inputLayout.Reset();
     if (FAILED(dev->CreateInputLayout(desc, _countof(desc), bc, sz, m_inputLayout.GetAddressOf()))) {
-        OutputDebugStringA("[AdvModel] CreateInputLayout failed\n");
+        ShowErrorMessage("Shader Error", "[EnsureInputLayout] CreateInputLayout 失敗");
     }
 }
 
@@ -122,10 +138,10 @@ void AdvancedModelComponent::EditUpdate() {
     prev = now;
     UpdateAnimation(dt);
 
-    // 任意: 一定間隔で自動再取得したい場合（例: 5秒）
+    // 5 秒ごとの自動リスト再構築（選択保持対応）
     double tSec = std::chrono::duration<double>(now.time_since_epoch()).count();
     if (tSec - m_lastRefreshTime > 5.0) {
-        RefreshCachedModelAssetList();
+        RefreshCachedModelAssetList(false); // force=false で選択保持
         m_lastRefreshTime = tSec;
     }
 }
@@ -157,11 +173,15 @@ bool AdvancedModelComponent::PlayAnimation(const std::string& clipName, bool loo
     if (!m_resource) return false;
     for (int i = 0; i < (int)m_resource->animations.size(); i++) {
         if (m_resource->animations[i].name == clipName) {
-            m_animCtrl.Play(i, loop, speed);
+            if (!m_animCtrl.Play(i, loop, speed)) {
+                ShowErrorMessage("Animation Error", "[PlayAnimation] 再生に失敗: " + clipName);
+                return false;
+            }
             m_selectedClip = i;
             return true;
         }
     }
+    ShowErrorMessage("Animation Error", "[PlayAnimation] クリップが存在しません: " + clipName);
     return false;
 }
 
@@ -169,10 +189,14 @@ bool AdvancedModelComponent::BlendToAnimation(const std::string& clipName, doubl
     if (!m_resource) return false;
     for (int i = 0; i < (int)m_resource->animations.size(); i++) {
         if (m_resource->animations[i].name == clipName) {
-            m_animCtrl.BlendTo(i, duration, mode, loop, speed);
+            if (!m_animCtrl.BlendTo(i, duration, mode, loop, speed)) {
+                ShowErrorMessage("Animation Error", "[BlendToAnimation] ブレンド開始失敗: " + clipName);
+                return false;
+            }
             return true;
         }
     }
+    ShowErrorMessage("Animation Error", "[BlendToAnimation] クリップが存在しません: " + clipName);
     return false;
 }
 
@@ -192,7 +216,10 @@ void AdvancedModelComponent::TouchCacheOrder(const std::string& key) {
 
 bool AdvancedModelComponent::SetMaterialTexture(uint32_t matIdx, uint32_t slot, const std::string& assetName) {
     if (!m_resource) return false;
-    if (matIdx >= m_resource->materials.size()) return false;
+    if (matIdx >= m_resource->materials.size()) {
+        ShowErrorMessage("Material Error", "[SetMaterialTexture] material index 範囲外");
+        return false;
+    }
     auto& mat = m_resource->materials[matIdx];
     if (slot >= mat.textures.size()) mat.textures.resize(slot + 1);
 
@@ -205,31 +232,38 @@ bool AdvancedModelComponent::SetMaterialTexture(uint32_t matIdx, uint32_t slot, 
 
     std::vector<uint8_t> data;
     if (!AssetsManager::GetInstance()->LoadAsset(assetName, data)) {
-        OutputDebugStringA(("[AdvModel] Texture asset not found: " + assetName + "\n").c_str());
+        ShowErrorMessage("Material Error", "[SetMaterialTexture] テクスチャ資産取得失敗: " + assetName);
         return false;
     }
+
     DirectX::ScratchImage img;
     std::string ext;
     if (auto p = assetName.find_last_of('.'); p != std::string::npos) {
-        ext = assetName.substr(p + 1); std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        ext = assetName.substr(p + 1);
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
     }
     HRESULT hr;
-    if (ext == "dds") hr = LoadFromDDSMemory(data.data(), data.size(), DDS_FLAGS_NONE, nullptr, img);
-    else hr = LoadFromWICMemory(data.data(), data.size(), WIC_FLAGS_FORCE_SRGB, nullptr, img);
+    if (ext == "dds")
+        hr = LoadFromDDSMemory(data.data(), data.size(), DDS_FLAGS_NONE, nullptr, img);
+    else
+        hr = LoadFromWICMemory(data.data(), data.size(), WIC_FLAGS_FORCE_SRGB, nullptr, img);
+
     if (FAILED(hr)) {
-        OutputDebugStringA("[AdvModel] Decode failed\n");
+        ShowErrorMessage("Material Error", "[SetMaterialTexture] デコード失敗: " + assetName);
         return false;
     }
     if (img.GetMetadata().mipLevels <= 1) {
         ScratchImage mip;
-        if (SUCCEEDED(GenerateMipMaps(img.GetImages(), img.GetImageCount(), img.GetMetadata(), TEX_FILTER_DEFAULT, 0, mip))) {
+        if (SUCCEEDED(GenerateMipMaps(img.GetImages(), img.GetImageCount(), img.GetMetadata(),
+            TEX_FILTER_DEFAULT, 0, mip))) {
             img = std::move(mip);
         }
     }
     auto dev = DirectX11::GetInstance()->GetDevice();
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv;
-    if (FAILED(CreateShaderResourceView(dev, img.GetImages(), img.GetImageCount(), img.GetMetadata(), srv.GetAddressOf()))) {
-        OutputDebugStringA("[AdvModel] CreateSRV failed\n");
+    if (FAILED(CreateShaderResourceView(dev, img.GetImages(), img.GetImageCount(),
+        img.GetMetadata(), srv.GetAddressOf()))) {
+        ShowErrorMessage("Material Error", "[SetMaterialTexture] CreateSRV 失敗: " + assetName);
         return false;
     }
     m_texCache[assetName] = srv;
@@ -252,14 +286,16 @@ bool AdvancedModelComponent::ResolveAndLoadMaterialTextures() {
             std::string fileOnly = ts.originalPath;
             if (auto p = fileOnly.find_last_of("/\\"); p != std::string::npos)
                 fileOnly = fileOnly.substr(p + 1);
-            std::string lowerTarget = fileOnly; std::transform(lowerTarget.begin(), lowerTarget.end(), lowerTarget.begin(), ::tolower);
+            std::string lowerTarget = fileOnly;
+            std::transform(lowerTarget.begin(), lowerTarget.end(), lowerTarget.begin(), ::tolower);
 
             std::string resolved;
             for (auto& a : all) {
                 std::string f = a;
                 if (auto q = f.find_last_of("/\\"); q != std::string::npos)
                     f = f.substr(q + 1);
-                std::string lf = f; std::transform(lf.begin(), lf.end(), lf.begin(), ::tolower);
+                std::string lf = f;
+                std::transform(lf.begin(), lf.end(), lf.begin(), ::tolower);
                 if (lf == lowerTarget) { resolved = a; break; }
             }
             if (!resolved.empty()) {
@@ -294,7 +330,6 @@ void AdvancedModelComponent::ClassifySubMeshes() {
 }
 
 bool AdvancedModelComponent::IsModelAsset(const std::string& name) const {
-    // モデルとして扱う拡張子をここで列挙
     return CaseInsensitiveEndsWith(name, ".fbx")
         || CaseInsensitiveEndsWith(name, ".obj")
         || CaseInsensitiveEndsWith(name, ".gltf")
@@ -302,11 +337,9 @@ bool AdvancedModelComponent::IsModelAsset(const std::string& name) const {
 }
 
 void AdvancedModelComponent::RefreshCachedModelAssetList(bool force) {
-    // force=false かつ既に非空ならフィルタ文字変更のみで再生成も可
     auto cached = AssetsManager::GetInstance()->ListCachedAssets();
     std::vector<std::string> filtered;
-    std::string filter = m_modelFilter;
-    std::string lfilter = filter;
+    std::string lfilter = m_modelFilter;
     std::transform(lfilter.begin(), lfilter.end(), lfilter.begin(), ::tolower);
 
     for (auto& a : cached) {
@@ -319,15 +352,41 @@ void AdvancedModelComponent::RefreshCachedModelAssetList(bool force) {
         filtered.push_back(a);
     }
     std::sort(filtered.begin(), filtered.end());
+
+    // リスト変化判定（force またはサイズ/要素差異）
+    bool changed = force || (filtered.size() != m_cachedModelAssets.size());
+    if (!changed) {
+        for (size_t i = 0; i < filtered.size(); ++i) {
+            if (filtered[i] != m_cachedModelAssets[i]) { changed = true; break; }
+        }
+    }
+    if (!changed) return; // 変化なしなら何もしない
+
     m_cachedModelAssets = std::move(filtered);
 
-    // 選択インデックス再計算
-    m_cachedAssetSelected = -1;
-    for (int i = 0; i < (int)m_cachedModelAssets.size(); ++i) {
-        if (m_cachedModelAssets[i] == m_currentAsset) {
-            m_cachedAssetSelected = i;
-            break;
+    // 選択保持処理
+    int newIndex = -1;
+    if (!m_selectedCachedAssetName.empty()) {
+        for (int i = 0; i < (int)m_cachedModelAssets.size(); ++i) {
+            if (m_cachedModelAssets[i] == m_selectedCachedAssetName) {
+                newIndex = i;
+                break;
+            }
         }
+    }
+    // 新規ロード直後は m_currentAsset を優先
+    if (newIndex == -1 && !m_currentAsset.empty()) {
+        for (int i = 0; i < (int)m_cachedModelAssets.size(); ++i) {
+            if (m_cachedModelAssets[i] == m_currentAsset) {
+                newIndex = i;
+                m_selectedCachedAssetName = m_currentAsset;
+                break;
+            }
+        }
+    }
+    // 見つからなかった場合は従来インデックスを維持（存在しないなら自然に外れる）
+    if (newIndex != -1) {
+        m_cachedAssetSelected = newIndex;
     }
 }
 
@@ -419,7 +478,6 @@ void AdvancedModelComponent::DrawInspector() {
 void AdvancedModelComponent::DrawSection_Model() {
     if (!ImGui::CollapsingHeader("Model")) return;
 
-    // --- NEW: メモリ展開済みモデル選択 UI ---
     ImGui::TextUnformatted("[Cached Model Assets]");
     ImGui::SetNextItemWidth(150);
     if (ImGui::InputText("Filter", m_modelFilter, sizeof(m_modelFilter))) {
@@ -436,14 +494,12 @@ void AdvancedModelComponent::DrawSection_Model() {
     }
 
     if (m_cachedModelAssets.empty()) {
-        // 初回ロードがまだの場合 / キャッシュにモデルが無い
         if (ImGui::Button("ListCached")) {
             RefreshCachedModelAssetList(true);
         }
-        ImGui::TextUnformatted("（キャッシュ済みモデルなし / 先に AssetsManager::LoadAsset で読み込んでください）");
+        ImGui::TextUnformatted("キャッシュ済みモデルなし / AssetsManager::LoadAsset で読み込んでください");
     }
     else {
-        // Combo で選択
         std::string currentLabel = (m_cachedAssetSelected >= 0 && m_cachedAssetSelected < (int)m_cachedModelAssets.size()) ?
             m_cachedModelAssets[m_cachedAssetSelected] : "<select>";
         if (ImGui::BeginCombo("CachedModels", currentLabel.c_str())) {
@@ -451,6 +507,8 @@ void AdvancedModelComponent::DrawSection_Model() {
                 bool sel = (i == m_cachedAssetSelected);
                 if (ImGui::Selectable(m_cachedModelAssets[i].c_str(), sel)) {
                     m_cachedAssetSelected = i;
+                    if (i >= 0 && i < (int)m_cachedModelAssets.size())
+                        m_selectedCachedAssetName = m_cachedModelAssets[i]; // 選択保持文字列更新
                 }
                 if (sel) ImGui::SetItemDefaultFocus();
             }
@@ -460,7 +518,9 @@ void AdvancedModelComponent::DrawSection_Model() {
         bool canLoad = (m_cachedAssetSelected >= 0 && m_cachedAssetSelected < (int)m_cachedModelAssets.size());
         if (!canLoad) ImGui::BeginDisabled();
         if (ImGui::Button("Load Selected") && canLoad) {
-            LoadModel(m_cachedModelAssets[m_cachedAssetSelected], true);
+            if (!LoadModel(m_cachedModelAssets[m_cachedAssetSelected], true)) {
+                ShowErrorMessage("Model Load Error", "選択モデルのロードに失敗しました。");
+            }
         }
         if (!canLoad) ImGui::EndDisabled();
     }
@@ -469,11 +529,19 @@ void AdvancedModelComponent::DrawSection_Model() {
     ImGui::InputText("Asset", m_modelPathInput, sizeof(m_modelPathInput));
     ImGui::SameLine();
     if (ImGui::Button("Load Path")) {
-        if (m_modelPathInput[0]) LoadModel(m_modelPathInput, true);
+        if (m_modelPathInput[0]) {
+            if (!LoadModel(m_modelPathInput, true)) {
+                ShowErrorMessage("Model Load Error", "手動指定ロード失敗: " + std::string(m_modelPathInput));
+            }
+        }
     }
     ImGui::SameLine();
     if (ImGui::Button("Reload")) {
-        if (!m_currentAsset.empty()) LoadModel(m_currentAsset, true);
+        if (!m_currentAsset.empty()) {
+            if (!LoadModel(m_currentAsset, true)) {
+                ShowErrorMessage("Model Reload Error", "リロード失敗: " + m_currentAsset);
+            }
+        }
     }
     ImGui::Checkbox("Skinning", &m_enableSkinning);
 
@@ -549,7 +617,11 @@ void AdvancedModelComponent::DrawSection_Materials() {
                 if (input[0]) SetMaterialTexture((uint32_t)m_selectedMaterial, (uint32_t)i, input);
             }
             if (ImGui::Button("LoadInput")) {
-                if (input[0]) SetMaterialTexture((uint32_t)m_selectedMaterial, (uint32_t)i, input);
+                if (input[0]) {
+                    if (!SetMaterialTexture((uint32_t)m_selectedMaterial, (uint32_t)i, input)) {
+                        ShowErrorMessage("Material Error", "テクスチャ読み込み失敗: " + std::string(input));
+                    }
+                }
             }
             ImGui::SameLine();
             if (ImGui::Button("Clear")) {
@@ -567,7 +639,8 @@ void AdvancedModelComponent::DrawSection_Animation() {
         ImGui::TextUnformatted("No Clips");
         return;
     }
-    if (ImGui::BeginCombo("Clip", (m_selectedClip >= 0 && m_selectedClip < (int)m_resource->animations.size()) ?
+    if (ImGui::BeginCombo("Clip",
+        (m_selectedClip >= 0 && m_selectedClip < (int)m_resource->animations.size()) ?
         m_resource->animations[m_selectedClip].name.c_str() : "-")) {
         for (int i = 0; i < (int)m_resource->animations.size(); i++) {
             bool sel = (i == m_selectedClip);
