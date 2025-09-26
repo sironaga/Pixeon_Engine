@@ -8,12 +8,14 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <deque>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
 constexpr uint32_t MODEL_MAX_BONES = 512;
-constexpr uint32_t MODEL_MAX_INFLUENCES = 4; // シェーダ(uint4/float4)と整合
+constexpr uint32_t MODEL_MAX_INFLUENCES = 4;
+constexpr size_t   MODEL_TEXCACHE_LIMIT = 256; // 簡易 LRU 上限
 
 struct ModelVertex {
     DirectX::XMFLOAT3 position;
@@ -28,11 +30,9 @@ struct ModelMaterial {
     std::string vertexShader;
     std::string pixelShader;
     bool        overrideUnified = false;
-
     DirectX::XMFLOAT4 baseColor = { 1,1,1,1 };
     float metallic = 0.0f;
     float roughness = 0.8f;
-
     struct TextureSlot {
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv;
         std::string assetName;
@@ -62,14 +62,12 @@ struct BoneKeyFrame {
     DirectX::XMFLOAT4 r;
     DirectX::XMFLOAT3 s;
 };
-
 struct BoneAnimChannel {
     std::string boneName;
     std::vector<BoneKeyFrame> translations;
     std::vector<BoneKeyFrame> rotations;
     std::vector<BoneKeyFrame> scalings;
 };
-
 struct AnimationClip {
     std::string name;
     double duration = 0.0;
@@ -126,6 +124,9 @@ private:
     std::string NormalizeTexturePath(const std::string& raw, const std::string& modelDir);
     void ExtractMaterialColors(aiMaterial* aimat, ModelMaterial& outMat);
 
+    void EnsureFallbackWhiteTexture();
+    void InsertTextureCache(const std::string& key, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv);
+
 private:
     Microsoft::WRL::ComPtr<ID3D11Buffer>      m_vertexBuffer;
     Microsoft::WRL::ComPtr<ID3D11Buffer>      m_indexBuffer;
@@ -136,9 +137,9 @@ private:
     std::vector<SubMesh>       m_subMeshes;
     std::vector<ModelMaterial> m_materials;
 
-    std::vector<Bone>                    m_bones;
-    std::unordered_map<std::string, int>  m_boneNameToIndex;
-    DirectX::XMMATRIX                    m_finalBoneMatrices[MODEL_MAX_BONES]{};
+    std::vector<Bone>                   m_bones;
+    std::unordered_map<std::string, int> m_boneNameToIndex;
+    DirectX::XMMATRIX                   m_finalBoneMatrices[MODEL_MAX_BONES]{};
 
     std::vector<AnimationClip> m_clips;
     int     m_currentClip = -1;
@@ -152,13 +153,12 @@ private:
     std::string m_unifiedVS;
     std::string m_unifiedPS;
 
-    // Inspector 入力系
+    // Inspector
     char m_modelAssetInput[260] = "";
     char m_modelSearch[64] = "";
     char m_newTextureName[260] = "";
     int  m_selectedAnimIndex = -1;
     int  m_selectedMaterial = 0;
-
     std::string m_currentModelAsset;
 
     // IK
@@ -167,6 +167,9 @@ private:
     int   m_ikIterations = 5;
     float m_ikThresholdDeg = 0.5f;
 
-    // テクスチャキャッシュ
+    // テクスチャキャッシュ (LRU 保持)
     std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> m_textureCache;
+    std::deque<std::string> m_cacheOrder;
+
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_fallbackWhite; // フォールバック用
 };
