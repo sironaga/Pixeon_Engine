@@ -1,0 +1,87 @@
+ModelComponent テクスチャ未反映問題の分析結果
+=================================================
+
+問題の概要:
+ModelComponentにおいて、モデルは正常に描画されるがテクスチャが反映されない。
+
+【特定した問題点】
+
+1. **LoadTextureFromAsset関数の実装不完全 (ModelComponent.cpp:358-380)**
+   - 問題箇所: 
+     ```cpp
+     // TODO: DirectXTex の CreateShaderResourceView を使用
+     // hr = CreateShaderResourceView(device, img.GetImages(), img.GetImageCount(), img.GetMetadata(), outSRV.GetAddressOf());
+     return true;
+     ```
+   - 問題の内容: 
+     * DirectXTexを使用してScratchImageは正常に作成されているが、肝心のID3D11ShaderResourceViewの作成がコメントアウトされている
+     * 関数は常にtrueを返すが、実際にはoutSRVパラメータに何も設定されていない
+     * 結果として、テクスチャデータは読み込まれるがGPUで使用可能なリソースに変換されていない
+
+2. **Assimpマテリアルからのテクスチャ情報抽出の未実装 (ModelComponent.cpp:132-142)**
+   - 問題箇所:
+     ```cpp
+     for (uint32_t i = 0; i < scene->mNumMaterials; ++i) {
+         aiMaterial* aimat = scene->mMaterials[i];
+         ModelMaterial mat;
+         mat.baseColor = XMFLOAT4(1, 1, 1, 1);
+         mat.metallic = 0.0f;
+         mat.roughness = 0.8f;
+         // Diffuse テクスチャ一覧は後でGUIから設定するとする
+         m_materials[i] = std::move(mat);
+     }
+     ```
+   - 問題の内容:
+     * Assimpのaimaterialからテクスチャパス情報を取得する処理が実装されていない
+     * Diffuseテクスチャの自動読み込みが行われていない
+     * マテリアルのテクスチャスロットが空のまま残される
+
+3. **利用可能なテクスチャローディング機能の未使用**
+   - DirectXTex/TextureLoad.hに完全なLoadTextureFromFile関数が提供されているが活用されていない
+   - AssetsManagerは正常に動作しているが、テクスチャの最終的なSRV作成段階で失敗している
+
+【修正案】
+
+1. **LoadTextureFromAsset関数の修正**
+   ```cpp
+   // TODO部分を以下のように実装:
+   hr = DirectX::CreateShaderResourceView(device, img.GetImages(), img.GetImageCount(), img.GetMetadata(), outSRV.GetAddressOf());
+   return SUCCEEDED(hr);
+   ```
+
+2. **Assimpマテリアル処理の改善**
+   ```cpp
+   for (uint32_t i = 0; i < scene->mNumMaterials; ++i) {
+       aiMaterial* aimat = scene->mMaterials[i];
+       ModelMaterial mat;
+       // ... 既存のコード ...
+       
+       // Diffuseテクスチャの自動読み込み
+       aiString path;
+       if (aimat->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS) {
+           std::string texPath = path.C_Str();
+           // パス処理とSetMaterialTexture呼び出し
+           SetMaterialTexture(i, 0, texPath);
+       }
+       m_materials[i] = std::move(mat);
+   }
+   ```
+
+3. **シェーダーでの適切な処理確認**
+   - PS_ModelSkin.hlslでは UseBaseTex フラグによる分岐処理は正しく実装されている
+   - CBuffer設定とSRVバインディングも適切に行われている
+
+【影響範囲】
+- ModelComponent::LoadTextureFromAsset()
+- ModelComponent::ImportAssimpScene()  
+- ModelComponent::SetMaterialTexture()は正常に動作
+
+【優先度】
+高 - テクスチャが表示されないのは視覚的に重大な問題
+
+【検証方法】
+1. LoadTextureFromAsset関数のTODO部分を実装
+2. Assimpマテリアルからのテクスチャパス取得を実装
+3. サンプルモデル（FBXファイル）とテクスチャで動作確認
+
+この修正により、モデルに適切にテクスチャが適用されるようになると予想される。
