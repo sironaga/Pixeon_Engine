@@ -1,0 +1,112 @@
+ModelComponent テクスチャ適用問題の分析結果
+================================================================
+
+問題の概要:
+モデルにテクスチャが適用されない原因について、コード分析を行った結果、以下の複数の問題点が特定されました。
+
+主要な問題点:
+================================================================
+
+1. 【CRITICAL】シェーダーファイルの不整合
+   問題: ModelComponent.cpp Line 126で「PS_ModelPBR」シェーダーを指定しているが、実際には「PS_ModelSkin.hlsl」ファイルしか存在しない
+   
+   現在のコード:
+   ```cpp
+   m_unifiedVS = "VS_ModelSkin";
+   m_unifiedPS = "PS_ModelPBR";  // ← このファイルが存在しない
+   ```
+   
+   影響: ピクセルシェーダーのロードに失敗し、テクスチャが適用されない
+   場所: ModelComponent.cpp:126
+
+2. 【HIGH】Assimpテクスチャパス処理の問題
+   問題: NormalizeTexturePath関数でテクスチャパスを正規化しているが、モデルディレクトリの取得が不完全
+   
+   現在のコード:
+   ```cpp
+   std::string modelDir;
+   if (auto pos = assetName.find_last_of("/\\"); pos != std::string::npos)
+       modelDir = assetName.substr(0, pos);
+   ```
+   
+   影響: 相対パスのテクスチャファイルが正しく見つからない
+   場所: ModelComponent.cpp:177
+
+3. 【HIGH】テクスチャロード失敗時のフォールバック処理不足
+   問題: LoadTextureFromAsset関数でテクスチャロードに失敗した場合、SetMaterialTextureがfalseを返すだけで、デフォルトテクスチャの設定がない
+   
+   現在のコード:
+   ```cpp
+   if (!LoadTextureFromAsset(assetName, srv)) {
+       OutputDebugStringA(("[ModelComponent] SetMaterialTexture failed: " + assetName + "\n").c_str());
+       return false;  // ← フォールバック処理なし
+   }
+   ```
+   
+   影響: テクスチャが見つからない場合に完全に描画に失敗する
+   場所: ModelComponent.cpp:476-478
+
+4. 【MEDIUM】シェーダーリソースビューの設定タイミング問題
+   問題: Draw()関数内でテクスチャのSRVを設定しているが、UseBaseTexフラグとSRVの設定に不整合がある可能性
+   
+   現在のコード:
+   ```cpp
+   UINT useBase = (!mat.textures.empty() && mat.textures[0].srv) ? 1u : 0u;
+   // ...
+   if (!mat.textures.empty()) {
+       // SRVの設定
+   }
+   ```
+   
+   影響: テクスチャは存在するがSRVがnullの場合の処理が不完全
+   場所: ModelComponent.cpp:678-688
+
+5. 【MEDIUM】AssetsManagerのロードモード依存性
+   問題: LoadAsset関数がFromSourceモードでファイルが見つからない場合のエラーハンドリングが不十分
+   
+   現在のコード:
+   ```cpp
+   if (!file) {
+       std::string dbg = "[AssetsManager] Open failed: " + full + "\n";
+       OutputDebugStringA(dbg.c_str());
+       return false;
+   }
+   ```
+   
+   影響: デバッグ出力のみでアプリケーション層に詳細なエラー情報が伝わらない
+   場所: AssetsManager.cpp:70-73
+
+6. 【LOW】テクスチャキャッシュのメモリ管理
+   問題: m_textureCache が無制限に蓄積される可能性がある
+   
+   影響: 長時間実行時のメモリリーク
+   場所: ModelComponent.h:171
+
+推奨される修正順序:
+================================================================
+
+1. CRITICAL問題の修正:
+   - PS_ModelPBRシェーダーファイルの作成、または既存のPS_ModelSkinへの変更
+
+2. HIGH問題の修正:
+   - テクスチャパス解決の改善
+   - デフォルトテクスチャのフォールバック機能追加
+
+3. MEDIUM問題の修正:
+   - シェーダーリソースの設定ロジック改善
+   - エラーハンドリングの強化
+
+根本的な原因:
+================================================================
+最も重要な問題は、存在しないPS_ModelPBRシェーダーを参照していることです。
+これにより、ピクセルシェーダーのロードに失敗し、結果的にテクスチャが適用されません。
+
+テスト用の確認方法:
+================================================================
+1. DebugViewでOutputDebugStringAの出力を確認
+2. シェーダーファイルの存在確認
+3. AssetsManagerのロードモードの確認
+4. テクスチャファイルパスの確認
+
+作成日: 2024年12月19日
+分析者: GitHub Copilot Coding Agent
