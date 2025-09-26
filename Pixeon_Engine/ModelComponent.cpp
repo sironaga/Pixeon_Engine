@@ -35,7 +35,7 @@
 
 using namespace DirectX;
 
-// ---------- ヘルパ ----------
+// ---------- ユーティリティ ----------
 static XMMATRIX AiToXM(const aiMatrix4x4& m) {
     return XMMATRIX(
         (float)m.a1, (float)m.b1, (float)m.c1, (float)m.d1,
@@ -90,12 +90,17 @@ void ModelComponent::ClearModel() {
 }
 
 bool ModelComponent::LoadModelFromAsset(const std::string& assetName, bool forceReload) {
-    if (m_modelLoaded && !forceReload && assetName == m_currentModelAsset) return true;
+    if (m_modelLoaded && !forceReload && assetName == m_currentModelAsset)
+        return true;
 
     ClearModel();
 
     std::vector<uint8_t> data;
-    if (!AssetsManager::GetInstance()->LoadAsset(assetName, data)) return false;
+    if (!AssetsManager::GetInstance()->LoadAsset(assetName, data)) {
+        std::string dbg = "[ModelComponent] LoadModelFromAsset failed asset=" + assetName + "\n";
+        OutputDebugStringA(dbg.c_str());
+        return false;
+    }
 
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFileFromMemory(
@@ -109,8 +114,14 @@ bool ModelComponent::LoadModelFromAsset(const std::string& assetName, bool force
         aiProcess_SortByPType |
         aiProcess_GlobalScale
     );
-    if (!scene || !scene->mRootNode) return false;
-    if (!ImportAssimpScene(assetName, scene)) return false;
+    if (!scene || !scene->mRootNode) {
+        OutputDebugStringA("[ModelComponent] Assimp ReadFileFromMemory failed\n");
+        return false;
+    }
+    if (!ImportAssimpScene(assetName, scene)) {
+        OutputDebugStringA("[ModelComponent] ImportAssimpScene failed\n");
+        return false;
+    }
 
     BuildBuffers();
     m_modelLoaded = true;
@@ -128,8 +139,237 @@ bool ModelComponent::LoadModelFromAsset(const std::string& assetName, bool force
     return true;
 }
 
+// ---------- マテリアル情報 / テクスチャ取得ヘルパ ----------
+void ModelComponent::GetMaterialColorFactors(aiMaterial* aimat, ModelMaterial& outMat)
+{
+    if (!aimat) return;
+    aiColor4D col;
+#ifdef AI_MATKEY_BASE_COLOR
+    if (AI_SUCCESS == aimat->Get(AI_MATKEY_BASE_COLOR, col)) {
+        outMat.baseColor = XMFLOAT4(col.r, col.g, col.b, col.a);
+    }
+    else
+#endif
+        if (AI_SUCCESS == aimat->Get(AI_MATKEY_COLOR_DIFFUSE, col)) {
+            outMat.baseColor = XMFLOAT4(col.r, col.g, col.b, col.a);
+        }
+#ifdef AI_MATKEY_METALLIC_FACTOR
+    float metallic = 0.f;
+    if (AI_SUCCESS == aimat->Get(AI_MATKEY_METALLIC_FACTOR, metallic))
+        outMat.metallic = metallic;
+#endif
+#ifdef AI_MATKEY_ROUGHNESS_FACTOR
+    float roughness = 0.f;
+    if (AI_SUCCESS == aimat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness))
+        outMat.roughness = roughness;
+#endif
+}
+
+std::string ModelComponent::NormalizeTexturePath(const std::string& rawPath, const std::string& modelDir)
+{
+    if (rawPath.empty()) return rawPath;
+    if (rawPath[0] == '*') return rawPath; // 埋め込み
+
+    std::string p = rawPath;
+    std::replace(p.begin(), p.end(), '\\', '/');
+
+    // 絶対パスならそのまま
+    if (!p.empty()) {
+        if (p[0] == '/' || (p.size() > 2 && p[1] == ':')) return p;
+    }
+
+    if (!modelDir.empty()) {
+        if (p.rfind(modelDir + "/", 0) == 0) return p;
+        return modelDir + "/" + p;
+    }
+    return p;
+}
+
+bool ModelComponent::TryLoadMaterialTexture(uint32_t matIndex, uint32_t slot, const std::string& texRelPath)
+{
+    if (texRelPath.empty()) return false;
+    return SetMaterialTexture(matIndex, slot, texRelPath);
+}
+
+bool ModelComponent::CreateSRVFromRawRGBA(const uint8_t* pixels, uint32_t width, uint32_t height,
+    DXGI_FORMAT fmt, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& outSRV)
+{
+    if (!pixels || width == 0 || height == 0) return false;
+    ID3D11Device* dev = DirectX11::GetInstance()->GetDevice();
+    if (!dev) return false;
+
+    D3D11_TEXTURE2D_DESC desc{};
+    desc.Width = width;
+    desc.Height = height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = fmt;
+    desc.SampleDesc.Count = 1;
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    D3D11_SUBRESOURCE_DATA init{};
+    init.pSysMem = pixels;
+    init.SysMemPitch = width * 4;
+
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> tex;
+    HRESULT hr = dev->CreateTexture2D(&desc, &init, tex.GetAddressOf());
+    if (FAILED(hr)) return false;
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvd{};
+    srvd.Format = desc.Format;
+    srvd.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvd.Texture2D.MipLevels = 1;
+    hr = dev->CreateShaderResourceView(tex.Get(), &srvd, outSRV.GetAddressOf());
+    return SUCCEEDED(hr);
+}
+
+bool ModelComponent::CreateSRVFromCompressed(const uint8_t* data, size_t size, const char* formatHint,
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& outSRV)
+{
+    if (!data || size == 0) return false;
+    ScratchImage img;
+    HRESULT hr = E_FAIL;
+    std::string hint = (formatHint ? formatHint : "");
+    std::transform(hint.begin(), hint.end(), hint.begin(), ::tolower);
+
+    if (hint == "dds")
+        hr = LoadFromDDSMemory(data, size, DDS_FLAGS_NONE, nullptr, img);
+    else if (hint == "tga")
+        hr = LoadFromTGAMemory(data, size, nullptr, img);
+    else
+        hr = LoadFromWICMemory(data, size, WIC_FLAGS_FORCE_SRGB, nullptr, img);
+
+    if (FAILED(hr)) return false;
+
+    if (img.GetMetadata().mipLevels <= 1) {
+        ScratchImage mip;
+        if (SUCCEEDED(GenerateMipMaps(img.GetImages(), img.GetImageCount(),
+            img.GetMetadata(), TEX_FILTER_DEFAULT, 0, mip)))
+            img = std::move(mip);
+    }
+
+    hr = CreateShaderResourceView(DirectX11::GetInstance()->GetDevice(),
+        img.GetImages(), img.GetImageCount(), img.GetMetadata(), outSRV.GetAddressOf());
+    return SUCCEEDED(hr);
+}
+
+bool ModelComponent::TryLoadEmbeddedTexture(uint32_t matIndex, uint32_t slot, const aiTexture* aitex,
+    const std::string& cacheKey, const char* formatHint)
+{
+    if (!aitex) return false;
+    // キャッシュ
+    auto it = m_textureCache.find(cacheKey);
+    if (it != m_textureCache.end()) {
+        if (slot >= m_materials[matIndex].textures.size())
+            m_materials[matIndex].textures.resize(slot + 1);
+        m_materials[matIndex].textures[slot].srv = it->second;
+        m_materials[matIndex].textures[slot].assetName = cacheKey;
+        return true;
+    }
+
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv;
+    if (aitex->mHeight == 0) {
+        // 圧縮
+        if (!CreateSRVFromCompressed(reinterpret_cast<const uint8_t*>(aitex->pcData),
+            aitex->mWidth, aitex->achFormatHint, srv))
+        {
+            OutputDebugStringA("[ModelComponent] Embedded compressed texture load failed\n");
+            return false;
+        }
+    }
+    else {
+        // 非圧縮 (aiTexel は RGBA もしくは BGRA。Assimp ドキュメント参照。ここでは RGBA として扱う)
+        std::vector<uint8_t> rgba;
+        rgba.resize((size_t)aitex->mWidth * aitex->mHeight * 4);
+        for (uint32_t i = 0; i < (uint32_t)(aitex->mWidth * aitex->mHeight); ++i) {
+            const aiTexel& t = aitex->pcData[i];
+            rgba[i * 4 + 0] = t.r;
+            rgba[i * 4 + 1] = t.g;
+            rgba[i * 4 + 2] = t.b;
+            rgba[i * 4 + 3] = t.a;
+        }
+        if (!CreateSRVFromRawRGBA(rgba.data(), (uint32_t)aitex->mWidth, aitex->mHeight,
+            DXGI_FORMAT_R8G8B8A8_UNORM, srv))
+        {
+            OutputDebugStringA("[ModelComponent] Embedded raw texture create failed\n");
+            return false;
+        }
+    }
+
+    m_textureCache[cacheKey] = srv;
+    if (slot >= m_materials[matIndex].textures.size())
+        m_materials[matIndex].textures.resize(slot + 1);
+    m_materials[matIndex].textures[slot].srv = srv;
+    m_materials[matIndex].textures[slot].assetName = cacheKey;
+    return true;
+}
+
+bool ModelComponent::AcquireMaterialTextures(uint32_t matIndex, aiMaterial* aimat, const aiScene* scene, const std::string& modelDir)
+{
+    if (!aimat) return false;
+
+    auto loadOne = [&](aiTextureType type, uint32_t slot, const char* tag) {
+        if (aimat->GetTextureCount(type) > 0) {
+            aiString path;
+            if (AI_SUCCESS == aimat->GetTexture(type, 0, &path)) {
+                std::string p = path.C_Str();
+                if (!p.empty() && p[0] == '*') {
+                    const aiTexture* aitex = scene->GetEmbeddedTexture(p.c_str());
+                    std::string key = "embedded:" + std::to_string(matIndex) + ":" + p;
+                    if (!TryLoadEmbeddedTexture(matIndex, slot, aitex, key, aitex ? aitex->achFormatHint : "")) {
+                        std::string dbg = "[ModelComponent] Embedded texture load failed tag=" + std::string(tag) + "\n";
+                        OutputDebugStringA(dbg.c_str());
+                    }
+                }
+                else {
+                    p = NormalizeTexturePath(p, modelDir);
+                    if (!TryLoadMaterialTexture(matIndex, slot, p)) {
+                        std::string dbg = "[ModelComponent] Texture load failed slot=" + std::to_string(slot) + " path=" + p + "\n";
+                        OutputDebugStringA(dbg.c_str());
+                    }
+                }
+            }
+        }
+        };
+
+    // Diffuse / BaseColor
+#ifdef AI_MATKEY_BASE_COLOR_TEXTURE
+    if (aimat->GetTextureCount(aiTextureType_BASE_COLOR) > 0)
+        loadOne(aiTextureType_BASE_COLOR, 0, "BaseColor");
+    else
+#endif
+        loadOne(aiTextureType_DIFFUSE, 0, "Diffuse");
+
+    // Normal
+    if (aimat->GetTextureCount(aiTextureType_NORMALS) > 0)
+        loadOne(aiTextureType_NORMALS, 1, "Normal");
+    else if (aimat->GetTextureCount(aiTextureType_HEIGHT) > 0)
+        loadOne(aiTextureType_HEIGHT, 1, "HeightAsNormal");
+
+#ifdef aiTextureType_METALNESS
+    if (aimat->GetTextureCount(aiTextureType_METALNESS) > 0)
+        loadOne(aiTextureType_METALNESS, 2, "Metalness");
+#endif
+#ifdef aiTextureType_DIFFUSE_ROUGHNESS
+    if (aimat->GetTextureCount(aiTextureType_DIFFUSE_ROUGHNESS) > 0)
+        loadOne(aiTextureType_DIFFUSE_ROUGHNESS, 2, "Roughness");
+#endif
+
+    loadOne(aiTextureType_EMISSIVE, 3, "Emissive");
+
+    return true;
+}
+
 // ---------- インポート ----------
 bool ModelComponent::ImportAssimpScene(const std::string& assetName, const aiScene* scene) {
+    // モデルの相対ディレクトリ
+    std::string modelDir;
+    {
+        auto pos = assetName.find_last_of("/\\");
+        if (pos != std::string::npos) modelDir = assetName.substr(0, pos);
+    }
+
     m_materials.resize(scene->mNumMaterials);
     for (uint32_t i = 0; i < scene->mNumMaterials; ++i) {
         aiMaterial* aimat = scene->mMaterials[i];
@@ -137,11 +377,17 @@ bool ModelComponent::ImportAssimpScene(const std::string& assetName, const aiSce
         mat.baseColor = XMFLOAT4(1, 1, 1, 1);
         mat.metallic = 0.0f;
         mat.roughness = 0.8f;
-        // Diffuse テクスチャ一覧は後で GUI から設定可能とする
+        GetMaterialColorFactors(aimat, mat);
         m_materials[i] = std::move(mat);
     }
+    // テクスチャ自動取得
+    for (uint32_t i = 0; i < scene->mNumMaterials; ++i) {
+        AcquireMaterialTextures(i, scene->mMaterials[i], scene, modelDir);
+    }
+
     ProcessNode(scene->mRootNode, scene, -1);
 
+    // アニメーション
     if (scene->mNumAnimations > 0) {
         m_clips.reserve(scene->mNumAnimations);
         for (uint32_t i = 0; i < scene->mNumAnimations; i++) {
@@ -156,17 +402,24 @@ bool ModelComponent::ImportAssimpScene(const std::string& assetName, const aiSce
                 channel.boneName = ch->mNodeName.C_Str();
                 for (uint32_t k = 0; k < ch->mNumPositionKeys; k++) {
                     BoneKeyFrame kf; kf.time = ch->mPositionKeys[k].mTime;
-                    kf.t = XMFLOAT3((float)ch->mPositionKeys[k].mValue.x, (float)ch->mPositionKeys[k].mValue.y, (float)ch->mPositionKeys[k].mValue.z);
+                    kf.t = XMFLOAT3((float)ch->mPositionKeys[k].mValue.x,
+                        (float)ch->mPositionKeys[k].mValue.y,
+                        (float)ch->mPositionKeys[k].mValue.z);
                     channel.translations.push_back(kf);
                 }
                 for (uint32_t k = 0; k < ch->mNumRotationKeys; k++) {
                     BoneKeyFrame kf; kf.time = ch->mRotationKeys[k].mTime;
-                    kf.r = XMFLOAT4((float)ch->mRotationKeys[k].mValue.x, (float)ch->mRotationKeys[k].mValue.y, (float)ch->mRotationKeys[k].mValue.z, (float)ch->mRotationKeys[k].mValue.w);
+                    kf.r = XMFLOAT4((float)ch->mRotationKeys[k].mValue.x,
+                        (float)ch->mRotationKeys[k].mValue.y,
+                        (float)ch->mRotationKeys[k].mValue.z,
+                        (float)ch->mRotationKeys[k].mValue.w);
                     channel.rotations.push_back(kf);
                 }
                 for (uint32_t k = 0; k < ch->mNumScalingKeys; k++) {
                     BoneKeyFrame kf; kf.time = ch->mScalingKeys[k].mTime;
-                    kf.s = XMFLOAT3((float)ch->mScalingKeys[k].mValue.x, (float)ch->mScalingKeys[k].mValue.y, (float)ch->mScalingKeys[k].mValue.z);
+                    kf.s = XMFLOAT3((float)ch->mScalingKeys[k].mValue.x,
+                        (float)ch->mScalingKeys[k].mValue.y,
+                        (float)ch->mScalingKeys[k].mValue.z);
                     channel.scalings.push_back(kf);
                 }
                 clip.channels.push_back(std::move(channel));
@@ -175,9 +428,14 @@ bool ModelComponent::ImportAssimpScene(const std::string& assetName, const aiSce
         }
     }
     for (uint32_t i = 0; i < MODEL_MAX_BONES; i++) m_finalBoneMatrices[i] = XMMatrixIdentity();
+
+    if (m_bones.size() > MODEL_MAX_BONES) {
+        OutputDebugStringA("[ModelComponent] Warning: bone count exceeds MODEL_MAX_BONES\n");
+    }
     return true;
 }
 
+// ---------- ノード / メッシュ ----------
 void ModelComponent::ProcessNode(aiNode* node, const aiScene* scene, int parentIndex) {
     int thisIndex = -1;
     auto it = m_boneNameToIndex.find(node->mName.C_Str());
@@ -202,7 +460,7 @@ void ModelComponent::ProcessNode(aiNode* node, const aiScene* scene, int parentI
     }
 }
 
-void ModelComponent::ProcessMesh(const aiMesh* mesh, const aiScene* scene) {
+void ModelComponent::ProcessMesh(const aiMesh* mesh, const aiScene* /*scene*/) {
     SubMesh sm;
     sm.materialIndex = mesh->mMaterialIndex;
     sm.vertexOffset = (uint32_t)m_vertices.size();
@@ -227,6 +485,10 @@ void ModelComponent::ProcessMesh(const aiMesh* mesh, const aiScene* scene) {
         }
         else {
             vert.uv = XMFLOAT2(0, 0);
+        }
+        if (mesh->mNumBones == 0) {
+            vert.boneWeights[0] = 1.0f;
+            vert.boneIndices[0] = 0;
         }
         m_vertices.push_back(vert);
     }
@@ -268,11 +530,16 @@ void ModelComponent::ProcessMesh(const aiMesh* mesh, const aiScene* scene) {
         // 正規化
         for (uint32_t v = 0; v < mesh->mNumVertices; v++) {
             float sum = 0.f;
-            for (int s = 0; s < MODEL_MAX_INFLUENCES; s++) sum += m_vertices[sm.vertexOffset + v].boneWeights[s];
+            for (int s = 0; s < MODEL_MAX_INFLUENCES; s++)
+                sum += m_vertices[sm.vertexOffset + v].boneWeights[s];
             if (sum > 0.f) {
                 float inv = 1.f / sum;
-                for (int s = 0; s < MODEL_MAX_INFLUENCES; s++)
+                for (int s = 0; s < MODEL_MAX_INFLUENCES; s++) {
                     m_vertices[sm.vertexOffset + v].boneWeights[s] *= inv;
+                }
+            }
+            else {
+                m_vertices[sm.vertexOffset + v].boneWeights[0] = 1.0f;
             }
         }
     }
@@ -323,12 +590,12 @@ void ModelComponent::EnsureInputLayout(const std::string& vsName) {
     if (!device) return;
 
     D3D11_INPUT_ELEMENT_DESC descs[] = {
-        {"POSITION",0, DXGI_FORMAT_R32G32B32_FLOAT, 0, (UINT)offsetof(ModelVertex,position), D3D11_INPUT_PER_VERTEX_DATA,0},
-        {"NORMAL",0,   DXGI_FORMAT_R32G32B32_FLOAT, 0, (UINT)offsetof(ModelVertex,normal),   D3D11_INPUT_PER_VERTEX_DATA,0},
-        {"TANGENT",0,  DXGI_FORMAT_R32G32B32A32_FLOAT,0,(UINT)offsetof(ModelVertex,tangent), D3D11_INPUT_PER_VERTEX_DATA,0},
-        {"TEXCOORD",0, DXGI_FORMAT_R32G32_FLOAT,     0, (UINT)offsetof(ModelVertex,uv),      D3D11_INPUT_PER_VERTEX_DATA,0},
-        {"BONEINDICES",0, DXGI_FORMAT_R32G32B32A32_UINT, 0, (UINT)offsetof(ModelVertex,boneIndices), D3D11_INPUT_PER_VERTEX_DATA,0},
-        {"BONEWEIGHTS",0, DXGI_FORMAT_R32G32B32A32_FLOAT,0,(UINT)offsetof(ModelVertex,boneWeights), D3D11_INPUT_PER_VERTEX_DATA,0},
+        {"POSITION",0, DXGI_FORMAT_R32G32B32_FLOAT,     0, (UINT)offsetof(ModelVertex,position),     D3D11_INPUT_PER_VERTEX_DATA,0},
+        {"NORMAL",0,   DXGI_FORMAT_R32G32B32_FLOAT,     0, (UINT)offsetof(ModelVertex,normal),       D3D11_INPUT_PER_VERTEX_DATA,0},
+        {"TANGENT",0,  DXGI_FORMAT_R32G32B32A32_FLOAT,  0, (UINT)offsetof(ModelVertex,tangent),      D3D11_INPUT_PER_VERTEX_DATA,0},
+        {"TEXCOORD",0, DXGI_FORMAT_R32G32_FLOAT,        0, (UINT)offsetof(ModelVertex,uv),           D3D11_INPUT_PER_VERTEX_DATA,0},
+        {"BONEINDICES",0, DXGI_FORMAT_R32G32B32A32_UINT,0, (UINT)offsetof(ModelVertex,boneIndices),  D3D11_INPUT_PER_VERTEX_DATA,0},
+        {"BONEWEIGHTS",0, DXGI_FORMAT_R32G32B32A32_FLOAT,0,(UINT)offsetof(ModelVertex,boneWeights),  D3D11_INPUT_PER_VERTEX_DATA,0},
     };
     m_inputLayout.Reset();
     device->CreateInputLayout(descs, _countof(descs), bytecode, size, m_inputLayout.GetAddressOf());
@@ -356,6 +623,12 @@ void ModelComponent::SetMaterialShader(uint32_t materialIndex, const std::string
 }
 
 bool ModelComponent::LoadTextureFromAsset(const std::string& assetName, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& outSRV) {
+    auto itC = m_textureCache.find(assetName);
+    if (itC != m_textureCache.end()) {
+        outSRV = itC->second;
+        return true;
+    }
+
     std::vector<uint8_t> data;
     if (!AssetsManager::GetInstance()->LoadAsset(assetName, data)) return false;
 
@@ -365,17 +638,31 @@ bool ModelComponent::LoadTextureFromAsset(const std::string& assetName, Microsof
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
     HRESULT hr = E_FAIL;
-    if (ext == "dds")
+    if (ext == "dds") {
         hr = LoadFromDDSMemory(data.data(), data.size(), DDS_FLAGS_NONE, nullptr, img);
-    else
+    }
+    else {
         hr = LoadFromWICMemory(data.data(), data.size(), WIC_FLAGS_FORCE_SRGB, nullptr, img);
+    }
     if (FAILED(hr)) return false;
+
+    ScratchImage mipChain;
+    const TexMetadata& meta0 = img.GetMetadata();
+    if (meta0.mipLevels <= 1) {
+        if (SUCCEEDED(GenerateMipMaps(img.GetImages(), img.GetImageCount(), meta0,
+            TEX_FILTER_DEFAULT, 0, mipChain))) {
+            img = std::move(mipChain);
+        }
+    }
 
     ID3D11Device* device = DirectX11::GetInstance()->GetDevice();
     if (!device) return false;
 
-    // TODO: DirectXTex の CreateShaderResourceView を使用
-    // hr = CreateShaderResourceView(device, img.GetImages(), img.GetImageCount(), img.GetMetadata(), outSRV.GetAddressOf());
+    hr = CreateShaderResourceView(device, img.GetImages(), img.GetImageCount(), img.GetMetadata(),
+        outSRV.GetAddressOf());
+    if (FAILED(hr)) return false;
+
+    m_textureCache[assetName] = outSRV;
     return true;
 }
 
@@ -385,13 +672,17 @@ bool ModelComponent::SetMaterialTexture(uint32_t materialIndex, uint32_t slot, c
         m_materials[materialIndex].textures.resize(slot + 1);
 
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv;
-    if (!LoadTextureFromAsset(assetName, srv)) return false;
+    if (!LoadTextureFromAsset(assetName, srv)) {
+        std::string dbg = "[ModelComponent] SetMaterialTexture failed: " + assetName + "\n";
+        OutputDebugStringA(dbg.c_str());
+        return false;
+    }
     m_materials[materialIndex].textures[slot].srv = srv;
     m_materials[materialIndex].textures[slot].assetName = assetName;
     return true;
 }
 
-// ---------- アニメ ----------
+// ---------- アニメーション ----------
 void ModelComponent::PlayAnimation(const std::string& clipName, bool loop, float speed) {
     for (int i = 0; i < (int)m_clips.size(); i++) {
         if (m_clips[i].name == clipName) {
@@ -406,7 +697,8 @@ void ModelComponent::PlayAnimation(const std::string& clipName, bool loop, float
 
 void ModelComponent::StopAnimation() { m_currentClip = -1; }
 void ModelComponent::SetAnimationTime(double time) { m_animTime = time; }
-int  ModelComponent::FindBoneIndex(const std::string& name) const {
+
+int ModelComponent::FindBoneIndex(const std::string& name) const {
     auto it = m_boneNameToIndex.find(name);
     return (it == m_boneNameToIndex.end()) ? -1 : it->second;
 }
@@ -542,6 +834,8 @@ void ModelComponent::Draw() {
     ID3D11DeviceContext* ctx = DirectX11::GetInstance()->GetContext();
     if (!ctx) return;
 
+    DirectX11::GetInstance()->SetBlendMode(BLEND_NONE);
+
     UINT stride = sizeof(ModelVertex);
     UINT offset = 0;
     ID3D11Buffer* vb = m_vertexBuffer.Get();
@@ -550,7 +844,6 @@ void ModelComponent::Draw() {
     ctx->IASetInputLayout(m_inputLayout.Get());
     ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // 親オブジェクトの Transform から world 行列
     XMMATRIX world = XMMatrixIdentity();
     if (_Parent) {
         Transform tr = _Parent->GetTransform();
@@ -560,19 +853,16 @@ void ModelComponent::Draw() {
         world = S * R * T;
     }
 
-    // メインカメラ取得 (Scene 側で設定されている前提)
     CameraComponent* cam = nullptr;
     if (_Parent && _Parent->GetParentScene())
         cam = _Parent->GetParentScene()->GetMainCamera();
     if (!cam) return;
 
-    // 転置行列（現在の ShaderManager::SetCBufferVariable が「値をそのままコピーする」実装想定のため）
-    XMFLOAT4X4 wT, vT, pT;
+    XMFLOAT4X4 wT;
     XMStoreFloat4x4(&wT, XMMatrixTranspose(world));
-    auto viewT = cam->GetViewMatrix(true);      // 既に transpose 済みを返す実装ならそのまま
+    auto viewT = cam->GetViewMatrix(true);
     auto projT = cam->GetProjectionMatrix(true);
 
-    // SkinCB 更新（スキンありの場合）
     if (m_enableSkinning && !m_bones.empty()) {
         std::string vsName = m_unifiedVS;
         ShaderManager::GetInstance()->SetCBufferVariable(
@@ -582,7 +872,6 @@ void ModelComponent::Draw() {
         ShaderManager::GetInstance()->CommitAndBind(ShaderStage::VS, vsName);
     }
 
-    // サブメッシュ毎
     for (auto& sm : m_subMeshes) {
         if (sm.materialIndex >= m_materials.size()) continue;
         auto& mat = m_materials[sm.materialIndex];
@@ -594,7 +883,6 @@ void ModelComponent::Draw() {
         ctx->VSSetShader(vs, nullptr, 0);
         ctx->PSSetShader(ps, nullptr, 0);
 
-        // CameraCB: VS側 (world/view/proj)
         ShaderManager::GetInstance()->SetCBufferVariable(
             ShaderStage::VS, mat.vertexShader, "CameraCB", "world", &wT, sizeof(wT));
         ShaderManager::GetInstance()->SetCBufferVariable(
@@ -603,7 +891,6 @@ void ModelComponent::Draw() {
             ShaderStage::VS, mat.vertexShader, "CameraCB", "proj", &projT, sizeof(projT));
         ShaderManager::GetInstance()->CommitAndBind(ShaderStage::VS, mat.vertexShader);
 
-        // MaterialCB: BaseColor / MetallicRoughness / UseBaseTex
         ShaderManager::GetInstance()->SetCBufferVariable(
             ShaderStage::PS, mat.pixelShader, "MaterialCB", "BaseColor",
             &mat.baseColor, sizeof(XMFLOAT4));
@@ -613,16 +900,15 @@ void ModelComponent::Draw() {
             ShaderStage::PS, mat.pixelShader, "MaterialCB", "MetallicRoughness",
             &mr, sizeof(MR));
 
-        // 追加: UseBaseTex
         UINT useBaseTex = 0;
-        if (!mat.textures.empty() && mat.textures[0].srv) useBaseTex = 1;
+        if (!mat.textures.empty() && mat.textures.size() > 0 && mat.textures[0].srv)
+            useBaseTex = 1;
         ShaderManager::GetInstance()->SetCBufferVariable(
             ShaderStage::PS, mat.pixelShader, "MaterialCB", "UseBaseTex",
             &useBaseTex, sizeof(UINT));
 
         ShaderManager::GetInstance()->CommitAndBind(ShaderStage::PS, mat.pixelShader);
 
-        // SRV セット
         if (!mat.textures.empty()) {
             std::vector<ID3D11ShaderResourceView*> srvs;
             for (auto& ts : mat.textures) srvs.push_back(ts.srv.Get());
@@ -632,7 +918,6 @@ void ModelComponent::Draw() {
         ctx->DrawIndexed(sm.indexCount, sm.indexOffset, 0);
     }
 }
-
 // ---------- Inspector ----------
 void ModelComponent::DrawInspector() {
     auto gui = EditrGUI::GetInstance();
@@ -642,16 +927,14 @@ void ModelComponent::DrawInspector() {
 
     if (!ImGui::CollapsingHeader(header.c_str())) return;
 
-    // 1) Transform
+    // Transform
     if (_Parent) {
         Transform tr = _Parent->GetTransform();
         if (ImGui::BeginTable(("TransformTable" + ptrId).c_str(), 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV)) {
             ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text(gui->ShiftJISToUTF8("位置").c_str());
             ImGui::TableSetColumnIndex(1); ImGui::DragFloat3((std::string("##Pos") + ptrId).c_str(), &tr.position.x, 0.01f);
-
             ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text(gui->ShiftJISToUTF8("回転").c_str());
             ImGui::TableSetColumnIndex(1); ImGui::DragFloat3((std::string("##Rot") + ptrId).c_str(), &tr.rotation.x, 0.01f);
-
             ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text(gui->ShiftJISToUTF8("拡縮").c_str());
             ImGui::TableSetColumnIndex(1); ImGui::DragFloat3((std::string("##Scl") + ptrId).c_str(), &tr.scale.x, 0.01f, 0.001f, 1000.0f);
             ImGui::EndTable();

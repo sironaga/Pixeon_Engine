@@ -17,6 +17,7 @@ GameRenderTarget* gGameRenderTarget;
 bool bInGame;
 std::vector<PostEffectBase*> gPostEffects;
 std::vector<Object*> gContentsObjects;
+bool bZBuffer = true;
 
 void OnAssetChanged(const std::string& filepath) {
 	AssetsManager::GetInstance()->CacheAsset(filepath);
@@ -59,6 +60,20 @@ int Init(const EngineConfig& InPut){
 	ShaderManager::GetInstance()->Initialize(DirectX11::GetInstance()->GetDevice());
 	ComponentManager::GetInstance()->Init();
 
+	bZBuffer = SettingManager::GetInstance()->GetZBuffer();
+	RenderTarget* pRTV = nullptr;
+	DepthStencil* pDSV = nullptr;
+	pRTV = DirectX11::GetInstance()->GetDefaultRTV();
+	if (bZBuffer) {
+		pDSV = DirectX11::GetInstance()->GetDefaultDSV();
+		gGameRenderTarget->SetRenderZBuffer(true);
+	}
+	else {
+		pDSV = nullptr;
+		gGameRenderTarget->SetRenderZBuffer(false);
+	}
+	DirectX11::GetInstance()->SetRenderTargets(1, &pRTV, pDSV);
+
 	return 0;
 }
 
@@ -70,6 +85,21 @@ void Update(){
 }
 
 void Draw(){
+	if(bZBuffer != SettingManager::GetInstance()->GetZBuffer()){
+		bZBuffer = SettingManager::GetInstance()->GetZBuffer();
+		RenderTarget* pRTV = nullptr;
+		DepthStencil* pDSV = nullptr;
+		pRTV = DirectX11::GetInstance()->GetDefaultRTV();
+		if(bZBuffer){
+			pDSV = DirectX11::GetInstance()->GetDefaultDSV();
+			gGameRenderTarget->SetRenderZBuffer(true);
+		}
+		else{
+			pDSV = nullptr;
+			gGameRenderTarget->SetRenderZBuffer(false);
+		}
+		DirectX11::GetInstance()->SetRenderTargets(1, &pRTV, pDSV);
+	}
 	EditeDraw();
 }
 

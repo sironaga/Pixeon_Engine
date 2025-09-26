@@ -14,9 +14,8 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-// 最大ボーン数
 constexpr uint32_t MODEL_MAX_BONES = 512;
-constexpr uint32_t MODEL_MAX_INFLUENCES = 4;
+constexpr uint32_t MODEL_MAX_INFLUENCES = 8;
 
 struct ModelVertex {
     DirectX::XMFLOAT3 position;
@@ -126,28 +125,40 @@ private:
     bool LoadTextureFromAsset(const std::string& assetName, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& outSRV);
     static bool IsModelAssetName(const std::string& name);
 
+    // ---- 追加ヘルパ（マテリアル拡張） ----
+    bool AcquireMaterialTextures(uint32_t matIndex, aiMaterial* aimat, const aiScene* scene, const std::string& modelDir);
+    bool TryLoadMaterialTexture(uint32_t matIndex, uint32_t slot, const std::string& texRelPath);
+    bool TryLoadEmbeddedTexture(uint32_t matIndex, uint32_t slot, const aiTexture* aitex,
+        const std::string& cacheKey, const char* formatHint);
+    std::string NormalizeTexturePath(const std::string& rawPath, const std::string& modelDir);
+    void GetMaterialColorFactors(aiMaterial* aimat, ModelMaterial& outMat);
+    bool CreateSRVFromRawRGBA(const uint8_t* pixels, uint32_t width, uint32_t height,
+        DXGI_FORMAT fmt, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& outSRV);
+    bool CreateSRVFromCompressed(const uint8_t* data, size_t size, const char* formatHint,
+        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& outSRV);
+
 private:
-    Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBuffer;
-    Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
+    Microsoft::WRL::ComPtr<ID3D11Buffer>       m_vertexBuffer;
+    Microsoft::WRL::ComPtr<ID3D11Buffer>       m_indexBuffer;
+    Microsoft::WRL::ComPtr<ID3D11InputLayout>  m_inputLayout;
 
-    std::vector<ModelVertex> m_vertices;
-    std::vector<uint32_t>    m_indices;
-    std::vector<SubMesh>     m_subMeshes;
-    std::vector<ModelMaterial> m_materials;
+    std::vector<ModelVertex>     m_vertices;
+    std::vector<uint32_t>        m_indices;
+    std::vector<SubMesh>         m_subMeshes;
+    std::vector<ModelMaterial>   m_materials;
 
-    std::vector<Bone> m_bones;
-    std::unordered_map<std::string, int> m_boneNameToIndex;
-    DirectX::XMMATRIX m_finalBoneMatrices[MODEL_MAX_BONES]{};
+    std::vector<Bone>                          m_bones;
+    std::unordered_map<std::string, int>       m_boneNameToIndex;
+    DirectX::XMMATRIX                          m_finalBoneMatrices[MODEL_MAX_BONES]{};
 
-    std::vector<AnimationClip> m_clips;
-    int   m_currentClip = -1;
-    bool  m_loop = true;
-    double m_animTime = 0.0;
-    double m_animSpeed = 1.0;
+    std::vector<AnimationClip>   m_clips;
+    int     m_currentClip = -1;
+    bool    m_loop = true;
+    double  m_animTime = 0.0;
+    double  m_animSpeed = 1.0;
 
-    bool m_modelLoaded = false;
-    bool m_enableSkinning = true;
+    bool    m_modelLoaded = false;
+    bool    m_enableSkinning = true;
 
     std::string m_unifiedVS;
     std::string m_unifiedPS;
@@ -166,6 +177,9 @@ private:
     // IK
     char m_ikChainInput[128] = "";
     DirectX::XMFLOAT3 m_ikTarget{ 0,0,0 };
-    int m_ikIterations = 5;
+    int   m_ikIterations = 5;
     float m_ikThresholdDeg = 0.5f;
+
+    // テクスチャキャッシュ
+    std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> m_textureCache;
 };

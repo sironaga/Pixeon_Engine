@@ -95,7 +95,7 @@ HRESULT DirectX11::Init(HWND hWnd, UINT width, UINT height, bool fullScreen)
 	if(FAILED(result = g_pRTV->CreateFromScreen()))return result;
 	g_pDSV = new DepthStencil();
 	if (FAILED(result = g_pDSV->Create(g_pRTV->GetWidth(), g_pRTV->GetHeight(), false)))return result;
-	SetRenderTargets(1, &g_pRTV, nullptr);
+	SetRenderTargets(1, &g_pRTV, g_pDSV);
 
 	D3D11_RASTERIZER_DESC rasterizer = {};
 	D3D11_CULL_MODE cull[] = {
