@@ -45,7 +45,7 @@ Component* ComponentManager::AddComponent(Object* owner, COMPONENT_TYPE type){
 		component = owner->AddComponent<Geometry>();
 		break;
 	case ComponentManager::COMPONENT_TYPE::MODEL:
-		component = owner->AddComponent<ModelComponent>();
+		component = owner->AddComponent<AdvancedModelComponent>();
 		break;
 	case ComponentManager::COMPONENT_TYPE::MAX:
 		MessageBox(nullptr, "—áŠO‚È’l‚Å‚·\nCode : CMMAX", "Error", MB_OK);

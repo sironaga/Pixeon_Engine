@@ -12,269 +12,265 @@
 
 
 HWND ghWnd;
-AssetWatcher *watcher;
+AssetWatcher* watcher;
 GameRenderTarget* gGameRenderTarget;
 bool bInGame;
 std::vector<PostEffectBase*> gPostEffects;
 std::vector<Object*> gContentsObjects;
 bool bZBuffer = true;
 
+//---------------------------------------------
+// 変更監視: 単発再キャッシュ方式
+//---------------------------------------------
+static const std::vector<std::string> kPreloadExts = {
+    "fbx","obj","gltf","glb",
+    "png","jpg","jpeg","dds","tga","hdr",
+    "wav","ogg"
+};
+
+// 拡張子を小文字で取得
+static std::string GetLowerExt(const std::string& path) {
+    auto p = path.find_last_of('.');
+    if (p == std::string::npos) return "";
+    std::string e = path.substr(p + 1);
+    std::transform(e.begin(), e.end(), e.begin(), ::tolower);
+    return e;
+}
+
+// 監視変更コールバック
 void OnAssetChanged(const std::string& filepath) {
-	AssetsManager::GetInstance()->CacheAsset(filepath);
+    // 個別ファイルを再キャッシュ
+    AssetsManager::GetInstance()->CacheAsset(filepath);
+
+    // 必要なら以下のように親ディレクトリ単位で再帰プリロードも可能
+    // std::string parent = std::filesystem::path(filepath).parent_path().string();
+    // PreloadRecursive(parent, kPreloadExts);
 }
 
+// 既存: 直下のみのキャッシュ関数（再帰版導入で不要なら削除可）
 void CacheAllAssetsOnStartup(const std::string& assetsDir) {
-	for (const auto& entry : std::filesystem::directory_iterator(assetsDir)) {
-		if (entry.is_regular_file()) {
-			AssetsManager::GetInstance()->CacheAsset(entry.path().string());
-		}
-	}
+    for (const auto& entry : std::filesystem::directory_iterator(assetsDir)) {
+        if (entry.is_regular_file()) {
+            AssetsManager::GetInstance()->CacheAsset(entry.path().string());
+        }
+    }
 }
 
-int Init(const EngineConfig& InPut){
+int Init(const EngineConfig& InPut) {
 
-	// DirectX11の初期化
-	ghWnd = InPut.hWnd;
-	HRESULT hr = DirectX11::GetInstance()->Init(InPut.hWnd, InPut.screenWidth, InPut.screenHeight, InPut.fullscreen);
-	if (FAILED(hr)) return -1;
-	// 設定の読み込み
-	SettingManager::GetInstance()->LoadConfig();
-	//　アセットマネージャーの起動
-	AssetsManager::GetInstance()->SetLoadMode(AssetsManager::LoadMode::FromSource);
-	AssetsManager::GetInstance()->CacheAsset(SettingManager::GetInstance()->GetAssetsFilePath());
-	CacheAllAssetsOnStartup(SettingManager::GetInstance()->GetAssetsFilePath());
-	watcher = new AssetWatcher(SettingManager::GetInstance()->GetAssetsFilePath(), OnAssetChanged);
-	// 非同期監視開始
-	watcher->Start();
-	// ゲームレンダリングターゲットの初期化
-	gGameRenderTarget = new GameRenderTarget();
-	gGameRenderTarget->Init(DirectX11::GetInstance()->GetDevice(), InPut.screenWidth, InPut.screenHeight);
-	// GUIの初期化
-	EditrGUI::GetInstance()->Init();
-	bInGame = false;
-	// シーンマネージャーの初期化
-	SceneManger::GetInstance()->Init();
-	// ContentsObjectsの初期化
-	gContentsObjects.clear();
-	// シェーダーマネージャーの初期化
-	ShaderManager::GetInstance()->Initialize(DirectX11::GetInstance()->GetDevice());
-	ComponentManager::GetInstance()->Init();
+    // DirectX 初期化
+    ghWnd = InPut.hWnd;
+    HRESULT hr = DirectX11::GetInstance()->Init(InPut.hWnd, InPut.screenWidth, InPut.screenHeight, InPut.fullscreen);
+    if (FAILED(hr)) return -1;
 
-	bZBuffer = SettingManager::GetInstance()->GetZBuffer();
-	RenderTarget* pRTV = nullptr;
-	DepthStencil* pDSV = nullptr;
-	pRTV = DirectX11::GetInstance()->GetDefaultRTV();
-	if (bZBuffer) {
-		pDSV = DirectX11::GetInstance()->GetDefaultDSV();
-		gGameRenderTarget->SetRenderZBuffer(true);
-	}
-	else {
-		pDSV = nullptr;
-		gGameRenderTarget->SetRenderZBuffer(false);
-	}
-	DirectX11::GetInstance()->SetRenderTargets(1, &pRTV, pDSV);
+    // 設定ロード
+    SettingManager::GetInstance()->LoadConfig();
 
-	return 0;
+    // アセットマネージャ FromSource モード
+    AssetsManager::GetInstance()->SetLoadMode(AssetsManager::LoadMode::FromSource);
+
+    // (旧) 誤ったディレクトリ指定の CacheAsset 呼び出しを削除
+    // AssetsManager::GetInstance()->CacheAsset(SettingManager::GetInstance()->GetAssetsFilePath());
+
+    // (旧) 直下のみキャッシュ → 再帰版と重複するためコメントアウト
+    // CacheAllAssetsOnStartup(SettingManager::GetInstance()->GetAssetsFilePath());
+
+    // 新規: 再帰プリロード（起動時一括）
+    {
+        std::string root = SettingManager::GetInstance()->GetAssetsFilePath();
+        PreloadRecursive(root, kPreloadExts);
+    }
+
+    // 監視開始
+    watcher = new AssetWatcher(SettingManager::GetInstance()->GetAssetsFilePath(), OnAssetChanged);
+    watcher->Start();
+
+    // Game RenderTarget 初期化
+    gGameRenderTarget = new GameRenderTarget();
+    gGameRenderTarget->Init(DirectX11::GetInstance()->GetDevice(), InPut.screenWidth, InPut.screenHeight);
+
+    // GUI 初期化
+    EditrGUI::GetInstance()->Init();
+    bInGame = false;
+
+    // シーンマネージャ初期化
+    SceneManger::GetInstance()->Init();
+
+    // ContentsObjects 初期化
+    gContentsObjects.clear();
+
+    // シェーダマネージャ初期化
+    ShaderManager::GetInstance()->Initialize(DirectX11::GetInstance()->GetDevice());
+    ComponentManager::GetInstance()->Init();
+
+    // ZBuffer 設定
+    bZBuffer = SettingManager::GetInstance()->GetZBuffer();
+    RenderTarget* pRTV = DirectX11::GetInstance()->GetDefaultRTV();
+    DepthStencil* pDSV = bZBuffer ? DirectX11::GetInstance()->GetDefaultDSV() : nullptr;
+    gGameRenderTarget->SetRenderZBuffer(bZBuffer);
+    DirectX11::GetInstance()->SetRenderTargets(1, &pRTV, pDSV);
+
+    return 0;
 }
 
-void Update(){
-	if(bInGame){
-		InGameUpdate();}
-	else{
-		EditeUpdate();}
+void Update() {
+    if (bInGame) {
+        InGameUpdate();
+    }
+    else {
+        EditeUpdate();
+    }
 }
 
-void Draw(){
-	if(bZBuffer != SettingManager::GetInstance()->GetZBuffer()){
-		bZBuffer = SettingManager::GetInstance()->GetZBuffer();
-		RenderTarget* pRTV = nullptr;
-		DepthStencil* pDSV = nullptr;
-		pRTV = DirectX11::GetInstance()->GetDefaultRTV();
-		if(bZBuffer){
-			pDSV = DirectX11::GetInstance()->GetDefaultDSV();
-			gGameRenderTarget->SetRenderZBuffer(true);
-		}
-		else{
-			pDSV = nullptr;
-			gGameRenderTarget->SetRenderZBuffer(false);
-		}
-		DirectX11::GetInstance()->SetRenderTargets(1, &pRTV, pDSV);
-	}
-	EditeDraw();
+void Draw() {
+    if (bZBuffer != SettingManager::GetInstance()->GetZBuffer()) {
+        bZBuffer = SettingManager::GetInstance()->GetZBuffer();
+        RenderTarget* pRTV = DirectX11::GetInstance()->GetDefaultRTV();
+        DepthStencil* pDSV = bZBuffer ? DirectX11::GetInstance()->GetDefaultDSV() : nullptr;
+        gGameRenderTarget->SetRenderZBuffer(bZBuffer);
+        DirectX11::GetInstance()->SetRenderTargets(1, &pRTV, pDSV);
+    }
+    EditeDraw();
 }
 
-void UnInit(){
-	watcher->Stop();
-	delete watcher;
-	AssetsManager::GetInstance()->ClearCache();
-	AssetsManager::DestroyInstance();
-	SceneManger::GetInstance()->Save();
-	SceneManger::DestroyInstance();
-	SettingManager::GetInstance()->SaveConfig();
-	SettingManager::DestroyInstance();
-	DirectX11::DestroyInstance();
+void UnInit() {
+    if (watcher) {
+        watcher->Stop();
+        delete watcher;
+        watcher = nullptr;
+    }
+    AssetsManager::GetInstance()->ClearCache();
+    AssetsManager::DestroyInstance();
+    SceneManger::GetInstance()->Save();
+    SceneManger::DestroyInstance();
+    SettingManager::GetInstance()->SaveConfig();
+    SettingManager::DestroyInstance();
+    DirectX11::DestroyInstance();
 }
 
-// 内部処理
+// ----------------
 
-void EditeUpdate(){
-	ShaderManager::GetInstance()->UpdateAndCompileShaders();
-	EditrGUI::GetInstance()->Update();
-	SceneManger::GetInstance()->EditUpdate();
+void EditeUpdate() {
+    // シェーダのホットリロード (既存)
+    ShaderManager::GetInstance()->UpdateAndCompileShaders();
+
+    // GUI
+    EditrGUI::GetInstance()->Update();
+
+    // シーン編集更新
+    SceneManger::GetInstance()->EditUpdate();
 }
 
-void InGameUpdate(){
-	SceneManger::GetInstance()->PlayUpdate();
+void InGameUpdate() {
+    SceneManger::GetInstance()->PlayUpdate();
 }
 
-void EditeDraw(){
+void EditeDraw() {
+    gGameRenderTarget->Begin(DirectX11::GetInstance()->GetContext());
+    SceneManger::GetInstance()->Draw();
+    gGameRenderTarget->End();
 
-	gGameRenderTarget->Begin(DirectX11::GetInstance()->GetContext());
-	SceneManger::GetInstance()->Draw();
-	gGameRenderTarget->End();
-
-	ID3D11DeviceContext* ctx = DirectX11::GetInstance()->GetContext();
+    ID3D11DeviceContext* ctx = DirectX11::GetInstance()->GetContext();
     ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
     ctx->PSSetShaderResources(0, 1, nullSRV);
 
-	DirectX11::GetInstance()->BeginDraw();
-	EditrGUI::GetInstance()->Draw();
-	DirectX11::GetInstance()->EndDraw();
+    DirectX11::GetInstance()->BeginDraw();
+    EditrGUI::GetInstance()->Draw();
+    DirectX11::GetInstance()->EndDraw();
 }
 
-void InGamDraw(){
-
-	DirectX11::GetInstance()->BeginDraw();
-	SceneManger::GetInstance()->Draw();
-	DirectX11::GetInstance()->EndDraw();
+void InGamDraw() {
+    DirectX11::GetInstance()->BeginDraw();
+    SceneManger::GetInstance()->Draw();
+    DirectX11::GetInstance()->EndDraw();
 }
 
-HWND GetWindowHandle(){
-	return ghWnd;
+HWND GetWindowHandle() {
+    return ghWnd;
 }
 
-ID3D11ShaderResourceView* GetGameRender(){
-	return gGameRenderTarget->GetShaderResourceView();
+ID3D11ShaderResourceView* GetGameRender() {
+    return gGameRenderTarget->GetShaderResourceView();
 }
 
-bool IsInGame(){
-	return bInGame;
+bool IsInGame() {
+    return bInGame;
 }
 
-void SetInGame(bool inGame){
-	bInGame = inGame;
+void SetInGame(bool inGame) {
+    bInGame = inGame;
 }
 
-std::vector<Object*> GetContentsObjects(){
-	return gContentsObjects;
+std::vector<Object*> GetContentsObjects() {
+    return gContentsObjects;
 }
 
-void AddContentsObject(Object* obj){
-	Object* CloneObj;
-	CloneObj = obj->Clone();
-	gContentsObjects.push_back(CloneObj);
+void AddContentsObject(Object* obj) {
+    Object* CloneObj = obj->Clone();
+    gContentsObjects.push_back(CloneObj);
 }
 
-void RemoveContentsObject(Object* obj){
-	auto it = std::remove(gContentsObjects.begin(), gContentsObjects.end(), obj);
-	if(it != gContentsObjects.end()) {
-		gContentsObjects.erase(it, gContentsObjects.end());
-		obj->UInit();
-		delete obj;
-	}
+void RemoveContentsObject(Object* obj) {
+    auto it = std::remove(gContentsObjects.begin(), gContentsObjects.end(), obj);
+    if (it != gContentsObjects.end()) {
+        gContentsObjects.erase(it, gContentsObjects.end());
+        obj->UInit();
+        delete obj;
+    }
 }
 
-void OpenExplorer(const std::string& path)
-{
-	ShellExecuteA(
-		NULL,           // ウィンドウハンドル
-		"open",         // 動作（openでOK）
-		"explorer.exe", // 実行ファイル
-		path.c_str(),   // パラメータ（開きたいパス）
-		NULL,           // ディレクトリ（NULLでOK）
-		SW_SHOWNORMAL   // ウィンドウ表示方法
-	);
+void OpenExplorer(const std::string& path) {
+    ShellExecuteA(nullptr, "open", "explorer.exe", path.c_str(), nullptr, SW_SHOWNORMAL);
 }
 
 std::string GetExePath() {
-	char path[MAX_PATH];
-	DWORD length = GetModuleFileNameA(nullptr, path, MAX_PATH);
-	if (length == 0 || length == MAX_PATH) {
-		// 取得失敗
-		return "";
-	}
-	return std::string(path, length);
+    char path[MAX_PATH];
+    DWORD length = GetModuleFileNameA(nullptr, path, MAX_PATH);
+    if (length == 0 || length == MAX_PATH) {
+        return "";
+    }
+    return std::string(path, length);
 }
 
-std::string RemoveExeFromPath(const std::string& exePath)
-{
-	size_t pos = exePath.find_last_of("\\/");
-	if (pos != std::string::npos)
-	{
-		// ファイル名部分を除去し、フォルダパスにする
-		return exePath.substr(0, pos);
-	}
-	return exePath; // 区切りが見つからなかった場合はそのまま返す
+std::string RemoveExeFromPath(const std::string& exePath) {
+    size_t pos = exePath.find_last_of("\\/");
+    if (pos != std::string::npos) {
+        return exePath.substr(0, pos);
+    }
+    return exePath;
 }
 
 bool CallAssetPacker(const std::string& toolPath, const std::string& assetDir, const std::string& outputPak) {
-	std::string cmd = "\"" + toolPath + "\" \"" + assetDir + "\" \"" + outputPak + "\"";
-	STARTUPINFOA si = { sizeof(si) };
-	PROCESS_INFORMATION pi;
-	BOOL result = CreateProcessA(
-		nullptr, (LPSTR)cmd.c_str(), nullptr, nullptr, FALSE,
-		CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi);
-
-	if (!result) return false;
-
-	MessageBoxA(NULL, "アーカイブ化を開始しました。完了までしばらくお待ちください。", "情報", MB_OK | MB_ICONINFORMATION);
-
-	// プロセス終了まで待機
-	WaitForSingleObject(pi.hProcess, INFINITE);
-
-	DWORD exitCode = 0;
-	GetExitCodeProcess(pi.hProcess, &exitCode);
-
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
-
-	return (exitCode == 0);
+    std::string cmd = "\"" + toolPath + "\" \"" + assetDir + "\" \"" + outputPak + "\"";
+    STARTUPINFOA si = { sizeof(si) };
+    PROCESS_INFORMATION pi;
+    BOOL result = CreateProcessA(nullptr, (LPSTR)cmd.c_str(), nullptr, nullptr, FALSE,
+        CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi);
+    if (!result) return false;
+    MessageBoxA(NULL, "アーカイブ生成を開始しました。完了までお待ちください。", "情報", MB_OK | MB_ICONINFORMATION);
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    DWORD exitCode = 0;
+    GetExitCodeProcess(pi.hProcess, &exitCode);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    return (exitCode == 0);
 }
 
-bool RunArchiveTool(const std::string& toolExePath, const std::string& assetDir, const std::string& archivePath)
-{
-	// コマンドライン例: "SceneRoot/Tool/Tool.exe" "SceneRoot/Assets" "SceneRoot/Archive/assets.PixAssets"
-	std::string cmd = "\"" + toolExePath + "\" \"" + assetDir + "\" \"" + archivePath + "\"";
-
-	STARTUPINFOA si = { sizeof(si) };
-	PROCESS_INFORMATION pi;
-	BOOL result = CreateProcessA(
-		nullptr,            // lpApplicationName
-		(LPSTR)cmd.c_str(), // lpCommandLine
-		nullptr,            // lpProcessAttributes
-		nullptr,            // lpThreadAttributes
-		FALSE,              // bInheritHandles
-		CREATE_NO_WINDOW,   // dwCreationFlags
-		nullptr,            // lpEnvironment
-		nullptr,            // lpCurrentDirectory
-		&si,                // lpStartupInfo
-		&pi                 // lpProcessInformation
-	);
-
-	if (!result) {
-		std::string ErrorMsg = "ツールの起動に失敗: " + std::to_string(GetLastError());
-		MessageBoxA(NULL, ErrorMsg.c_str(), "エラー", MB_OK | MB_ICONERROR);
-		return false;
-	}
-
-	// 起動後終了まで待機
-	WaitForSingleObject(pi.hProcess, INFINITE);
-
-	DWORD exitCode = 0;
-	GetExitCodeProcess(pi.hProcess, &exitCode);
-
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
-
-	return (exitCode == 0);
+bool RunArchiveTool(const std::string& toolExePath, const std::string& assetDir, const std::string& archivePath) {
+    std::string cmd = "\"" + toolExePath + "\" \"" + assetDir + "\" \"" + archivePath + "\"";
+    STARTUPINFOA si = { sizeof(si) };
+    PROCESS_INFORMATION pi;
+    BOOL result = CreateProcessA(nullptr, (LPSTR)cmd.c_str(), nullptr, nullptr, FALSE,
+        CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi);
+    if (!result) {
+        std::string ErrorMsg = "ツールの起動に失敗: " + std::to_string(GetLastError());
+        MessageBoxA(NULL, ErrorMsg.c_str(), "エラー", MB_OK | MB_ICONERROR);
+        return false;
+    }
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    DWORD exitCode = 0;
+    GetExitCodeProcess(pi.hProcess, &exitCode);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    return (exitCode == 0);
 }

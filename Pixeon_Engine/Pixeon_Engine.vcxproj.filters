@@ -134,6 +134,12 @@
     <ClCompile Include="ModelComponent.cpp">
       <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
+    <ClCompile Include="ModelRuntimeResource.cpp">
+      <Filter>ソース ファイル\Sys</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelAnimationController.cpp">
+      <Filter>ソース ファイル\Sys</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -219,6 +225,12 @@
     </ClInclude>
     <ClInclude Include="ModelComponent.h">
       <Filter>ソース ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelAnimationController.h">
+      <Filter>ソース ファイル\Sys</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelRuntimeResource.h">
+      <Filter>ソース ファイル\Sys</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
