@@ -14,9 +14,6 @@ struct PakHeader {
 };
 #pragma pack(pop)
 
-// TOC v1: (nameLen, name, compression, 3*res, crc32, originalSize, storedSize, offset)
-// TOC v2: è„ãL + sha256[32]
-
 // à≥èkéÌï 
 enum class AssetCompression : uint16_t {
     None = 0,
