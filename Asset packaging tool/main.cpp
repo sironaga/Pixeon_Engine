@@ -1,97 +1,157 @@
 #include <windows.h>
-#include <iostream>
-#include <fstream>
+#include <cstdint>
 #include <vector>
 #include <string>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <algorithm>
+#include <iomanip>
+#include "ArchiveFormat.h"
+#include "HashUtill.h"
 
-struct AssetEntry {
-    std::string name;
-    uint64_t size;
-    uint64_t offset;
+namespace fs = std::filesystem;
+
+static uint64_t AlignValue(uint64_t v, uint64_t a) { return (v + (a - 1)) & ~(a - 1); }
+
+struct TempFileEntry {
+    std::string relativePath;
+    uint64_t originalSize = 0;
+    uint64_t storedSize = 0;
+    uint64_t offset = 0;
+    uint32_t crc32 = 0;
+    uint8_t  compression = 0;
+    std::array<uint8_t, 32> sha256{};
 };
 
-// ディレクトリ内のファイルリスト取得
-std::vector<std::string> ListFiles(const std::string& dir) {
-    std::vector<std::string> files;
-    WIN32_FIND_DATAA fd;
-    std::string pattern = dir + "\\*";
-    HANDLE hFind = FindFirstFileA(pattern.c_str(), &fd);
-    if (hFind == INVALID_HANDLE_VALUE) return files;
-    do {
-        if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-            files.push_back(fd.cFileName);
-        }
-    } while (FindNextFileA(hFind, &fd));
-    FindClose(hFind);
-    return files;
+static void CollectFiles(const fs::path& root, std::vector<TempFileEntry>& out) {
+    for (auto& p : fs::recursive_directory_iterator(root)) {
+        if (!p.is_regular_file()) continue;
+        auto rel = fs::relative(p.path(), root);
+        std::string r = rel.generic_string();
+        std::transform(r.begin(), r.end(), r.begin(), [](unsigned char c) { return (char)tolower(c); });
+        TempFileEntry e;
+        e.relativePath = r;
+        out.push_back(std::move(e));
+    }
 }
 
-int main(int argc, char* argv[]){
-    if (argc != 3) {
-        std::cout << "使い方: PixAssetPacker.exe <input_dir> <output.PixAssets>" << std::endl;
+int main(int argc, char* argv[]) {
+    SetConsoleOutputCP(CP_UTF8);
+    if (argc < 3 || argc > 4) {
+        std::cout << "使用方法: PixAssetPacker.exe <input_dir> <output.pak> [alignment]\n";
         return 1;
     }
-    std::string inputDir = argv[1];
-    std::string outputPak = argv[2];
 
-    // ファイル一覧取得
-    auto files = ListFiles(inputDir);
+    fs::path inputDir = argv[1];
+    fs::path outputPak = argv[2];
+    uint32_t alignment = 16;
+    if (argc == 4) alignment = std::max<uint32_t>(1, std::stoul(argv[3]));
+
+    if (!fs::exists(inputDir) || !fs::is_directory(inputDir)) {
+        std::cout << "入力ディレクトリが存在しません\n";
+        return 1;
+    }
+
+    std::vector<TempFileEntry> files;
+    CollectFiles(inputDir, files);
     if (files.empty()) {
-        std::cout << "入力ディレクトリにファイルがありません。" << std::endl;
+        std::cout << "対象ファイルがありません\n";
         return 1;
     }
 
-    std::ofstream out(outputPak, std::ios::binary);
-    if (!out) {
-        std::cout << "出力ファイル作成失敗: " << outputPak << std::endl;
+    HashUtil::InitCRC32();
+
+    PakHeader header{};
+    memcpy(header.magic, "PIXPAK\0", 8);
+    header.version = 2;  // v2
+    header.fileCount = (uint32_t)files.size();
+    header.tocOffset = 0;
+    header.flags = 0;
+    header.alignment = alignment;
+    memset(header.reserved, 0, sizeof(header.reserved));
+
+    std::ofstream ofs(outputPak, std::ios::binary);
+    if (!ofs) {
+        std::cout << "出力を開けません: " << outputPak << "\n";
         return 1;
     }
 
-    // ヘッダー: ファイル数
-    uint32_t fileCount = static_cast<uint32_t>(files.size());
-    out.write((char*)&fileCount, sizeof(fileCount));
+    ofs.write(reinterpret_cast<const char*>(&header), sizeof(header));
+    uint64_t currentOffset = sizeof(header);
 
-    // エントリ情報（後で埋めるため一旦空で書き込む）
-    std::vector<AssetEntry> entries(fileCount);
-    size_t headerPos = out.tellp();
-    size_t entryTableSize = (sizeof(uint32_t) + 260 + sizeof(uint64_t) * 2) * fileCount; // name長+name+size+offset
-    std::vector<char> empty(entryTableSize, 0);
-    out.write(empty.data(), entryTableSize);
+    size_t idx = 0;
+    for (auto& fe : files) {
+        uint64_t aligned = AlignValue(currentOffset, header.alignment);
+        if (aligned != currentOffset) {
+            size_t pad = (size_t)(aligned - currentOffset);
+            static const char padBuf[4096]{};
+            while (pad > 0) {
+                size_t chunk = std::min<size_t>(pad, sizeof(padBuf));
+                ofs.write(padBuf, chunk);
+                pad -= chunk;
+            }
+            currentOffset = aligned;
+        }
 
-    // データ書き込み
-    uint64_t curOffset = sizeof(fileCount) + entryTableSize;
-    for (size_t i = 0; i < files.size(); ++i) {
-        std::string fullpath = inputDir + "\\" + files[i];
-        std::ifstream in(fullpath, std::ios::binary | std::ios::ate);
-        if (!in) {
-            std::cout << "ファイルオープン失敗: " << fullpath << std::endl;
+        fs::path full = inputDir / fe.relativePath;
+        std::ifstream ifs(full, std::ios::binary | std::ios::ate);
+        if (!ifs) {
+            std::cout << "読込失敗: " << full << "\n";
             return 1;
         }
-        uint64_t sz = in.tellg();
-        in.seekg(0, std::ios::beg);
-        std::vector<char> buf(sz);
-        in.read(buf.data(), sz);
-        out.write(buf.data(), sz);
+        uint64_t sz = (uint64_t)ifs.tellg();
+        ifs.seekg(0, std::ios::beg);
+        std::vector<uint8_t> buf;
+        buf.resize((size_t)sz);
+        if (sz > 0) {
+            if (!ifs.read(reinterpret_cast<char*>(buf.data()), sz)) {
+                std::cout << "読込中エラー: " << full << "\n";
+                return 1;
+            }
+        }
 
-        entries[i].name = files[i];
-        entries[i].size = sz;
-        entries[i].offset = curOffset;
-        curOffset += sz;
+        fe.originalSize = sz;
+        fe.storedSize = sz;
+        fe.offset = currentOffset;
+        fe.crc32 = HashUtil::CalcCRC32(buf.data(), buf.size());
+        auto h = HashUtil::SHA256(buf);
+        fe.sha256 = h;
+
+        if (sz > 0) ofs.write(reinterpret_cast<const char*>(buf.data()), sz);
+        currentOffset += sz;
+
+        ++idx;
+        if (idx % 10 == 0 || idx == files.size()) {
+            double prog = (double)idx / files.size() * 100.0;
+            std::cout << "\r書き込み中... " << std::fixed << std::setprecision(1) << prog << "%";
+        }
+    }
+    std::cout << "\n";
+
+    header.tocOffset = currentOffset;
+
+    // TOC 書き込み (v2)
+    for (auto& fe : files) {
+        uint16_t nameLen = (uint16_t)fe.relativePath.size();
+        ofs.write(reinterpret_cast<const char*>(&nameLen), sizeof(nameLen));
+        ofs.write(fe.relativePath.data(), nameLen);
+        ofs.write(reinterpret_cast<const char*>(&fe.compression), 1);
+        uint8_t reservedC[3]{};
+        ofs.write(reinterpret_cast<const char*>(reservedC), 3);
+        ofs.write(reinterpret_cast<const char*>(&fe.crc32), sizeof(fe.crc32));
+        ofs.write(reinterpret_cast<const char*>(&fe.originalSize), sizeof(fe.originalSize));
+        ofs.write(reinterpret_cast<const char*>(&fe.storedSize), sizeof(fe.storedSize));
+        ofs.write(reinterpret_cast<const char*>(&fe.offset), sizeof(fe.offset));
+        ofs.write(reinterpret_cast<const char*>(fe.sha256.data()), fe.sha256.size());
     }
 
-    // エントリテーブル書き込み
-    out.seekp(headerPos, std::ios::beg);
-    for (auto& e : entries) {
-        uint32_t nameLen = static_cast<uint32_t>(e.name.size());
-        char nameBuf[260] = {};
-        memcpy(nameBuf, e.name.c_str(), nameLen);
+    ofs.seekp(0, std::ios::beg);
+    ofs.write(reinterpret_cast<const char*>(&header), sizeof(header));
+    ofs.flush();
 
-        out.write((char*)&nameLen, sizeof(nameLen));
-        out.write(nameBuf, 260); // 固定長
-        out.write((char*)&e.size, sizeof(e.size));
-        out.write((char*)&e.offset, sizeof(e.offset));
-    }
-
-    std::cout << "パッキング完了: " << outputPak << std::endl;
+    std::cout << "パック完了: " << outputPak << "\n";
+    std::cout << "ファイル数: " << files.size() << "\n";
+    std::cout << "TOC Offset: " << header.tocOffset << "\n";
     return 0;
 }
