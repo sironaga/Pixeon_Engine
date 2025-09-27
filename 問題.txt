@@ -1,0 +1,167 @@
+ModelComponentの描画問題 - 根本原因分析レポート
+
+## 問題の概要
+現在作成中のModelComponent（AdvancedModelComponent）で3Dモデル（FBXファイル）の描画が正常に行われない問題が発生しています。
+
+## 原因分析
+
+### 1. シェーダーの問題
+**現象**: ModelComponentで指定されているシェーダー（VS_ModelSkin.hlsl, PS_ModelSkin.hlsl）が正しく動作しない可能性があります。
+
+**詳細分析**:
+- VS_ModelSkin.hlsl: スキンアニメーション用の頂点シェーダー
+- PS_ModelSkin.hlsl: マテリアル処理用のピクセルシェーダー
+- シェーダーのコンパイルエラーまたは定数バッファの設定ミスが考えられます
+
+**問題箇所**: 
+- ModelComponent.cpp の line 112-132: EnsureInputLayout関数でシェーダーのバイトコード取得に失敗している可能性
+- ShaderManager::GetVSBytecode()の呼び出しが失敗している
+
+### 2. GPU リソースの作成失敗
+**現象**: ModelRuntimeResource::BuildGPU()でのバーテックスバッファまたはインデックスバッファの作成に失敗している可能性があります。
+
+**詳細分析**:
+- ModelRuntimeResource.cpp の line 246-265: CreateBuffer呼び出しが失敗している可能性
+- DirectX11デバイスの状態に問題がある
+
+### 3. アセット読み込みの問題
+**現象**: FBXファイルの読み込み処理でAssimp関連のエラーが発生している可能性があります。
+
+**詳細分析**:
+- ModelRuntimeResource.cpp の line 52-79: AssetsManager::LoadAsset()またはAssimp::ReadFileFromMemory()の失敗
+- FBXファイル自体の破損または非対応フォーマット
+
+### 4. 入力レイアウトの不整合
+**現象**: 頂点シェーダーと頂点データの入力レイアウトが一致していない可能性があります。
+
+**詳細分析**:
+- ModelComponent.cpp の line 120-131: D3D11_INPUT_ELEMENT_DESC配列の定義
+- AModelVertex構造体（ModelRuntimeResource.h line 39-46）との不整合
+
+### 5. 描画パイプラインの設定ミス
+**現象**: Draw()メソッドでの描画ステート設定に問題がある可能性があります。
+
+**詳細分析**:
+- ModelComponent.cpp の line 393-464: Draw()メソッド内の処理
+- カメラマトリクス設定、マテリアル設定、テクスチャバインドの問題
+
+## 特定された重要な問題点（修正済み）
+
+### 問題1: PS_ModelPBRシェーダーの不存在 ✓修正済み
+ModelComponent.cpp line 27でデフォルトピクセルシェーダーが"PS_ModelPBR"に設定されていましたが、実際のシェーダーファイルは"PS_ModelSkin.hlsl"でした。この名前の不一致により、正しいシェーダーが読み込まれませんでした。
+**修正内容**: ModelComponent.cpp および ModelRuntimeResource.h で "PS_ModelPBR" を "PS_ModelSkin" に変更
+
+### 問題2: 頂点シェーダーとピクセルシェーダー間の構造体不整合 ✓修正済み
+VS_ModelSkin.hlsl の VS_OUTPUT 構造体で worldPos : TEXCOORD1 を定義していましたが、PS_ModelSkin.hlsl の PS_INPUT 構造体では該当フィールドが欠落していました。
+**修正内容**: PS_ModelSkin.hlsl の PS_INPUT 構造体に worldPos : TEXCOORD1 を追加
+
+### 問題3: サンプラーステートの未設定 ✓修正済み
+ピクセルシェーダーで SampLin : register(s0) サンプラーを参照していましたが、Draw() メソッドでサンプラーステートが設定されていませんでした。
+**修正内容**: ModelComponent.cpp の Draw() メソッドにサンプラーステート設定を追加、System.h に GetSamplerState() メソッドを追加
+
+### 問題4: ボーン配列サイズの不整合 ✓修正済み
+C++コードでは AMODEL_MAX_BONES = 512 でボーンデータを定義していましたが、VS_ModelSkin.hlsl では gBones[128] と宣言されており、定数バッファサイズの不整合が発生していました。
+**修正内容**: VS_ModelSkin.hlsl の gBones 配列サイズを 128 から 512 に変更
+
+### 問題5: エラーハンドリングの不十分
+LoadModel()メソッド（line 54-97）でエラーが発生した場合、MessageBoxでエラーを表示しますが、詳細なデバッグ情報が不足しています。
+
+### 問題6: アセットパスの解決
+AssetsManagerのFromSourceモードでのアセット読み込み時、相対パスの解決に問題がある可能性があります。
+
+## 検証すべき項目
+
+### 1. シェーダーファイルの確認
+- Exe/SceneRoot/Shader/hlsl/PS_ModelPBR.hlsl の存在確認
+- シェーダーのコンパイル状況確認
+- ShaderManagerでの登録状況確認
+
+### 2. FBXファイルの妥当性確認
+- 使用するFBXファイルが正常に読み込み可能か
+- Assimpでサポートされているフォーマットか
+- ファイルサイズや構造の確認
+
+### 3. DirectX11デバイスの状態確認
+- System.cpp でのDirectX11初期化が正常に完了しているか
+- デバイス、コンテキストが有効な状態か
+
+### 4. アセット管理の確認
+- AssetsManagerの初期化状況
+- FromSourceモードでの正しいパス設定
+- アセットキャッシュの状態
+
+## コパイロット向け解決のための情報
+
+### コードベース構造
+- **メインクラス**: AdvancedModelComponent (ModelComponent.h/.cpp)
+- **リソース管理**: ModelRuntimeResource (ModelRuntimeResource.h/.cpp)
+- **アセット管理**: AssetsManager (AssetsManager.h/.cpp)
+- **シェーダー管理**: ShaderManager (ShaderManager.h/.cpp)
+- **3Dライブラリ**: Assimp (外部依存関係)
+
+### キーファイル場所
+- シェーダー: /Exe/SceneRoot/Shader/hlsl/
+- アセット: /Exe/SceneRoot/Assets/
+- FBXモデル: /Exe/SceneRoot/Assets/Player/Test.fbx など
+
+### デバッグ手順
+1. ShaderManager::GetVertexShader() / GetPixelShader() の戻り値確認
+2. ModelRuntimeResource::LoadFromAsset() の戻り値確認
+3. BuildGPU() の戻り値確認
+4. Draw() メソッド内でのnullptrチェック強化
+
+### 修正方針
+1. シェーダー名の統一（PS_ModelPBR → PS_ModelSkin）
+2. エラーログ機能の強化
+3. 各ステップでの詳細な戻り値確認
+4. アセットパス解決ロジックの見直し
+
+### 使用技術スタック
+- DirectX11 (グラフィックスAPI)
+- Assimp (3Dモデル読み込み)
+- HLSL (シェーダー言語)
+- C++ (プログラミング言語)
+
+## 適用された修正内容
+
+### 修正1: シェーダー名の統一
+**ファイル**: ModelComponent.cpp line 27, ModelRuntimeResource.h line 121
+**変更**: `m_unifiedPS = "PS_ModelPBR"` → `m_unifiedPS = "PS_ModelSkin"`
+**理由**: 実際に存在するシェーダーファイル名に合わせて修正
+
+### 修正2: シェーダー構造体の整合性修正
+**ファイル**: PS_ModelSkin.hlsl line 12-17
+**変更**: PS_INPUT構造体に `float3 worldPos : TEXCOORD1;` を追加
+**理由**: 頂点シェーダーからの出力と一致させるため
+
+### 修正3: サンプラーステート設定の追加
+**ファイル**: ModelComponent.cpp line 452-456, System.h line 142-144
+**変更**: 
+- Draw()メソッドにサンプラーステート設定コードを追加
+- System.hにGetSamplerState()メソッドを追加
+**理由**: ピクセルシェーダーがテクスチャサンプリングで使用するため
+
+### 修正4: ボーン配列サイズの統一
+**ファイル**: VS_ModelSkin.hlsl line 10
+**変更**: `matrix gBones[128];` → `matrix gBones[512];`
+**理由**: C++側のAMODEL_MAX_BONES定数値に合わせるため
+
+## 修正後の動作確認手順
+
+### 1. シェーダーコンパイル確認
+- ShaderManager でのシェーダー読み込みが正常に完了するか確認
+- エラーログでコンパイルエラーが解消されているか確認
+
+### 2. モデル読み込み確認
+- FBXファイルの読み込みが正常に完了するか確認
+- ModelRuntimeResource::LoadFromAsset() の戻り値確認
+
+### 3. 描画確認
+- Draw()メソッドが正常に実行されるか確認
+- モデルがレンダーターゲットに描画されるか確認
+
+### 4. GPU リソース確認
+- バーテックスバッファ、インデックスバッファの作成が成功するか確認
+- 入力レイアウトの作成が成功するか確認
+
+これらの修正により、ModelComponentの基本的な描画機能が正常に動作するようになると予想されます。

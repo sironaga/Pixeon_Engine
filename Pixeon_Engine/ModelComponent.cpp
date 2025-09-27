@@ -24,7 +24,7 @@ AdvancedModelComponent::AdvancedModelComponent() {
     _ComponentName = "AdvancedModelComponent";
     _Type = ComponentManager::COMPONENT_TYPE::MODEL;
     m_unifiedVS = "VS_ModelSkin";
-    m_unifiedPS = "PS_ModelPBR";
+    m_unifiedPS = "PS_ModelSkin";
     for (int i = (int)MeshPartType::HEAD; i <= (int)MeshPartType::OTHER; ++i)
         m_partVisible[(MeshPartType)i] = true;
     m_modelFilter[0] = '\0';
@@ -57,12 +57,12 @@ bool AdvancedModelComponent::LoadModel(const std::string& assetName, bool force)
     Clear();
     m_resource = std::make_shared<ModelRuntimeResource>();
     if (!m_resource->LoadFromAsset(assetName)) {
-        ShowErrorMessage("Model Load Error", "[LoadModel] Asset “Ç‚İ‚İ¸”s: " + assetName);
+        ShowErrorMessage("Model Load Error", "[LoadModel] Asset ï¿½Ç‚İï¿½ï¿½İï¿½ï¿½s: " + assetName);
         m_resource.reset();
         return false;
     }
     if (!m_resource->BuildGPU(DirectX11::GetInstance()->GetDevice())) {
-        ShowErrorMessage("Model GPU Error", "[LoadModel] GPU ƒoƒbƒtƒ@ì¬¸”s: " + assetName);
+        ShowErrorMessage("Model GPU Error", "[LoadModel] GPU ï¿½oï¿½bï¿½tï¿½@ï¿½ì¬ï¿½ï¿½ï¿½s: " + assetName);
         m_resource.reset();
         return false;
     }
@@ -70,7 +70,7 @@ bool AdvancedModelComponent::LoadModel(const std::string& assetName, bool force)
     m_animCtrl.SetResource(m_resource);
     if (!m_resource->animations.empty()) {
         if (!m_animCtrl.Play(0, true, 1.0)) {
-            ShowErrorMessage("Animation Error", "[LoadModel] Å‰‚ÌƒAƒjƒ[ƒVƒ‡ƒ“Ä¶‚É¸”s");
+            ShowErrorMessage("Animation Error", "[LoadModel] ï¿½Åï¿½ï¿½ÌƒAï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½Äï¿½ï¿½Éï¿½ï¿½s");
         }
         else {
             m_selectedClip = 0;
@@ -78,13 +78,13 @@ bool AdvancedModelComponent::LoadModel(const std::string& assetName, bool force)
     }
     SetUnifiedShader(m_unifiedVS, m_unifiedPS);
     if (!ResolveAndLoadMaterialTextures()) {
-        ShowErrorMessage("Material Load Warning", "[LoadModel] ƒ}ƒeƒŠƒAƒ‹ƒeƒNƒXƒ`ƒƒ‰ğŒˆ‚Ìˆê•”‚É¸”s");
+        ShowErrorMessage("Material Load Warning", "[LoadModel] ï¿½}ï¿½eï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìˆê•”ï¿½Éï¿½ï¿½s");
     }
     ClassifySubMeshes();
     m_loaded = true;
     m_currentAsset = assetName;
 
-    // ‘I‘ğ•Û
+    // ï¿½Iï¿½ï¿½Ûï¿½
     RefreshCachedModelAssetList(true);
     for (int i = 0; i < (int)m_cachedModelAssets.size(); ++i) {
         if (m_cachedModelAssets[i] == assetName) {
@@ -113,7 +113,7 @@ void AdvancedModelComponent::EnsureInputLayout(const std::string& vs) {
     if (vs.empty()) return;
     const void* bc = nullptr; size_t sz = 0;
     if (!ShaderManager::GetInstance()->GetVSBytecode(vs, &bc, &sz)) {
-        ShowErrorMessage("Shader Error", "[EnsureInputLayout] VS Bytecode –¢æ“¾: " + vs);
+        ShowErrorMessage("Shader Error", "[EnsureInputLayout] VS Bytecode ï¿½ï¿½ï¿½æ“¾: " + vs);
         return;
     }
     auto dev = DirectX11::GetInstance()->GetDevice();
@@ -127,7 +127,7 @@ void AdvancedModelComponent::EnsureInputLayout(const std::string& vs) {
     };
     m_inputLayout.Reset();
     if (FAILED(dev->CreateInputLayout(desc, _countof(desc), bc, sz, m_inputLayout.GetAddressOf()))) {
-        ShowErrorMessage("Shader Error", "[EnsureInputLayout] CreateInputLayout ¸”s");
+        ShowErrorMessage("Shader Error", "[EnsureInputLayout] CreateInputLayout ï¿½ï¿½ï¿½s");
     }
 }
 
@@ -138,10 +138,10 @@ void AdvancedModelComponent::EditUpdate() {
     prev = now;
     UpdateAnimation(dt);
 
-    // 5 •b‚²‚Æ‚Ì©“®ƒŠƒXƒgÄ\’zi‘I‘ğ•Û‘Î‰j
+    // 5 ï¿½bï¿½ï¿½ï¿½Æ‚Ìï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½gï¿½Ä\ï¿½zï¿½iï¿½Iï¿½ï¿½Ûï¿½ï¿½Î‰ï¿½ï¿½j
     double tSec = std::chrono::duration<double>(now.time_since_epoch()).count();
     if (tSec - m_lastRefreshTime > 5.0) {
-        RefreshCachedModelAssetList(false); // force=false ‚Å‘I‘ğ•Û
+        RefreshCachedModelAssetList(false); // force=false ï¿½Å‘Iï¿½ï¿½Ûï¿½
         m_lastRefreshTime = tSec;
     }
 }
@@ -174,14 +174,14 @@ bool AdvancedModelComponent::PlayAnimation(const std::string& clipName, bool loo
     for (int i = 0; i < (int)m_resource->animations.size(); i++) {
         if (m_resource->animations[i].name == clipName) {
             if (!m_animCtrl.Play(i, loop, speed)) {
-                ShowErrorMessage("Animation Error", "[PlayAnimation] Ä¶‚É¸”s: " + clipName);
+                ShowErrorMessage("Animation Error", "[PlayAnimation] ï¿½Äï¿½ï¿½Éï¿½ï¿½s: " + clipName);
                 return false;
             }
             m_selectedClip = i;
             return true;
         }
     }
-    ShowErrorMessage("Animation Error", "[PlayAnimation] ƒNƒŠƒbƒv‚ª‘¶İ‚µ‚Ü‚¹‚ñ: " + clipName);
+    ShowErrorMessage("Animation Error", "[PlayAnimation] ï¿½Nï¿½ï¿½ï¿½bï¿½vï¿½ï¿½ï¿½ï¿½ï¿½İ‚ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½: " + clipName);
     return false;
 }
 
@@ -190,13 +190,13 @@ bool AdvancedModelComponent::BlendToAnimation(const std::string& clipName, doubl
     for (int i = 0; i < (int)m_resource->animations.size(); i++) {
         if (m_resource->animations[i].name == clipName) {
             if (!m_animCtrl.BlendTo(i, duration, mode, loop, speed)) {
-                ShowErrorMessage("Animation Error", "[BlendToAnimation] ƒuƒŒƒ“ƒhŠJn¸”s: " + clipName);
+                ShowErrorMessage("Animation Error", "[BlendToAnimation] ï¿½uï¿½ï¿½ï¿½ï¿½ï¿½hï¿½Jï¿½nï¿½ï¿½ï¿½s: " + clipName);
                 return false;
             }
             return true;
         }
     }
-    ShowErrorMessage("Animation Error", "[BlendToAnimation] ƒNƒŠƒbƒv‚ª‘¶İ‚µ‚Ü‚¹‚ñ: " + clipName);
+    ShowErrorMessage("Animation Error", "[BlendToAnimation] ï¿½Nï¿½ï¿½ï¿½bï¿½vï¿½ï¿½ï¿½ï¿½ï¿½İ‚ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½: " + clipName);
     return false;
 }
 
@@ -217,7 +217,7 @@ void AdvancedModelComponent::TouchCacheOrder(const std::string& key) {
 bool AdvancedModelComponent::SetMaterialTexture(uint32_t matIdx, uint32_t slot, const std::string& assetName) {
     if (!m_resource) return false;
     if (matIdx >= m_resource->materials.size()) {
-        ShowErrorMessage("Material Error", "[SetMaterialTexture] material index ”ÍˆÍŠO");
+        ShowErrorMessage("Material Error", "[SetMaterialTexture] material index ï¿½ÍˆÍŠO");
         return false;
     }
     auto& mat = m_resource->materials[matIdx];
@@ -232,7 +232,7 @@ bool AdvancedModelComponent::SetMaterialTexture(uint32_t matIdx, uint32_t slot, 
 
     std::vector<uint8_t> data;
     if (!AssetsManager::GetInstance()->LoadAsset(assetName, data)) {
-        ShowErrorMessage("Material Error", "[SetMaterialTexture] ƒeƒNƒXƒ`ƒƒ‘Yæ“¾¸”s: " + assetName);
+        ShowErrorMessage("Material Error", "[SetMaterialTexture] ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½Yï¿½æ“¾ï¿½ï¿½ï¿½s: " + assetName);
         return false;
     }
 
@@ -249,7 +249,7 @@ bool AdvancedModelComponent::SetMaterialTexture(uint32_t matIdx, uint32_t slot, 
         hr = LoadFromWICMemory(data.data(), data.size(), WIC_FLAGS_FORCE_SRGB, nullptr, img);
 
     if (FAILED(hr)) {
-        ShowErrorMessage("Material Error", "[SetMaterialTexture] ƒfƒR[ƒh¸”s: " + assetName);
+        ShowErrorMessage("Material Error", "[SetMaterialTexture] ï¿½fï¿½Rï¿½[ï¿½hï¿½ï¿½ï¿½s: " + assetName);
         return false;
     }
     if (img.GetMetadata().mipLevels <= 1) {
@@ -263,7 +263,7 @@ bool AdvancedModelComponent::SetMaterialTexture(uint32_t matIdx, uint32_t slot, 
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv;
     if (FAILED(CreateShaderResourceView(dev, img.GetImages(), img.GetImageCount(),
         img.GetMetadata(), srv.GetAddressOf()))) {
-        ShowErrorMessage("Material Error", "[SetMaterialTexture] CreateSRV ¸”s: " + assetName);
+        ShowErrorMessage("Material Error", "[SetMaterialTexture] CreateSRV ï¿½ï¿½ï¿½s: " + assetName);
         return false;
     }
     m_texCache[assetName] = srv;
@@ -353,18 +353,18 @@ void AdvancedModelComponent::RefreshCachedModelAssetList(bool force) {
     }
     std::sort(filtered.begin(), filtered.end());
 
-    // ƒŠƒXƒg•Ï‰»”»’èiforce ‚Ü‚½‚ÍƒTƒCƒY/—v‘f·ˆÙj
+    // ï¿½ï¿½ï¿½Xï¿½gï¿½Ï‰ï¿½ï¿½ï¿½ï¿½ï¿½iforce ï¿½Ü‚ï¿½ï¿½ÍƒTï¿½Cï¿½Y/ï¿½vï¿½fï¿½ï¿½ï¿½Ùj
     bool changed = force || (filtered.size() != m_cachedModelAssets.size());
     if (!changed) {
         for (size_t i = 0; i < filtered.size(); ++i) {
             if (filtered[i] != m_cachedModelAssets[i]) { changed = true; break; }
         }
     }
-    if (!changed) return; // •Ï‰»‚È‚µ‚È‚ç‰½‚à‚µ‚È‚¢
+    if (!changed) return; // ï¿½Ï‰ï¿½ï¿½È‚ï¿½ï¿½È‚ç‰½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½
 
     m_cachedModelAssets = std::move(filtered);
 
-    // ‘I‘ğ•Ûˆ—
+    // ï¿½Iï¿½ï¿½Ûï¿½ï¿½ï¿½ï¿½ï¿½
     int newIndex = -1;
     if (!m_selectedCachedAssetName.empty()) {
         for (int i = 0; i < (int)m_cachedModelAssets.size(); ++i) {
@@ -374,7 +374,7 @@ void AdvancedModelComponent::RefreshCachedModelAssetList(bool force) {
             }
         }
     }
-    // V‹Kƒ[ƒh’¼Œã‚Í m_currentAsset ‚ğ—Dæ
+    // ï¿½Vï¿½Kï¿½ï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½ï¿½ï¿½ m_currentAsset ï¿½ï¿½Dï¿½ï¿½
     if (newIndex == -1 && !m_currentAsset.empty()) {
         for (int i = 0; i < (int)m_cachedModelAssets.size(); ++i) {
             if (m_cachedModelAssets[i] == m_currentAsset) {
@@ -384,7 +384,7 @@ void AdvancedModelComponent::RefreshCachedModelAssetList(bool force) {
             }
         }
     }
-    // Œ©‚Â‚©‚ç‚È‚©‚Á‚½ê‡‚Í]—ˆƒCƒ“ƒfƒbƒNƒX‚ğˆÛi‘¶İ‚µ‚È‚¢‚È‚ç©‘R‚ÉŠO‚ê‚éj
+    // ï¿½ï¿½ï¿½Â‚ï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½Í]ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½fï¿½bï¿½Nï¿½Xï¿½ï¿½ï¿½Ûï¿½ï¿½iï¿½ï¿½ï¿½İ‚ï¿½ï¿½È‚ï¿½ï¿½È‚ç©ï¿½Rï¿½ÉŠOï¿½ï¿½ï¿½j
     if (newIndex != -1) {
         m_cachedAssetSelected = newIndex;
     }
@@ -449,6 +449,12 @@ void AdvancedModelComponent::Draw() {
         ctx->VSSetShader(vs, nullptr, 0);
         ctx->PSSetShader(ps, nullptr, 0);
 
+        // Set sampler state for textures
+        auto samplerState = DirectX11::GetInstance()->GetSamplerState(SAMPLER_LINEAR);
+        if (samplerState) {
+            ctx->PSSetSamplers(0, 1, &samplerState);
+        }
+
         if (!mat.textures.empty()) {
             ID3D11ShaderResourceView* arr[8]{};
             UINT cnt = 0;
@@ -497,7 +503,7 @@ void AdvancedModelComponent::DrawSection_Model() {
         if (ImGui::Button("ListCached")) {
             RefreshCachedModelAssetList(true);
         }
-        ImGui::TextUnformatted("ƒLƒƒƒbƒVƒ…Ï‚İƒ‚ƒfƒ‹‚È‚µ / AssetsManager::LoadAsset ‚Å“Ç‚İ‚ñ‚Å‚­‚¾‚³‚¢");
+        ImGui::TextUnformatted("ï¿½Lï¿½ï¿½ï¿½bï¿½Vï¿½ï¿½ï¿½Ï‚İƒï¿½ï¿½fï¿½ï¿½ï¿½È‚ï¿½ / AssetsManager::LoadAsset ï¿½Å“Ç‚İï¿½ï¿½ï¿½Å‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
     }
     else {
         std::string currentLabel = (m_cachedAssetSelected >= 0 && m_cachedAssetSelected < (int)m_cachedModelAssets.size()) ?
@@ -508,7 +514,7 @@ void AdvancedModelComponent::DrawSection_Model() {
                 if (ImGui::Selectable(m_cachedModelAssets[i].c_str(), sel)) {
                     m_cachedAssetSelected = i;
                     if (i >= 0 && i < (int)m_cachedModelAssets.size())
-                        m_selectedCachedAssetName = m_cachedModelAssets[i]; // ‘I‘ğ•Û•¶š—ñXV
+                        m_selectedCachedAssetName = m_cachedModelAssets[i]; // ï¿½Iï¿½ï¿½Ûï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½V
                 }
                 if (sel) ImGui::SetItemDefaultFocus();
             }
@@ -519,7 +525,7 @@ void AdvancedModelComponent::DrawSection_Model() {
         if (!canLoad) ImGui::BeginDisabled();
         if (ImGui::Button("Load Selected") && canLoad) {
             if (!LoadModel(m_cachedModelAssets[m_cachedAssetSelected], true)) {
-                ShowErrorMessage("Model Load Error", "‘I‘ğƒ‚ƒfƒ‹‚Ìƒ[ƒh‚É¸”s‚µ‚Ü‚µ‚½B");
+                ShowErrorMessage("Model Load Error", "ï¿½Iï¿½ï¿½ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½Ìƒï¿½ï¿½[ï¿½hï¿½Éï¿½ï¿½sï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½ï¿½B");
             }
         }
         if (!canLoad) ImGui::EndDisabled();
@@ -531,7 +537,7 @@ void AdvancedModelComponent::DrawSection_Model() {
     if (ImGui::Button("Load Path")) {
         if (m_modelPathInput[0]) {
             if (!LoadModel(m_modelPathInput, true)) {
-                ShowErrorMessage("Model Load Error", "è“®w’èƒ[ƒh¸”s: " + std::string(m_modelPathInput));
+                ShowErrorMessage("Model Load Error", "ï¿½è“®ï¿½wï¿½èƒï¿½[ï¿½hï¿½ï¿½ï¿½s: " + std::string(m_modelPathInput));
             }
         }
     }
@@ -539,7 +545,7 @@ void AdvancedModelComponent::DrawSection_Model() {
     if (ImGui::Button("Reload")) {
         if (!m_currentAsset.empty()) {
             if (!LoadModel(m_currentAsset, true)) {
-                ShowErrorMessage("Model Reload Error", "ƒŠƒ[ƒh¸”s: " + m_currentAsset);
+                ShowErrorMessage("Model Reload Error", "ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½s: " + m_currentAsset);
             }
         }
     }
@@ -619,7 +625,7 @@ void AdvancedModelComponent::DrawSection_Materials() {
             if (ImGui::Button("LoadInput")) {
                 if (input[0]) {
                     if (!SetMaterialTexture((uint32_t)m_selectedMaterial, (uint32_t)i, input)) {
-                        ShowErrorMessage("Material Error", "ƒeƒNƒXƒ`ƒƒ“Ç‚İ‚İ¸”s: " + std::string(input));
+                        ShowErrorMessage("Material Error", "ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½Ç‚İï¿½ï¿½İï¿½ï¿½s: " + std::string(input));
                     }
                 }
             }

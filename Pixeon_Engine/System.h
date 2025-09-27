@@ -1,4 +1,4 @@
-//Dx11 ‚ÌŠî–{ˆ—
+//Dx11 ï¿½ÌŠï¿½{ï¿½ï¿½ï¿½ï¿½
 #pragma once
 // Include
 #include <math.h>
@@ -62,7 +62,7 @@ typedef struct
 	DWORD fpsTime;
 }FPSTIMER;
 
-// ƒeƒNƒXƒ`ƒƒ
+// ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½
 class Render
 {
 public:
@@ -85,7 +85,7 @@ protected:
 	ID3D11ShaderResourceView* m_pSRV;
 	ID3D11Texture2D* m_pTex;
 };
-// ƒŒƒ“ƒ_[ƒ^[ƒQƒbƒg
+// ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½[ï¿½^ï¿½[ï¿½Qï¿½bï¿½g
 class RenderTarget : public Render
 {
 public:
@@ -101,7 +101,7 @@ protected:
 private:
 	ID3D11RenderTargetView* m_pRTV;
 };
-// [“xƒoƒbƒtƒ@
+// ï¿½[ï¿½xï¿½oï¿½bï¿½tï¿½@
 class DepthStencil : public Render
 {
 public:
@@ -140,6 +140,9 @@ public:
 	void SetBlendMode(BlendMode blend);
 	void SetSamplerState(SamplerState state);
 	ID3D11Buffer* CreateVertexBuffer(void* vtxData, UINT vtxNum);
+	ID3D11SamplerState* GetSamplerState(SamplerState state) { 
+		return (state >= 0 && state < SAMPLER_MAX) ? g_pSamplerState[state] : nullptr; 
+	}
 	//void OnResize(UINT width, UINT height);
 private:
 	static DirectX11* instance;

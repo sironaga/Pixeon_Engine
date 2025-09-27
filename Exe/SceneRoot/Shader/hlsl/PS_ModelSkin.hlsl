@@ -1,7 +1,7 @@
 cbuffer MaterialCB : register(b0)
 {
     float4 BaseColor;
-    float2 MetallicRoughness; // x=metallic (–¢Žg—p‚Å‚ ‚ê‚Î0), y=roughness
+    float2 MetallicRoughness; // x=metallic (ï¿½ï¿½ï¿½gï¿½pï¿½Å‚ï¿½ï¿½ï¿½ï¿½0), y=roughness
     uint UseBaseTex;
     uint _Pad0;
 }
@@ -13,6 +13,7 @@ struct PS_INPUT
 {
     float4 pos : SV_POSITION;
     float3 normal : NORMAL;
+    float3 worldPos : TEXCOORD1;
     float2 uv : TEXCOORD0;
 };
 

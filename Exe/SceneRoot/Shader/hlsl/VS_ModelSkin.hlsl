@@ -7,7 +7,7 @@ cbuffer CameraCB : register(b0)
 
 cbuffer SkinCB : register(b1)
 {
-    matrix gBones[128];
+    matrix gBones[512];
 };
 
 struct VS_INPUT
@@ -52,7 +52,7 @@ VS_OUTPUT main(VS_INPUT IN)
         }
     }
 
-    // ”ñƒXƒLƒ“: ‚»‚Ì‚Ü‚Ü
+    // ï¿½ï¿½Xï¿½Lï¿½ï¿½: ï¿½ï¿½ï¿½Ì‚Ü‚ï¿½
     if (weightSum == 0.0f)
     {
         skinnedPos = localPos;

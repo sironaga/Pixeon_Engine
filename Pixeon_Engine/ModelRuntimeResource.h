@@ -118,7 +118,7 @@ public:
     Microsoft::WRL::ComPtr<ID3D11Buffer> ib;
 
     std::string unifiedVS = "VS_ModelSkin";
-    std::string unifiedPS = "PS_ModelPBR";
+    std::string unifiedPS = "PS_ModelSkin";
 
     std::string sourceAssetName;
     bool hasSkin = false;
