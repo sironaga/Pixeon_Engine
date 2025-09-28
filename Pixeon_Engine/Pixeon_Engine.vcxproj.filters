@@ -51,6 +51,9 @@
     <Filter Include="ソース ファイル\Component">
       <UniqueIdentifier>{27dfb793-5b5a-4ad2-aafd-2cbf1dbe4f30}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\Asset">
+      <UniqueIdentifier>{ebeb58a2-94ec-4f81-a7e0-2e0d3bff3b35}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="content_Item.cpp">
@@ -69,9 +72,6 @@
       <Filter>ソース ファイル\Sys</Filter>
     </ClCompile>
     <ClCompile Include="SceneManger.cpp">
-      <Filter>ソース ファイル\Manager</Filter>
-    </ClCompile>
-    <ClCompile Include="AssetsManager.cpp">
       <Filter>ソース ファイル\Manager</Filter>
     </ClCompile>
     <ClCompile Include="IMGUI\imgui.cpp">
@@ -131,6 +131,21 @@
     <ClCompile Include="Geometry.cpp">
       <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
+    <ClCompile Include="AssetManager.cpp">
+      <Filter>ソース ファイル\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureManager.cpp">
+      <Filter>ソース ファイル\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelManager.cpp">
+      <Filter>ソース ファイル\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundManager.cpp">
+      <Filter>ソース ファイル\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourceService.cpp">
+      <Filter>ソース ファイル\Asset</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -149,9 +164,6 @@
       <Filter>ソース ファイル\Sys</Filter>
     </ClInclude>
     <ClInclude Include="SceneManger.h">
-      <Filter>ソース ファイル\Manager</Filter>
-    </ClInclude>
-    <ClInclude Include="AssetsManager.h">
       <Filter>ソース ファイル\Manager</Filter>
     </ClInclude>
     <ClInclude Include="IMGUI\imstb_truetype.h">
@@ -213,6 +225,24 @@
     </ClInclude>
     <ClInclude Include="Geometry.h">
       <Filter>ソース ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetTypes.h">
+      <Filter>ソース ファイル\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetManager.h">
+      <Filter>ソース ファイル\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureManager.h">
+      <Filter>ソース ファイル\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelManager.h">
+      <Filter>ソース ファイル\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundManager.h">
+      <Filter>ソース ファイル\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceService.h">
+      <Filter>ソース ファイル\Asset</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

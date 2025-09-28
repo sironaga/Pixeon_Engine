@@ -1,6 +1,5 @@
 #include "Main.h"
 #include "System.h"
-#include "AssetsManager.h"
 #include "SceneManger.h"
 #include "GameRenderTarget.h"
 #include "EditrGUI.h"
@@ -12,23 +11,10 @@
 
 
 HWND ghWnd;
-AssetWatcher *watcher;
 GameRenderTarget* gGameRenderTarget;
 bool bInGame;
 std::vector<PostEffectBase*> gPostEffects;
 std::vector<Object*> gContentsObjects;
-
-void OnAssetChanged(const std::string& filepath) {
-	AssetsManager::GetInstance()->CacheAsset(filepath);
-}
-
-void CacheAllAssetsOnStartup(const std::string& assetsDir) {
-	for (const auto& entry : std::filesystem::directory_iterator(assetsDir)) {
-		if (entry.is_regular_file()) {
-			AssetsManager::GetInstance()->CacheAsset(entry.path().string());
-		}
-	}
-}
 
 int Init(const EngineConfig& InPut){
 
@@ -39,12 +25,9 @@ int Init(const EngineConfig& InPut){
 	// 設定の読み込み
 	SettingManager::GetInstance()->LoadConfig();
 	//　アセットマネージャーの起動
-	AssetsManager::GetInstance()->SetLoadMode(AssetsManager::LoadMode::FromSource);
-	AssetsManager::GetInstance()->CacheAsset(SettingManager::GetInstance()->GetAssetsFilePath());
-	CacheAllAssetsOnStartup(SettingManager::GetInstance()->GetAssetsFilePath());
-	watcher = new AssetWatcher(SettingManager::GetInstance()->GetAssetsFilePath(), OnAssetChanged);
+
 	// 非同期監視開始
-	watcher->Start();
+
 	// ゲームレンダリングターゲットの初期化
 	gGameRenderTarget = new GameRenderTarget();
 	gGameRenderTarget->Init(DirectX11::GetInstance()->GetDevice(), InPut.screenWidth, InPut.screenHeight);
@@ -74,10 +57,7 @@ void Draw(){
 }
 
 void UnInit(){
-	watcher->Stop();
-	delete watcher;
-	AssetsManager::GetInstance()->ClearCache();
-	AssetsManager::DestroyInstance();
+
 	SceneManger::GetInstance()->Save();
 	SceneManger::DestroyInstance();
 	SettingManager::GetInstance()->SaveConfig();
