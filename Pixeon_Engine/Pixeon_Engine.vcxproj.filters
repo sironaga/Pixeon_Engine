@@ -77,9 +77,6 @@
     <ClCompile Include="SceneManger.cpp">
       <Filter>ソース ファイル\Manager</Filter>
     </ClCompile>
-    <ClCompile Include="AssetsManager.cpp">
-      <Filter>ソース ファイル\Manager</Filter>
-    </ClCompile>
     <ClCompile Include="IMGUI\imgui.cpp">
       <Filter>ソース ファイル\GUI\Internal processing</Filter>
     </ClCompile>
@@ -175,9 +172,6 @@
     <ClInclude Include="SceneManger.h">
       <Filter>ソース ファイル\Manager</Filter>
     </ClInclude>
-    <ClInclude Include="AssetsManager.h">
-      <Filter>ソース ファイル\Manager</Filter>
-    </ClInclude>
     <ClInclude Include="IMGUI\imstb_truetype.h">
       <Filter>ソース ファイル\GUI\Internal processing</Filter>
     </ClInclude>
@@ -257,6 +251,9 @@
       <Filter>ソース ファイル\Assets</Filter>
     </ClInclude>
     <ClInclude Include="AssetManager.h">
+      <Filter>ソース ファイル\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetTypes.h">
       <Filter>ソース ファイル\Assets</Filter>
     </ClInclude>
   </ItemGroup>
