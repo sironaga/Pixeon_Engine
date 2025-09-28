@@ -105,6 +105,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;PiexonAPI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -120,7 +121,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;PiexonAPI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -151,6 +152,7 @@
     <ClInclude Include="IMGUI\imstb_textedit.h" />
     <ClInclude Include="IMGUI\imstb_truetype.h" />
     <ClInclude Include="ModelManager.h" />
+    <ClInclude Include="ModelRender.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="PostEffectBase.h" />
     <ClInclude Include="ResourceService.h" />
@@ -187,6 +189,7 @@
     <ClCompile Include="IMGUI\imgui_widgets.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ModelManager.cpp" />
+    <ClCompile Include="ModelRender.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="ResourceService.cpp" />
     <ClCompile Include="Scene.cpp" />

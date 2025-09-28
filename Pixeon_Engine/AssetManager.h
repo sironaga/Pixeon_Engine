@@ -32,6 +32,8 @@ public:
 	void StopAutoSync();
 
     bool IsAutoSyncRunning() const { return m_watchRunning.load(); }
+
+    std::vector<std::string> GetCachedAssetNames(bool onlyModelExt = false) const;
 private:
     AssetManager() = default;
     ~AssetManager();

@@ -287,3 +287,31 @@ void AssetManager::DrawDebugGUI()
     }
     ImGui::EndChild();
 }
+
+std::vector<std::string> AssetManager::GetCachedAssetNames(bool onlyModelExt) const {
+    std::vector<std::string> result;
+    {
+        std::lock_guard<std::mutex> lk(m_mtx);
+        result.reserve(m_cache.size());
+        for (auto& kv : m_cache) {
+            if (!onlyModelExt) {
+                result.push_back(kv.first);
+            }
+            else {
+                // ƒ‚ƒfƒ‹Šg’£Žq”»’è
+                std::string lower = kv.first;
+                for (auto& c : lower) c = (char)tolower(c);
+                if (lower.size() >= 4) {
+                    if (lower.ends_with(".fbx") ||
+                        lower.ends_with(".obj") ||
+                        lower.ends_with(".gltf") ||
+                        lower.ends_with(".glb")) {
+                        result.push_back(kv.first);
+                    }
+                }
+            }
+        }
+    }
+    std::sort(result.begin(), result.end());
+    return result;
+}
