@@ -5,14 +5,15 @@
 #include <algorithm>
 #include <winerror.h>
 #include <Windows.h>
+#include "IMGUI/imgui.h"
 
 TextureManager* TextureManager::s_instance = nullptr;
 
-TextureManager& TextureManager::Instance() {
+TextureManager* TextureManager::Instance() {
     if (!s_instance) {
         s_instance = new TextureManager();
     }
-    return *s_instance;
+    return s_instance;
 }
 
 std::shared_ptr<TextureResource> TextureManager::LoadOrGet(const std::string& logicalName) {
@@ -40,7 +41,7 @@ std::shared_ptr<TextureResource> TextureManager::LoadOrGet(const std::string& lo
 
 std::shared_ptr<TextureResource> TextureManager::LoadInternal(const std::string& logicalName) {
     std::vector<uint8_t> data;
-    if (!AssetManager::Instance().LoadAsset(logicalName, data) || data.empty()) {
+    if (!AssetManager::Instance()->LoadAsset(logicalName, data) || data.empty()) {
         OutputDebugStringA(("[TextureManager] Raw load failed: " + logicalName + "\n").c_str());
         return nullptr;
     }
@@ -144,4 +145,42 @@ void TextureManager::GarbageCollect() {
             ++it;
         }
     }
+}
+
+void TextureManager::DrawDebugGUI() {
+    std::lock_guard<std::mutex> lk(m_mtx);
+    ImGui::TextUnformatted("TextureManager");
+    ImGui::Separator();
+    size_t alive = 0;
+    size_t totalBytes = 0;
+    for (auto& kv : m_cache) {
+        if (auto sp = kv.second.weak.lock()) {
+            alive++;
+            totalBytes += kv.second.bytes;
+        }
+    }
+    ImGui::Text("Cached Entries: %zu (alive=%zu)", m_cache.size(), alive);
+    ImGui::Text("GPU Approx Total: %.2f MB", totalBytes / (1024.0 * 1024.0));
+    ImGui::Text("Memory Budget: %.2f MB (unused control)", m_budget / (1024.0 * 1024.0));
+    static char filter[128] = "";
+    ImGui::InputText("Filter", filter, sizeof(filter));
+
+    if (ImGui::Button("GC (Dead Only)")) {
+        for (auto it = m_cache.begin(); it != m_cache.end();) {
+            if (it->second.weak.expired()) it = m_cache.erase(it);
+            else ++it;
+        }
+    }
+    ImGui::Separator();
+    ImGui::BeginChild("TextureList", ImVec2(0, 160), true);
+    for (auto& kv : m_cache) {
+        if (filter[0] && kv.first.find(filter) == std::string::npos) continue;
+        bool isAlive = !kv.second.weak.expired();
+        ImGui::Text("%s | %s | %zu bytes | lastUse=%llu",
+            kv.first.c_str(),
+            isAlive ? "alive" : "dead",
+            kv.second.bytes,
+            (unsigned long long)kv.second.lastUse);
+    }
+    ImGui::EndChild();
 }

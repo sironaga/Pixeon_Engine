@@ -11,10 +11,10 @@
 
 class ModelManager {
 public:
-    static ModelManager& Instance();
+    static ModelManager* Instance();
     std::shared_ptr<ModelSharedResource> LoadOrGet(const std::string& logicalName);
     void GarbageCollect();
-
+    void DrawDebugGUI();
 private:
 
     void ProcessNode(aiNode* node, const aiScene* scene,

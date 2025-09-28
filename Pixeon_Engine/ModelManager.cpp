@@ -6,6 +6,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <Windows.h>
+#include "IMGUI/imgui.h"
 
 #if _MSC_VER >= 1930
 #ifdef _DEBUG
@@ -29,11 +30,11 @@
 
 ModelManager* ModelManager::s_instance = nullptr;
 
-ModelManager& ModelManager::Instance() {
+ModelManager* ModelManager::Instance() {
     if (!s_instance) {
         s_instance = new ModelManager();
     }
-    return *s_instance;
+    return s_instance;
 }
 
 std::shared_ptr<ModelSharedResource> ModelManager::LoadOrGet(const std::string& logicalName) {
@@ -61,7 +62,7 @@ std::shared_ptr<ModelSharedResource> ModelManager::LoadOrGet(const std::string& 
 
 std::shared_ptr<ModelSharedResource> ModelManager::LoadInternal(const std::string& logicalName) {
     std::vector<uint8_t> data;
-    if (!AssetManager::Instance().LoadAsset(logicalName, data) || data.empty()) {
+    if (!AssetManager::Instance()->LoadAsset(logicalName, data) || data.empty()) {
         OutputDebugStringA(("[ModelManager] Raw load failed: " + logicalName + "\n").c_str());
         return nullptr;
     }
@@ -295,4 +296,40 @@ void ModelManager::GarbageCollect() {
             ++it;
         }
     }
+}
+
+void ModelManager::DrawDebugGUI() {
+    std::lock_guard<std::mutex> lk(m_mtx);
+    ImGui::TextUnformatted("ModelManager");
+    ImGui::Separator();
+    size_t alive = 0;
+    size_t totalGPU = 0;
+    for (auto& kv : m_cache) {
+        if (!kv.second.weak.expired()) {
+            alive++;
+            totalGPU += kv.second.gpuBytes;
+        }
+    }
+    ImGui::Text("Cached: %zu (alive=%zu)", m_cache.size(), alive);
+    ImGui::Text("GPU Approx Total: %.2f MB", totalGPU / (1024.0 * 1024.0));
+    static char filter[128] = "";
+    ImGui::InputText("Filter##Model", filter, sizeof(filter));
+    if (ImGui::Button("GC Dead")) {
+        for (auto it = m_cache.begin(); it != m_cache.end();) {
+            if (it->second.weak.expired()) it = m_cache.erase(it);
+            else ++it;
+        }
+    }
+    ImGui::Separator();
+    ImGui::BeginChild("ModelList", ImVec2(0, 160), true);
+    for (auto& kv : m_cache) {
+        if (filter[0] && kv.first.find(filter) == std::string::npos) continue;
+        bool aliveRes = !kv.second.weak.expired();
+        ImGui::Text("%s | %s | %.2f KB | lastUse=%llu",
+            kv.first.c_str(),
+            aliveRes ? "alive" : "dead",
+            kv.second.gpuBytes / 1024.0,
+            (unsigned long long)kv.second.lastUse);
+    }
+    ImGui::EndChild();
 }

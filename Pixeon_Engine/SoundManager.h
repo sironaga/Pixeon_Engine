@@ -8,10 +8,10 @@
 
 class SoundManager {
 public:
-    static SoundManager& Instance();
+    static SoundManager* Instance();
     std::shared_ptr<SoundResource> LoadOrGet(const std::string& logicalName, bool streaming = false);
     void GarbageCollect();
-
+    void DrawDebugGUI();
 private:
     SoundManager() = default;
     std::shared_ptr<SoundResource> LoadInternal(const std::string& logicalName, bool streaming);

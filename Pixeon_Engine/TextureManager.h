@@ -7,11 +7,11 @@
 
 class TextureManager {
 public:
-    static TextureManager& Instance();
+    static TextureManager* Instance();
     std::shared_ptr<TextureResource> LoadOrGet(const std::string& logicalName);
     void SetMemoryBudget(size_t bytes) { m_budget = bytes; }
     void GarbageCollect(); // ※未実装（必要なら後で LRU を追加）
-
+    void DrawDebugGUI();
 private:
     TextureManager() = default;
     std::shared_ptr<TextureResource> LoadInternal(const std::string& logicalName);

@@ -9,6 +9,10 @@
 #include "ComponentManager.h"
 #include "Object.h"
 
+#include "AssetManager.h"
+#include "TextureManager.h"
+#include "ModelManager.h"
+#include "SoundManager.h"
 
 HWND ghWnd;
 GameRenderTarget* gGameRenderTarget;
@@ -25,8 +29,14 @@ int Init(const EngineConfig& InPut){
 	// 設定の読み込み
 	SettingManager::GetInstance()->LoadConfig();
 	//　アセットマネージャーの起動
-
+	AssetManager::Instance();
+	TextureManager::Instance();
+	ModelManager::Instance();
+	SoundManager::Instance();
 	// 非同期監視開始
+	AssetManager::Instance()->SetRoot(SettingManager::GetInstance()->GetAssetsFilePath());
+	AssetManager::Instance()->SetLoadMode(AssetManager::LoadMode::FromSource);
+	AssetManager::Instance()->StartAutoSync(std::chrono::milliseconds(1000), true);
 
 	// ゲームレンダリングターゲットの初期化
 	gGameRenderTarget = new GameRenderTarget();
@@ -58,6 +68,7 @@ void Draw(){
 
 void UnInit(){
 
+	AssetManager::Instance()->StopAutoSync();
 	SceneManger::GetInstance()->Save();
 	SceneManger::DestroyInstance();
 	SettingManager::GetInstance()->SaveConfig();

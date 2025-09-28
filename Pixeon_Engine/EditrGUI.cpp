@@ -9,6 +9,11 @@
 #include "StartUp.h"
 #include "SettingManager.h"
 #include "ShaderManager.h"
+#include "AssetManager.h"
+#include "TextureManager.h"
+#include "ModelManager.h"
+#include "SoundManager.h"
+
 #pragma comment(lib, "windowscodecs.lib")
 
 EditrGUI* EditrGUI::instance = nullptr;
@@ -154,6 +159,11 @@ void EditrGUI::WindowGUI()
             ImGui::MenuItem(ShiftJISToUTF8("開く...").c_str());
             ImGui::MenuItem(ShiftJISToUTF8("保存").c_str());
             if (ImGui::MenuItem(ShiftJISToUTF8("シェーダーリスト").c_str())) ShowShaderListWindow = true;
+			if (ImGui::MenuItem(ShiftJISToUTF8("アセットマネージャー").c_str())) ShowAssetManagerWindow = true;
+			if (ImGui::MenuItem(ShiftJISToUTF8("テクスチャマネージャー").c_str())) ShowTextureManagerWindow = true;
+			if (ImGui::MenuItem(ShiftJISToUTF8("モデルマネージャー").c_str())) ShowModelManagerWindow = true;
+			if (ImGui::MenuItem(ShiftJISToUTF8("サウンドマネージャー").c_str())) ShowSoundManagerWindow = true;
+			ImGui::Separator();
             if (ImGui::MenuItem(ShiftJISToUTF8("環境設定").c_str())) ShowSettingsWindow = true;
             ImGui::Separator();
             if (ImGui::MenuItem(ShiftJISToUTF8("終了").c_str())) SetRun(false);
@@ -269,6 +279,10 @@ void EditrGUI::WindowGUI()
     ShowInspector();
     ShowGameView();
     ShowConsole();
+	AssetManagerWindow();
+	TextureManagerWindow();
+	ModelManagerWindow();
+	SoundManagerWindow();
 }
 
 void EditrGUI::ShowGameView()
@@ -473,6 +487,46 @@ void EditrGUI::ShaderEditorWindow(){
 		}
 		ImGui::End();
     }
+}
+
+void EditrGUI::AssetManagerWindow(){
+	if (!ShowAssetManagerWindow)return;
+    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
+    if (ImGui::Begin(ShiftJISToUTF8("アセットマネージャー").c_str(), &ShowAssetManagerWindow, flags)) {
+		AssetManager::Instance()->DrawDebugGUI();
+		ImGui::End();
+    }
+}
+
+void EditrGUI::TextureManagerWindow(){
+	if (!ShowTextureManagerWindow)return;
+    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
+    if (ImGui::Begin(ShiftJISToUTF8("テクスチャマネージャー").c_str(), &ShowTextureManagerWindow, flags)) {
+        TextureManager::Instance()->DrawDebugGUI();
+        ImGui::End();
+	}
+}
+
+void EditrGUI::ModelManagerWindow(){
+    if (!ShowModelManagerWindow)return;
+    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
+    if (ImGui::Begin(ShiftJISToUTF8("モデルマネージャー").c_str(), &ShowModelManagerWindow, flags)) {
+        ModelManager::Instance()->DrawDebugGUI();
+        ImGui::End();
+	}
+}
+
+void EditrGUI::SoundManagerWindow(){
+    if (!ShowSoundManagerWindow)return;
+    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
+    if (ImGui::Begin(ShiftJISToUTF8("サウンドマネージャー").c_str(), &ShowSoundManagerWindow, flags)) {
+        SoundManager::Instance()->DrawDebugGUI();
+        ImGui::End();
+	}
 }
 
 ID3D11ShaderResourceView* EditrGUI::LoadImg(const std::wstring& filename, ID3D11Device* device)

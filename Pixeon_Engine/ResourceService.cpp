@@ -13,13 +13,13 @@ ResourceService& ResourceService::Instance() {
 }
 
 std::shared_ptr<TextureResource> ResourceService::GetTexture(const std::string& name) {
-    return TextureManager::Instance().LoadOrGet(name);
+    return TextureManager::Instance()->LoadOrGet(name);
 }
 std::shared_ptr<ModelSharedResource> ResourceService::GetModel(const std::string& name) {
-    return ModelManager::Instance().LoadOrGet(name);
+    return ModelManager::Instance()->LoadOrGet(name);
 }
 std::shared_ptr<SoundResource> ResourceService::GetSound(const std::string& name, bool streaming) {
-    return SoundManager::Instance().LoadOrGet(name, streaming);
+    return SoundManager::Instance()->LoadOrGet(name, streaming);
 }
 
 bool ResourceService::AutoResolve(const std::string& name) {
