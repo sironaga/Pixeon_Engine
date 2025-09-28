@@ -4,7 +4,6 @@
 #include "IMGUI/imgui_impl_win32.h"
 #include "IMGUI/imgui_internal.h"
 #include "SettingManager.h"
-#include "AssetsManager.h"
 #include <filesystem>
 #include <vector>
 #include <string>

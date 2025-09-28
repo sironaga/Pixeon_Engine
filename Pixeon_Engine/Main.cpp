@@ -1,6 +1,6 @@
 #include "Main.h"
 #include "System.h"
-
+#include "AssetManager.h"
 #include "SceneManger.h"
 #include "GameRenderTarget.h"
 #include "EditrGUI.h"
@@ -26,7 +26,9 @@ int Init(const EngineConfig& InPut){
 	// 設定の読み込み
 	SettingManager::GetInstance()->LoadConfig();
 	//　アセットマネージャーの起動
-
+	AssetManager::Instance()->SetRoot(SettingManager::GetInstance()->GetAssetsFilePath());
+	AssetManager::Instance()->SetLoadMode(AssetManager::LoadMode::FromSource);
+	AssetManager::Instance()->StartAutoSync(std::chrono::milliseconds(1000), true);
 
 	// ゲームレンダリングターゲットの初期化
 	gGameRenderTarget = new GameRenderTarget();
@@ -58,6 +60,7 @@ void Draw(){
 
 void UnInit(){
 
+	AssetManager::Instance()->StopAutoSync();
 	SceneManger::GetInstance()->Save();
 	SceneManger::DestroyInstance();
 	SettingManager::GetInstance()->SaveConfig();

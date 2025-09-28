@@ -152,6 +152,9 @@
     <ClCompile Include="TextureManager.cpp">
       <Filter>ソース ファイル\Assets</Filter>
     </ClCompile>
+    <ClCompile Include="AssetManager.cpp">
+      <Filter>ソース ファイル\Assets</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -251,6 +254,9 @@
       <Filter>ソース ファイル\Assets</Filter>
     </ClInclude>
     <ClInclude Include="TextureManager.h">
+      <Filter>ソース ファイル\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetManager.h">
       <Filter>ソース ファイル\Assets</Filter>
     </ClInclude>
   </ItemGroup>
