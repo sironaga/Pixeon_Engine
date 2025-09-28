@@ -54,6 +54,9 @@
     <Filter Include="ソース ファイル\Archive">
       <UniqueIdentifier>{694d96e6-a20e-4058-8d62-c8138137cc42}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\Assets">
+      <UniqueIdentifier>{e7c5ffb3-dad8-4d73-89f5-e4b021d0524c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="content_Item.cpp">
@@ -136,6 +139,18 @@
     </ClCompile>
     <ClCompile Include="HashUtill.cpp">
       <Filter>ソース ファイル\Archive</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelManager.cpp">
+      <Filter>ソース ファイル\Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourceService.cpp">
+      <Filter>ソース ファイル\Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundManager.cpp">
+      <Filter>ソース ファイル\Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureManager.cpp">
+      <Filter>ソース ファイル\Assets</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -225,6 +240,18 @@
     </ClInclude>
     <ClInclude Include="HashUtill.h">
       <Filter>ソース ファイル\Archive</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelManager.h">
+      <Filter>ソース ファイル\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceService.h">
+      <Filter>ソース ファイル\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundManager.h">
+      <Filter>ソース ファイル\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureManager.h">
+      <Filter>ソース ファイル\Assets</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
