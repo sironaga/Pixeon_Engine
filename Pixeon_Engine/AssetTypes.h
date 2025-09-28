@@ -76,3 +76,13 @@ struct SoundResource {
     int sampleRate = 0;
     bool streaming = false;
 };
+
+// モデル頂点フォーマット
+struct ModelVertex {
+    float position[3];
+    float normal[3];
+    float tangent[4];
+    float uv[2];
+    uint32_t boneIndices[4];
+    float boneWeights[4];
+};

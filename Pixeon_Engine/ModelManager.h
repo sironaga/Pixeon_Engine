@@ -2,6 +2,9 @@
 
 #pragma once
 #include "AssetTypes.h"
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 #include <unordered_map>
 #include <memory>
 #include <mutex>
@@ -13,6 +16,25 @@ public:
     void GarbageCollect();
 
 private:
+
+    void ProcessNode(aiNode* node, const aiScene* scene,
+        std::vector<ModelVertex>& vertices,
+        std::vector<uint32_t>& indices,
+        std::shared_ptr<ModelSharedResource> shared);
+
+    void ProcessMesh(aiMesh* mesh, const aiScene* scene,
+        std::vector<ModelVertex>& vertices,
+        std::vector<uint32_t>& indices,
+        std::shared_ptr<ModelSharedResource> shared);
+
+    bool CreateGPUBuffers(const std::vector<ModelVertex>& vertices,
+        const std::vector<uint32_t>& indices,
+        std::shared_ptr<ModelSharedResource> shared);
+
+    void ProcessMaterials(const aiScene* scene, std::shared_ptr<ModelSharedResource> shared);
+    void ProcessBones(const aiScene* scene, std::shared_ptr<ModelSharedResource> shared);
+    void ProcessAnimations(const aiScene* scene, std::shared_ptr<ModelSharedResource> shared);
+
     ModelManager() = default;
     std::shared_ptr<ModelSharedResource> LoadInternal(const std::string& logicalName);
 
