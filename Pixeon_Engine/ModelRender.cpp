@@ -465,7 +465,7 @@ void ModelRenderComponent::DrawInspector()
     static char pathBuf[256];
     std::snprintf(pathBuf, sizeof(pathBuf), "%s", m_modelPath.c_str());
     ImGui::InputText("Path", pathBuf, sizeof(pathBuf));
-    ImGui::SameLine();
+
     if (ImGui::Button(SJ("è“®ƒ[ƒh").c_str()))
         SetModel(pathBuf);
 
