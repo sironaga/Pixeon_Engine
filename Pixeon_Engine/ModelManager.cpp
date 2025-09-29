@@ -369,12 +369,23 @@ void ModelManager::ProcessMaterials(const aiScene* scene, std::shared_ptr<ModelS
             aiTextureType_AMBIENT 
         };
         
+        bool foundTexture = false;
         for (aiTextureType texType : texTypes) {
             if (AI_SUCCESS == mat->GetTexture(texType, 0, &texPath)) {
                 std::string resolved = ResolveTexturePath(shared->source, texPath.C_Str());
                 material.baseColorTex = resolved;
+                foundTexture = true;
+                // デバッグ用: どのテクスチャタイプで見つかったかログ出力
+                OutputDebugStringA(("[ModelManager] Material " + std::to_string(i) + 
+                    " texture found in type " + std::to_string(texType) + 
+                    ": " + resolved + "\n").c_str());
                 break; // 最初に見つかったテクスチャを使用
             }
+        }
+        
+        if (!foundTexture) {
+            OutputDebugStringA(("[ModelManager] Material " + std::to_string(i) + 
+                " has no texture in any supported type\n").c_str());
         }
 
         shared->materials.push_back(material);

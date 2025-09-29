@@ -101,14 +101,14 @@ bool TextureManager::IsPinned(const std::string& name) {
 }
 
 std::shared_ptr<TextureResource> TextureManager::LoadInternal(const std::string& logicalName) {
-    // (1) Raw “Ç‚İ‚İ
+    // (1) Raw ï¿½Ç‚İï¿½ï¿½ï¿½
     std::vector<uint8_t> data;
     if (!AssetManager::Instance()->LoadAsset(logicalName, data) || data.empty()) {
         SetFail(logicalName, "RawLoadFailed(size=0 or not found)");
         return nullptr;
     }
 
-    // (2) Šg’£q”»’è
+    // (2) ï¿½gï¿½ï¿½ï¿½qï¿½ï¿½ï¿½ï¿½
     std::string ext;
     if (auto p = logicalName.find_last_of('.'); p != std::string::npos) {
         ext = logicalName.substr(p + 1);
@@ -131,13 +131,20 @@ std::shared_ptr<TextureResource> TextureManager::LoadInternal(const std::string&
         hr = DirectX::LoadFromWICMemory(data.data(), data.size(), DirectX::WIC_FLAGS_NONE, nullptr, img);
     }
     if (FAILED(hr)) {
-        char buf[128];
-        sprintf_s(buf, "DecodeFailed hr=0x%08X ext=%s", (unsigned)hr, ext.c_str());
+        // ãƒ˜ãƒƒãƒ€ãƒã‚¤ãƒˆæƒ…å ±ã‚’å«ã‚ãŸè©³ç´°ãªã‚¨ãƒ©ãƒ¼ãƒ¬ãƒãƒ¼ãƒˆï¼ˆãƒ‡ãƒãƒƒã‚°ç”¨ï¼‰
+        char buf[256];
+        char headerHex[32] = "";
+        if (data.size() >= 8) {
+            sprintf_s(headerHex, "%02X%02X%02X%02X%02X%02X%02X%02X", 
+                data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+        }
+        sprintf_s(buf, "DecodeFailed hr=0x%08X ext=%s header=%s size=%zu", 
+            (unsigned)hr, ext.c_str(), headerHex, data.size());
         SetFail(logicalName, buf);
         return nullptr;
     }
 
-    // (3) Mip ¶¬ (¸”s‚ÍŒx‚Ì‚İ)
+    // (3) Mip ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½sï¿½ÍŒxï¿½ï¿½ï¿½Ì‚ï¿½)
     if (img.GetMetadata().mipLevels <= 1) {
         DirectX::ScratchImage mip;
         HRESULT hrMip = DirectX::GenerateMipMaps(img.GetImages(), img.GetImageCount(), img.GetMetadata(),
@@ -147,14 +154,14 @@ std::shared_ptr<TextureResource> TextureManager::LoadInternal(const std::string&
         }
     }
 
-    // (4) ƒfƒoƒCƒXŠm”F
+    // (4) ï¿½fï¿½oï¿½Cï¿½Xï¿½mï¿½F
     auto dev = DirectX11::GetInstance()->GetDevice();
     if (!dev) {
         SetFail(logicalName, "DeviceNull");
         return nullptr;
     }
 
-    // (5) SRV ì¬
+    // (5) SRV ï¿½ì¬
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv;
     hr = DirectX::CreateShaderResourceView(dev, img.GetImages(), img.GetImageCount(),
         img.GetMetadata(), srv.GetAddressOf());
