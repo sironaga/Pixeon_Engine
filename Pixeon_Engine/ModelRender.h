@@ -12,6 +12,20 @@
 
 class ModelRenderComponent : public Component
 {
+private:
+    enum class TextureIssue : uint8_t {
+        None = 0,
+        MaterialIndexOutOfRange,
+        MaterialNoPath,
+        TextureLoadFailed,
+        TextureSRVNull,
+        NoUVChannel,
+        UVAllZero,
+        SamplerMissing,
+        StillFallbackWhite,
+        StillFallbackMagenta
+    };
+
 public:
     ModelRenderComponent() = default;
     ~ModelRenderComponent() = default;
@@ -59,6 +73,13 @@ private:
 
     bool EnsureWhiteTexture(); 
     bool EnsureDebugFallbackTextures(); // Åö (îí+É}É[ÉìÉ^)
+
+    void DiagnoseAndReportTextureIssue(size_t submeshIdx,
+        const SubMesh& sm,
+        const MaterialRuntime* mat,
+        ID3D11ShaderResourceView* chosenSRV,
+        bool usedMagentaFallback,
+        bool usedWhiteFallback);
 private:
 
 
@@ -80,6 +101,7 @@ private:
     static Microsoft::WRL::ComPtr<ID3D11SamplerState> s_linearSmp;
     static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_whiteTexSRV;
     static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_magentaTexSRV;
+    std::vector<uint8_t> m_texIssueReported; // submeshêîÇ…çáÇÌÇπÇÈ(0=ñ¢ïÒçê,1=ïÒçêçœ)
 
     bool m_ready = false;
     bool m_openTexPopup = false;

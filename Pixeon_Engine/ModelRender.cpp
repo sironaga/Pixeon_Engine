@@ -7,6 +7,7 @@
 #include "SettingManager.h"
 #include "EditrGUI.h"
 #include "IMGUI/imgui.h"
+#include "ErrorLog.h"
 #include <filesystem>
 
 using namespace DirectX;
@@ -55,13 +56,16 @@ bool ModelRenderComponent::SetModel(const std::string& logicalPath)
     m_modelPath = logicalPath;
     m_model = ModelManager::Instance()->LoadOrGet(logicalPath);
     if (!m_model) {
-        OutputDebugStringA(("[ModelRenderComponent] Failed load model: " + logicalPath + "\n").c_str());
+        ErrorLogger::Instance().LogError("ModelRenderComponent",
+            "Failed load model: " + logicalPath);
         m_ready = false;
         return false;
     }
     RefreshMaterialCache();
     if (!EnsureShaders(false)) return false;
     if (!EnsureConstantBuffer()) return false;
+
+    m_texIssueReported.assign(m_model->submeshes.size(), 0); // ★ 初期化
     m_ready = true;
     return true;
 }
@@ -249,29 +253,101 @@ bool ModelRenderComponent::EnsureDebugFallbackTextures(){
     return (s_whiteTexSRV && s_magentaTexSRV);
 }
 
+void ModelRenderComponent::DiagnoseAndReportTextureIssue(size_t submeshIdx, const SubMesh& sm, const MaterialRuntime* mat, ID3D11ShaderResourceView* chosenSRV, bool usedMagentaFallback, bool usedWhiteFallback){
+    if (submeshIdx >= m_texIssueReported.size()) return;
+    if (m_texIssueReported[submeshIdx]) return; // 一度報告済み
+
+    TextureIssue issue = TextureIssue::None;
+    std::string detail;
+
+    // マテリアルインデックス不正
+    if (sm.materialIndex >= m_materials.size()) {
+        issue = TextureIssue::MaterialIndexOutOfRange;
+        detail = "submesh.materialIndex=" + std::to_string(sm.materialIndex) +
+            " materials=" + std::to_string(m_materials.size());
+    }
+    else {
+        // 正常範囲
+        if (!mat) {
+            issue = TextureIssue::TextureSRVNull;
+            detail = "MaterialRuntime pointer null";
+        }
+        else {
+            // テクスチャパス無し
+            if (mat->texName.empty()) {
+                issue = TextureIssue::MaterialNoPath;
+                detail = "Material has no texture path";
+            }
+            // パスはあるがロード失敗
+            if (issue == TextureIssue::None && !mat->texName.empty() && !mat->tex) {
+                issue = TextureIssue::TextureLoadFailed;
+                detail = "LoadOrGet returned null for " + mat->texName;
+            }
+            // テクスチャオブジェクトはあるが SRV 無し
+            if (issue == TextureIssue::None && mat->tex && !mat->tex->srv) {
+                issue = TextureIssue::TextureSRVNull;
+                detail = "SRV is null: " + mat->texName;
+            }
+            // UV関連
+            if (issue == TextureIssue::None) {
+                if (!sm.hasUV) {
+                    issue = TextureIssue::NoUVChannel;
+                    detail = "Mesh has no UV channel";
+                }
+                else if (sm.uvAllZero) {
+                    issue = TextureIssue::UVAllZero;
+                    detail = "All UV zero";
+                }
+            }
+        }
+    }
+
+    // サンプラ
+    if (issue == TextureIssue::None && !s_linearSmp) {
+        issue = TextureIssue::SamplerMissing;
+        detail = "SamplerState missing";
+    }
+
+    // フォールバック残存
+    if (issue == TextureIssue::None) {
+        if (usedMagentaFallback) {
+            issue = TextureIssue::StillFallbackMagenta;
+            detail = "Using magenta fallback (indicates load fail or missing path)";
+        }
+        else if (usedWhiteFallback) {
+            issue = TextureIssue::StillFallbackWhite;
+            detail = "Using white fallback (texture not yet loaded?)";
+        }
+    }
+
+    if (issue != TextureIssue::None) {
+        m_texIssueReported[submeshIdx] = 1;
+        // メッセージ整形
+        static const char* issueNames[] = {
+            "None",
+            "MaterialIndexOutOfRange",
+            "MaterialNoPath",
+            "TextureLoadFailed",
+            "TextureSRVNull",
+            "NoUVChannel",
+            "UVAllZero",
+            "SamplerMissing",
+            "StillFallbackWhite",
+            "StillFallbackMagenta"
+        };
+        std::string msg = "SubMesh " + std::to_string(submeshIdx) +
+            " Issue=" + issueNames[(int)issue] +
+            " | " + detail;
+        if (mat && !mat->texName.empty()) {
+            msg += " | path=" + mat->texName;
+        }
+        ErrorLogger::Instance().LogError("TextureBind", msg, false, 1);
+    }
+}
+
 void ModelRenderComponent::Draw()
 {
     if (!m_ready || !m_model) return;
-
-
-    static bool s_onceLogged = false;
-    if (!s_onceLogged) {
-        char buf[256];
-        sprintf_s(buf, "[ModelRender] model=%s ready=%d submeshes=%zu mats=%zu vb=%p ib=%p vs=%s ps=%s\n",
-            m_modelPath.c_str(), (int)m_ready, m_model ? m_model->submeshes.size() : 0,
-            m_materials.size(),
-            m_model ? m_model->vb.Get() : nullptr,
-            m_model ? m_model->ib.Get() : nullptr,
-            m_vsName.c_str(), m_psName.c_str());
-        OutputDebugStringA(buf);
-        for (size_t i = 0; i < m_materials.size(); ++i) {
-            std::string t = m_materials[i].texName.empty() ? "(none)" : m_materials[i].texName;
-            std::string l = "[ModelRender] Mat" + std::to_string(i) + " tex=" + t + "\n";
-            OutputDebugStringA(l.c_str());
-        }
-        s_onceLogged = true;
-    }
-
     Scene* scene = _Parent->GetParentScene();
     if (!scene) return;
     CameraComponent* cam = scene->GetMainCamera();
@@ -307,44 +383,49 @@ void ModelRenderComponent::Draw()
     ID3D11SamplerState* smp = s_linearSmp.Get();
     ctx->PSSetSamplers(0, 1, &smp);
 
-    EnsureWhiteTexture();
+    EnsureDebugFallbackTextures();
 
     for (size_t i = 0; i < m_model->submeshes.size(); ++i) {
-        const auto& sm = m_model->submeshes[i];
+        const SubMesh& sm = m_model->submeshes[i];
         size_t matIndex = sm.materialIndex;
-        ID3D11ShaderResourceView* srv = s_whiteTexSRV.Get(); // 初期は白 (まだロード前)
+
+        ID3D11ShaderResourceView* srv = s_whiteTexSRV.Get();
+        bool usedWhite = true;
+        bool usedMagenta = false;
+        MaterialRuntime* matPtr = nullptr;
 
         if (matIndex < m_materials.size()) {
-            auto& mat = m_materials[matIndex];
+            matPtr = &m_materials[matIndex];
+            auto& mat = *matPtr;
+
             if (!mat.tex && !mat.texName.empty()) {
                 mat.tex = TextureManager::Instance()->LoadOrGet(mat.texName);
-                if (mat.tex && mat.tex->srv) {
-                    OutputDebugStringA(("[ModelRender] Texture OK: " + mat.texName + "\n").c_str());
-                }
-                else {
-                    OutputDebugStringA(("[ModelRender] Texture FAIL -> magenta: " + mat.texName + "\n").c_str());
-                    srv = s_magentaTexSRV.Get();
-                }
             }
             if (mat.tex && mat.tex->srv) {
                 srv = mat.tex->srv.Get();
+                usedWhite = (srv == s_whiteTexSRV.Get());
             }
-            else if (mat.texName.empty()) {
-                // テクスチャ名空: マゼンタで強調
+            else {
+                // ロード失敗 / パス無し → マゼンタ
                 srv = s_magentaTexSRV.Get();
+                usedMagenta = true;
+                usedWhite = false;
             }
         }
         else {
+            // インデックス不正 → マゼンタ
             srv = s_magentaTexSRV.Get();
-            char logBuf[128];
-            sprintf_s(logBuf, "[ModelRender] submesh=%zu materialIndex=%u OUT_OF_RANGE mats=%zu\n",
-                i, sm.materialIndex, m_materials.size());
-			MessageBox(nullptr, "ModelRenderComponent: Material index out of range!", "Error", MB_OK | MB_ICONERROR);
-            OutputDebugStringA(logBuf);
+            usedMagenta = true;
+            usedWhite = false;
         }
 
         ctx->PSSetShaderResources(0, 1, &srv);
         ctx->DrawIndexed(sm.indexCount, sm.indexOffset, 0);
+
+        // 診断（1回のみ）
+        if (usedWhite || usedMagenta) {
+            DiagnoseAndReportTextureIssue(i, sm, matPtr, srv, usedMagenta, usedWhite);
+        }
     }
 }
 

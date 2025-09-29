@@ -2,6 +2,7 @@
 #include "ModelManager.h"
 #include "AssetManager.h"
 #include "System.h"
+#include "ErrorLog.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -75,7 +76,7 @@ std::shared_ptr<ModelSharedResource> ModelManager::LoadOrGet(const std::string& 
 std::shared_ptr<ModelSharedResource> ModelManager::LoadInternal(const std::string& logicalName) {
     std::vector<uint8_t> data;
     if (!AssetManager::Instance()->LoadAsset(logicalName, data) || data.empty()) {
-        OutputDebugStringA(("[ModelManager] Raw load failed: " + logicalName + "\n").c_str());
+		ErrorLogger::Instance().LogError("ModelManager", "Failed to load model asset: " + logicalName);
         return nullptr;
     }
 
@@ -91,7 +92,8 @@ std::shared_ptr<ModelSharedResource> ModelManager::LoadInternal(const std::strin
         aiProcess_SortByPType);
 
     if (!scene || !scene->mRootNode) {
-        OutputDebugStringA(("[ModelManager] Assimp parse failed: " + logicalName + "\n").c_str());
+        ErrorLogger::Instance().LogError("ModelManager", "Assimp parse failed: " + logicalName + 
+			(importer.GetErrorString()[0] ? (" (" + std::string(importer.GetErrorString()) + ")") : ""));
         return nullptr;
     }
 
@@ -106,7 +108,7 @@ std::shared_ptr<ModelSharedResource> ModelManager::LoadInternal(const std::strin
 
     // GPUバッファの作成
     if (!CreateGPUBuffers(vertices, indices, shared)) {
-        OutputDebugStringA(("[ModelManager] GPU buffer creation failed: " + logicalName + "\n").c_str());
+		ErrorLogger::Instance().LogError("ModelManager", "GPU buffer creation failed: " + logicalName);
         return nullptr;
     }
 
@@ -122,14 +124,14 @@ std::shared_ptr<ModelSharedResource> ModelManager::LoadInternal(const std::strin
     // メモリ使用量の計算
     shared->gpuBytes = vertices.size() * sizeof(ModelVertex) + indices.size() * sizeof(uint32_t);
 
-    OutputDebugStringA(("[ModelManager] Load OK: " + logicalName + "\n").c_str());
+	//ErrorLogger::Instance().LogError("ModelManager", "Load OK: " + logicalName, false, 5);
     return shared;
 }
 
 std::string ModelManager::ResolveTexturePath(const std::string& modelLogical, const std::string& rawPath){
     if (rawPath.empty()) return {};
     if (rawPath[0] == '*') { // 埋め込み未対応
-        OutputDebugStringA(("[ModelManager] Embedded texture unsupported: " + rawPath + "\n").c_str());
+		ErrorLogger::Instance().LogError("ModelManager", "Embedded texture unsupported: " + rawPath);
         return {};
     }
     std::string norm = MM_NormalizePath(rawPath);
@@ -169,7 +171,7 @@ std::string ModelManager::ResolveTexturePath(const std::string& modelLogical, co
             return c;
         }
     }
-    OutputDebugStringA(("[ModelManager] Texture NOT FOUND raw=" + rawPath + " model=" + modelLogical + "\n").c_str());
+	ErrorLogger::Instance().LogError("ModelManager", "Texture not found: " + rawPath + " (tried " + std::to_string(uniq.size()) + " paths)", false, 3);
     return {};
 }
 
@@ -265,14 +267,41 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
         if (!anyUV) {
             char buf[128];
             sprintf_s(buf, "[ModelManager] Mesh mat=%u UV channel MISSING\n", mesh->mMaterialIndex);
-            OutputDebugStringA(buf);
+			ErrorLogger::Instance().LogError("ModelManager", buf, false, 3);
         }
         else if (allZero) {
             char buf[128];
             sprintf_s(buf, "[ModelManager] Mesh mat=%u UV ALL ZERO\n", mesh->mMaterialIndex);
-            OutputDebugStringA(buf);
+			ErrorLogger::Instance().LogError("ModelManager", buf, false, 3);
         }
     }
+
+    bool anyUV = false;
+    bool allZero = true;
+    if (mesh->mTextureCoords[0]) {
+        anyUV = true;
+        for (uint32_t i = 0; i < mesh->mNumVertices; ++i) {
+            float ux = mesh->mTextureCoords[0][i].x;
+            float uy = mesh->mTextureCoords[0][i].y;
+            if (!(ux == 0.0f && uy == 0.0f)) {
+                allZero = false;
+                break;
+            }
+        }
+    }
+    subMesh.hasUV = anyUV;
+    subMesh.uvAllZero = anyUV ? allZero : false;
+
+    // 既存の ErrorLogger 呼び出しはそのまま/または以下のように整理
+    if (!anyUV) {
+        ErrorLogger::Instance().LogError("ModelManager",
+            "[Mesh mat=" + std::to_string(mesh->mMaterialIndex) + "] UV channel MISSING", false, 3);
+    }
+    else if (allZero) {
+        ErrorLogger::Instance().LogError("ModelManager",
+            "[Mesh mat=" + std::to_string(mesh->mMaterialIndex) + "] UV ALL ZERO", false, 3);
+    }
+
 
     subMesh.indexCount = static_cast<uint32_t>(indices.size()) - subMesh.indexOffset;
     shared->submeshes.push_back(subMesh);
@@ -311,6 +340,8 @@ bool ModelManager::CreateGPUBuffers(const std::vector<ModelVertex>& vertices,
 
     shared->vertexCount = static_cast<uint32_t>(vertices.size());
     shared->indexCount = static_cast<uint32_t>(indices.size());
+
+
 
     return true;
 }
