@@ -19,28 +19,35 @@ std::vector<Object*> gContentsObjects;
 
 int Init(const EngineConfig& InPut){
 
-	// DirectX11‚Ì‰Šú‰»
-	ghWnd = InPut.hWnd;
-	HRESULT hr = DirectX11::GetInstance()->Init(InPut.hWnd, InPut.screenWidth, InPut.screenHeight, InPut.fullscreen);
+	// COM ã®åˆæœŸåŒ– (WIC/DirectXTex ã®ãŸã‚å¿…é ˆ)
+	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	if (FAILED(hr)) return -1;
-	// İ’è‚Ì“Ç‚İ‚İ
+
+	// DirectX11ï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½
+	ghWnd = InPut.hWnd;
+	hr = DirectX11::GetInstance()->Init(InPut.hWnd, InPut.screenWidth, InPut.screenHeight, InPut.fullscreen);
+	if (FAILED(hr)) {
+		CoUninitialize();
+		return -1;
+	}
+	// ï¿½İ’ï¿½Ì“Ç‚İï¿½ï¿½ï¿½
 	SettingManager::GetInstance()->LoadConfig();
-	//@ƒAƒZƒbƒgƒ}ƒl[ƒWƒƒ[‚Ì‹N“®
+	//ï¿½@ï¿½Aï¿½Zï¿½bï¿½gï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½[ï¿½Ì‹Nï¿½ï¿½
 	AssetManager::Instance()->SetRoot(SettingManager::GetInstance()->GetAssetsFilePath());
 	AssetManager::Instance()->SetLoadMode(AssetManager::LoadMode::FromSource);
 	AssetManager::Instance()->StartAutoSync(std::chrono::milliseconds(1000), true);
 
-	// ƒQ[ƒ€ƒŒƒ“ƒ_ƒŠƒ“ƒOƒ^[ƒQƒbƒg‚Ì‰Šú‰»
+	// ï¿½Qï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½^ï¿½[ï¿½Qï¿½bï¿½gï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½
 	gGameRenderTarget = new GameRenderTarget();
 	gGameRenderTarget->Init(DirectX11::GetInstance()->GetDevice(), InPut.screenWidth, InPut.screenHeight);
-	// GUI‚Ì‰Šú‰»
+	// GUIï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½
 	EditrGUI::GetInstance()->Init();
 	bInGame = false;
-	// ƒV[ƒ“ƒ}ƒl[ƒWƒƒ[‚Ì‰Šú‰»
+	// ï¿½Vï¿½[ï¿½ï¿½ï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½[ï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½
 	SceneManger::GetInstance()->Init();
-	// ContentsObjects‚Ì‰Šú‰»
+	// ContentsObjectsï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½
 	gContentsObjects.clear();
-	// ƒVƒF[ƒ_[ƒ}ƒl[ƒWƒƒ[‚Ì‰Šú‰»
+	// ï¿½Vï¿½Fï¿½[ï¿½_ï¿½[ï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½[ï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½
 	ShaderManager::GetInstance()->Initialize(DirectX11::GetInstance()->GetDevice());
 	ComponentManager::GetInstance()->Init();
 
@@ -66,9 +73,12 @@ void UnInit(){
 	SettingManager::GetInstance()->SaveConfig();
 	SettingManager::DestroyInstance();
 	DirectX11::DestroyInstance();
+	
+	// COM ã®çµ‚äº†å‡¦ç†
+	CoUninitialize();
 }
 
-// “à•”ˆ—
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 void EditeUpdate(){
 	ShaderManager::GetInstance()->UpdateAndCompileShaders();
@@ -140,12 +150,12 @@ void RemoveContentsObject(Object* obj){
 void OpenExplorer(const std::string& path)
 {
 	ShellExecuteA(
-		NULL,           // ƒEƒBƒ“ƒhƒEƒnƒ“ƒhƒ‹
-		"open",         // “®ìiopen‚ÅOKj
-		"explorer.exe", // Àsƒtƒ@ƒCƒ‹
-		path.c_str(),   // ƒpƒ‰ƒ[ƒ^iŠJ‚«‚½‚¢ƒpƒXj
-		NULL,           // ƒfƒBƒŒƒNƒgƒŠiNULL‚ÅOKj
-		SW_SHOWNORMAL   // ƒEƒBƒ“ƒhƒE•\¦•û–@
+		NULL,           // ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½nï¿½ï¿½ï¿½hï¿½ï¿½
+		"open",         // ï¿½ï¿½ï¿½ï¿½iopenï¿½ï¿½OKï¿½j
+		"explorer.exe", // ï¿½ï¿½ï¿½sï¿½tï¿½@ï¿½Cï¿½ï¿½
+		path.c_str(),   // ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½iï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½pï¿½Xï¿½j
+		NULL,           // ï¿½fï¿½Bï¿½ï¿½ï¿½Nï¿½gï¿½ï¿½ï¿½iNULLï¿½ï¿½OKï¿½j
+		SW_SHOWNORMAL   // ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½@
 	);
 }
 
@@ -153,7 +163,7 @@ std::string GetExePath() {
 	char path[MAX_PATH];
 	DWORD length = GetModuleFileNameA(nullptr, path, MAX_PATH);
 	if (length == 0 || length == MAX_PATH) {
-		// æ“¾¸”s
+		// ï¿½æ“¾ï¿½ï¿½ï¿½s
 		return "";
 	}
 	return std::string(path, length);
@@ -164,10 +174,10 @@ std::string RemoveExeFromPath(const std::string& exePath)
 	size_t pos = exePath.find_last_of("\\/");
 	if (pos != std::string::npos)
 	{
-		// ƒtƒ@ƒCƒ‹–¼•”•ª‚ğœ‹‚µAƒtƒHƒ‹ƒ_ƒpƒX‚É‚·‚é
+		// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½tï¿½Hï¿½ï¿½ï¿½_ï¿½pï¿½Xï¿½É‚ï¿½ï¿½ï¿½
 		return exePath.substr(0, pos);
 	}
-	return exePath; // ‹æØ‚è‚ªŒ©‚Â‚©‚ç‚È‚©‚Á‚½ê‡‚Í‚»‚Ì‚Ü‚Ü•Ô‚·
+	return exePath; // ï¿½ï¿½Ø‚è‚ªï¿½ï¿½ï¿½Â‚ï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½Í‚ï¿½ï¿½Ì‚Ü‚Ü•Ô‚ï¿½
 }
 
 bool CallAssetPacker(const std::string& toolPath, const std::string& assetDir, const std::string& outputPak) {
@@ -180,9 +190,9 @@ bool CallAssetPacker(const std::string& toolPath, const std::string& assetDir, c
 
 	if (!result) return false;
 
-	MessageBoxA(NULL, "ƒA[ƒJƒCƒu‰»‚ğŠJn‚µ‚Ü‚µ‚½BŠ®—¹‚Ü‚Å‚µ‚Î‚ç‚­‚¨‘Ò‚¿‚­‚¾‚³‚¢B", "î•ñ", MB_OK | MB_ICONINFORMATION);
+	MessageBoxA(NULL, "ï¿½Aï¿½[ï¿½Jï¿½Cï¿½uï¿½ï¿½ï¿½ï¿½ï¿½Jï¿½nï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½ï¿½Bï¿½ï¿½ï¿½ï¿½ï¿½Ü‚Å‚ï¿½ï¿½Î‚ç‚­ï¿½ï¿½ï¿½Ò‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½B", "ï¿½ï¿½ï¿½", MB_OK | MB_ICONINFORMATION);
 
-	// ƒvƒƒZƒXI—¹‚Ü‚Å‘Ò‹@
+	// ï¿½vï¿½ï¿½ï¿½Zï¿½Xï¿½Iï¿½ï¿½ï¿½Ü‚Å‘Ò‹@
 	WaitForSingleObject(pi.hProcess, INFINITE);
 
 	DWORD exitCode = 0;
@@ -196,7 +206,7 @@ bool CallAssetPacker(const std::string& toolPath, const std::string& assetDir, c
 
 bool RunArchiveTool(const std::string& toolExePath, const std::string& assetDir, const std::string& archivePath)
 {
-	// ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“—á: "SceneRoot/Tool/Tool.exe" "SceneRoot/Assets" "SceneRoot/Archive/assets.PixAssets"
+	// ï¿½Rï¿½}ï¿½ï¿½ï¿½hï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½ï¿½: "SceneRoot/Tool/Tool.exe" "SceneRoot/Assets" "SceneRoot/Archive/assets.PixAssets"
 	std::string cmd = "\"" + toolExePath + "\" \"" + assetDir + "\" \"" + archivePath + "\"";
 
 	STARTUPINFOA si = { sizeof(si) };
@@ -215,12 +225,12 @@ bool RunArchiveTool(const std::string& toolExePath, const std::string& assetDir,
 	);
 
 	if (!result) {
-		std::string ErrorMsg = "ƒc[ƒ‹‚Ì‹N“®‚É¸”s: " + std::to_string(GetLastError());
-		MessageBoxA(NULL, ErrorMsg.c_str(), "ƒGƒ‰[", MB_OK | MB_ICONERROR);
+		std::string ErrorMsg = "ï¿½cï¿½[ï¿½ï¿½ï¿½Ì‹Nï¿½ï¿½ï¿½Éï¿½ï¿½s: " + std::to_string(GetLastError());
+		MessageBoxA(NULL, ErrorMsg.c_str(), "ï¿½Gï¿½ï¿½ï¿½[", MB_OK | MB_ICONERROR);
 		return false;
 	}
 
-	// ‹N“®ŒãI—¹‚Ü‚Å‘Ò‹@
+	// ï¿½Nï¿½ï¿½ï¿½ï¿½Iï¿½ï¿½ï¿½Ü‚Å‘Ò‹@
 	WaitForSingleObject(pi.hProcess, INFINITE);
 
 	DWORD exitCode = 0;
