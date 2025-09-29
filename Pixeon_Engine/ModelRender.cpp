@@ -16,6 +16,7 @@ Microsoft::WRL::ComPtr<ID3D11PixelShader>  ModelRenderComponent::s_ps;
 Microsoft::WRL::ComPtr<ID3D11InputLayout>  ModelRenderComponent::s_layout;
 Microsoft::WRL::ComPtr<ID3D11SamplerState> ModelRenderComponent::s_linearSmp;
 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ModelRenderComponent::s_whiteTexSRV;
+Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ModelRenderComponent::s_magentaTexSRV;
 
 static std::string NormalizeRelativePath(std::string s)
 {
@@ -78,6 +79,405 @@ void ModelRenderComponent::RefreshMaterialCache()
         }
         rt.color = m.baseColor;
         m_materials.push_back(rt);
+    }
+}
+
+bool ModelRenderComponent::EnsureShaders(bool forceRecreateLayout)
+{
+    auto* sm = ShaderManager::GetInstance();
+
+    ID3D11VertexShader* vs = sm->GetVertexShader(m_vsName);
+    ID3D11PixelShader* ps = sm->GetPixelShader(m_psName);
+
+    if (!vs || !ps) {
+        sm->UpdateAndCompileShaders();
+        vs = sm->GetVertexShader(m_vsName);
+        ps = sm->GetPixelShader(m_psName);
+        if (!vs || !ps) {
+            std::string msg = "[ModelRenderComponent] シェーダーが見つかりません: " + m_vsName + ", " + m_psName + "\n";
+            OutputDebugStringA(msg.c_str());
+            return false;
+        }
+    }
+
+    // 変更検知 (名前が変わった場合に再設定)
+    s_vs = vs;
+    s_ps = ps;
+
+    if (forceRecreateLayout || !s_layout) {
+        RecreateInputLayout();
+    }
+
+    // サンプラ
+    if (!s_linearSmp) {
+        D3D11_SAMPLER_DESC sd{};
+        sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+        sd.AddressU = sd.AddressV = sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+        sd.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+        sd.MinLOD = 0;
+        sd.MaxLOD = D3D11_FLOAT32_MAX;
+        auto dev = DirectX11::GetInstance()->GetDevice();
+        dev->CreateSamplerState(&sd, s_linearSmp.GetAddressOf());
+    }
+    EnsureDebugFallbackTextures();
+    return true;
+}
+
+void ModelRenderComponent::RecreateInputLayout()
+{
+    s_layout.Reset();
+    const void* bc = nullptr;
+    size_t bcSize = 0;
+    if (!ShaderManager::GetInstance()->GetVSBytecode(m_vsName, &bc, &bcSize)) {
+        OutputDebugStringA("[ModelRenderComponent] VS bytecode 取得失敗(InputLayout再構築)\n");
+        return;
+    }
+    EnsureInputLayout(bc, bcSize);
+}
+
+bool ModelRenderComponent::EnsureInputLayout(const void* vsBytecode, size_t size)
+{
+    if (s_layout) return true;
+
+    D3D11_INPUT_ELEMENT_DESC desc[] =
+    {
+        {"POSITION",     0, DXGI_FORMAT_R32G32B32_FLOAT,    0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"NORMAL",       0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"TANGENT",      0, DXGI_FORMAT_R32G32B32A32_FLOAT,0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"TEXCOORD",     0, DXGI_FORMAT_R32G32_FLOAT,      0, 40, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"BLENDWEIGHT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT,0, 64, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    };
+    auto dev = DirectX11::GetInstance()->GetDevice();
+    HRESULT hr = dev->CreateInputLayout(desc, _countof(desc), vsBytecode, size, s_layout.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("[ModelRenderComponent] InputLayout 作成失敗\n");
+        return false;
+    }
+    return true;
+}
+
+bool ModelRenderComponent::EnsureConstantBuffer()
+{
+    if (m_cb) return true;
+    auto dev = DirectX11::GetInstance()->GetDevice();
+    D3D11_BUFFER_DESC bd{};
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.ByteWidth = sizeof(CBData);
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    HRESULT hr = dev->CreateBuffer(&bd, nullptr, m_cb.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("[ModelRenderComponent] 定数バッファ作成失敗\n");
+        return false;
+    }
+    return true;
+}
+
+DirectX::XMMATRIX ModelRenderComponent::BuildWorldMatrix() const
+{
+    Transform t = _Parent->GetTransform();
+    XMMATRIX S = XMMatrixScaling(t.scale.x, t.scale.y, t.scale.z);
+    XMMATRIX R = XMMatrixRotationRollPitchYaw(t.rotation.x, t.rotation.y, t.rotation.z);
+    XMMATRIX T = XMMatrixTranslation(t.position.x, t.position.y, t.position.z);
+    return S * R * T;
+}
+
+bool ModelRenderComponent::EnsureWhiteTexture()
+{
+    if (s_whiteTexSRV) return true;
+    auto dev = DirectX11::GetInstance()->GetDevice();
+    if (!dev) return false;
+
+    // 1x1 RGBA (255,255,255,255)
+    uint32_t pixel = 0xFFFFFFFF;
+    D3D11_TEXTURE2D_DESC td{};
+    td.Width = 1;
+    td.Height = 1;
+    td.MipLevels = 1;
+    td.ArraySize = 1;
+    td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    td.SampleDesc.Count = 1;
+    td.Usage = D3D11_USAGE_DEFAULT;
+    td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    D3D11_SUBRESOURCE_DATA init{};
+    init.pSysMem = &pixel;
+    init.SysMemPitch = 4;
+
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> tex;
+    HRESULT hr = dev->CreateTexture2D(&td, &init, tex.GetAddressOf());
+    if (FAILED(hr)) return false;
+
+    hr = dev->CreateShaderResourceView(tex.Get(), nullptr, s_whiteTexSRV.GetAddressOf());
+    if (FAILED(hr)) return false;
+
+    return true;
+}
+
+bool ModelRenderComponent::EnsureDebugFallbackTextures(){
+    auto dev = DirectX11::GetInstance()->GetDevice();
+    if (!dev) return false;
+    if (!s_whiteTexSRV) {
+        uint32_t pixel = 0xFFFFFFFF;
+        D3D11_TEXTURE2D_DESC td{};
+        td.Width = td.Height = 1;
+        td.MipLevels = 1; td.ArraySize = 1;
+        td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        td.SampleDesc.Count = 1;
+        td.Usage = D3D11_USAGE_DEFAULT;
+        td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        D3D11_SUBRESOURCE_DATA init{ &pixel, 4, 4 };
+        Microsoft::WRL::ComPtr<ID3D11Texture2D> tex;
+        if (SUCCEEDED(dev->CreateTexture2D(&td, &init, tex.GetAddressOf())))
+            dev->CreateShaderResourceView(tex.Get(), nullptr, s_whiteTexSRV.GetAddressOf());
+    }
+    if (!s_magentaTexSRV) {
+        uint32_t pixel = 0xFFFF00FF; // ARGB or RGBA? -> DirectXTex Tex2D raw -> little endian 0xAABBGGRR
+        uint8_t pix[4] = { 255, 0, 255, 255 }; // RGBA = Magenta
+        D3D11_TEXTURE2D_DESC td{};
+        td.Width = td.Height = 1;
+        td.MipLevels = 1; td.ArraySize = 1;
+        td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        td.SampleDesc.Count = 1;
+        td.Usage = D3D11_USAGE_DEFAULT;
+        td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        D3D11_SUBRESOURCE_DATA init{ pix, 4, 4 };
+        Microsoft::WRL::ComPtr<ID3D11Texture2D> tex;
+        if (SUCCEEDED(dev->CreateTexture2D(&td, &init, tex.GetAddressOf())))
+            dev->CreateShaderResourceView(tex.Get(), nullptr, s_magentaTexSRV.GetAddressOf());
+    }
+    return (s_whiteTexSRV && s_magentaTexSRV);
+}
+
+void ModelRenderComponent::Draw()
+{
+    if (!m_ready || !m_model) return;
+
+
+    static bool s_onceLogged = false;
+    if (!s_onceLogged) {
+        char buf[256];
+        sprintf_s(buf, "[ModelRender] model=%s ready=%d submeshes=%zu mats=%zu vb=%p ib=%p vs=%s ps=%s\n",
+            m_modelPath.c_str(), (int)m_ready, m_model ? m_model->submeshes.size() : 0,
+            m_materials.size(),
+            m_model ? m_model->vb.Get() : nullptr,
+            m_model ? m_model->ib.Get() : nullptr,
+            m_vsName.c_str(), m_psName.c_str());
+        OutputDebugStringA(buf);
+        for (size_t i = 0; i < m_materials.size(); ++i) {
+            std::string t = m_materials[i].texName.empty() ? "(none)" : m_materials[i].texName;
+            std::string l = "[ModelRender] Mat" + std::to_string(i) + " tex=" + t + "\n";
+            OutputDebugStringA(l.c_str());
+        }
+        s_onceLogged = true;
+    }
+
+    Scene* scene = _Parent->GetParentScene();
+    if (!scene) return;
+    CameraComponent* cam = scene->GetMainCamera();
+    if (!cam) return;
+
+    XMMATRIX view = cam->GetView();
+    XMMATRIX proj = cam->GetProjection();
+    XMMATRIX world = BuildWorldMatrix();
+
+    CBData cbd;
+    cbd.World = XMMatrixTranspose(world);
+    cbd.View = XMMatrixTranspose(view);
+    cbd.Proj = XMMatrixTranspose(proj);
+    cbd.BaseColor = m_color;
+
+    auto ctx = DirectX11::GetInstance()->GetContext();
+    ctx->UpdateSubresource(m_cb.Get(), 0, nullptr, &cbd, 0, 0);
+
+    UINT stride = sizeof(ModelVertex);
+    UINT offset = 0;
+    ID3D11Buffer* vb = m_model->vb.Get();
+    ID3D11Buffer* ib = m_model->ib.Get();
+    ctx->IASetVertexBuffers(0, 1, &vb, &stride, &offset);
+    ctx->IASetIndexBuffer(ib, DXGI_FORMAT_R32_UINT, 0);
+    ctx->IASetInputLayout(s_layout.Get());
+    ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    ctx->VSSetShader(s_vs.Get(), nullptr, 0);
+    ctx->PSSetShader(s_ps.Get(), nullptr, 0);
+    ID3D11Buffer* cbs[] = { m_cb.Get() };
+    ctx->VSSetConstantBuffers(0, 1, cbs);
+    ctx->PSSetConstantBuffers(0, 1, cbs);
+    ID3D11SamplerState* smp = s_linearSmp.Get();
+    ctx->PSSetSamplers(0, 1, &smp);
+
+    EnsureWhiteTexture();
+
+    for (size_t i = 0; i < m_model->submeshes.size(); ++i) {
+        const auto& sm = m_model->submeshes[i];
+        size_t matIndex = sm.materialIndex;
+        ID3D11ShaderResourceView* srv = s_whiteTexSRV.Get(); // 初期は白 (まだロード前)
+
+        if (matIndex < m_materials.size()) {
+            auto& mat = m_materials[matIndex];
+            if (!mat.tex && !mat.texName.empty()) {
+                mat.tex = TextureManager::Instance()->LoadOrGet(mat.texName);
+                if (mat.tex && mat.tex->srv) {
+                    OutputDebugStringA(("[ModelRender] Texture OK: " + mat.texName + "\n").c_str());
+                }
+                else {
+                    OutputDebugStringA(("[ModelRender] Texture FAIL -> magenta: " + mat.texName + "\n").c_str());
+                    srv = s_magentaTexSRV.Get();
+                }
+            }
+            if (mat.tex && mat.tex->srv) {
+                srv = mat.tex->srv.Get();
+            }
+            else if (mat.texName.empty()) {
+                // テクスチャ名空: マゼンタで強調
+                srv = s_magentaTexSRV.Get();
+            }
+        }
+        else {
+            srv = s_magentaTexSRV.Get();
+            char logBuf[128];
+            sprintf_s(logBuf, "[ModelRender] submesh=%zu materialIndex=%u OUT_OF_RANGE mats=%zu\n",
+                i, sm.materialIndex, m_materials.size());
+			MessageBox(nullptr, "ModelRenderComponent: Material index out of range!", "Error", MB_OK | MB_ICONERROR);
+            OutputDebugStringA(logBuf);
+        }
+
+        ctx->PSSetShaderResources(0, 1, &srv);
+        ctx->DrawIndexed(sm.indexCount, sm.indexOffset, 0);
+    }
+}
+
+
+void ModelRenderComponent::SaveToFile(std::ostream& out)
+{
+    out << m_modelPath << "\n";
+    out << m_color.x << " " << m_color.y << " " << m_color.z << " " << m_color.w << "\n";
+    out << m_vsName << "\n" << m_psName << "\n"; // *** シェーダー設定も保存
+}
+
+void ModelRenderComponent::LoadFromFile(std::istream& in)
+{
+    std::getline(in, m_modelPath);
+    if (!m_modelPath.empty() && m_modelPath.back() == '\r') m_modelPath.pop_back();
+    in >> m_color.x >> m_color.y >> m_color.z >> m_color.w;
+    in.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    std::getline(in, m_vsName);
+    if (!m_vsName.empty() && m_vsName.back() == '\r') m_vsName.pop_back();
+    std::getline(in, m_psName);
+    if (!m_psName.empty() && m_psName.back() == '\r') m_psName.pop_back();
+
+    if (!m_modelPath.empty()) SetModel(m_modelPath);
+}
+
+
+void ModelRenderComponent::DrawInspector()
+{
+    auto SJ = [](const char* s)->std::string { return EditrGUI::GetInstance()->ShiftJISToUTF8(s); };
+
+    if (!ImGui::CollapsingHeader("ModelRenderComponent", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
+    // モデルパス
+    ImGui::Text("%s %s", SJ("モデル:").c_str(), m_modelPath.c_str());
+    static char pathBuf[256];
+    std::snprintf(pathBuf, sizeof(pathBuf), "%s", m_modelPath.c_str());
+    ImGui::InputText("Path", pathBuf, sizeof(pathBuf));
+    ImGui::SameLine();
+    if (ImGui::Button(SJ("手動ロード").c_str()))
+        SetModel(pathBuf);
+
+    ImGui::SameLine();
+    if (ImGui::Button(SJ("モデル選択...").c_str()))
+        ImGui::OpenPopup("ModelSelectPopup");
+    ShowModelSelectPopup();
+
+    // シェーダー設定
+    if (ImGui::TreeNode(SJ("シェーダー設定").c_str()))
+    {
+        auto* sm = ShaderManager::GetInstance();
+        static std::vector<std::string> vsList;
+        static std::vector<std::string> psList;
+        if (vsList.empty()) vsList = sm->GetShaderList("VS");
+        if (psList.empty()) psList = sm->GetShaderList("PS");
+
+        if (ImGui::BeginCombo(SJ("頂点シェーダー").c_str(), m_vsName.c_str())) {
+            for (auto& n : vsList) {
+                bool sel = (n == m_vsName);
+                if (ImGui::Selectable(n.c_str(), sel)) { m_vsName = n; EnsureShaders(true); }
+                if (sel) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+        if (ImGui::BeginCombo(SJ("ピクセルシェーダー").c_str(), m_psName.c_str())) {
+            for (auto& n : psList) {
+                bool sel = (n == m_psName);
+                if (ImGui::Selectable(n.c_str(), sel)) { m_psName = n; EnsureShaders(false); }
+                if (sel) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+        if (ImGui::Button(SJ("シェーダーリスト再取得").c_str())) {
+            vsList = sm->GetShaderList("VS");
+            psList = sm->GetShaderList("PS");
+        }
+        ImGui::TreePop();
+    }
+
+    ImGui::ColorEdit4("Color", (float*)&m_color);
+
+    ImGui::Separator();
+    ImGui::Text("%s %zu", SJ("マテリアル数:").c_str(), m_materials.size());
+
+    // マテリアルごとの UI
+    for (size_t i = 0; i < m_materials.size(); ++i)
+    {
+        ImGui::PushID((int)i);
+        ImGui::Text("Mat %zu", i);
+        ImGui::SameLine();
+        std::string shown = m_materials[i].texName.empty() ? SJ("(なし)") : m_materials[i].texName;
+        ImGui::Text("%s%s", SJ("tex=").c_str(), shown.c_str());
+        ImGui::SameLine();
+        if (ImGui::Button(SJ("テクスチャ選択...").c_str())) {
+            m_texPopupMatIndex = (int)i;
+            ImGui::OpenPopup("TextureSelectPopup"); // ★ この PushID スタック内で呼ぶ
+        }
+
+        // ★ ポップアップも同じ PushID 内で開始することで ID 不一致を解消
+        if (ImGui::BeginPopup("TextureSelectPopup"))
+        {
+            auto texList = AssetManager::Instance()->GetCachedTextureNames();
+            static char texFilter[128] = "";
+            ImGui::InputText(SJ("フィルタ").c_str(), texFilter, sizeof(texFilter));
+
+            ImGui::BeginChild("TexListChild", ImVec2(380, 230), true);
+            int shownCount = 0;
+            for (int ti = 0; ti < (int)texList.size(); ++ti) {
+                const std::string& name = texList[ti];
+                if (texFilter[0] && name.find(texFilter) == std::string::npos)
+                    continue;
+                ++shownCount;
+                if (ImGui::Selectable(name.c_str(), false)) {
+                    if (m_texPopupMatIndex == (int)i) {
+                        m_materials[i].texName = name;
+                        m_materials[i].tex.reset(); // 再ロード
+                    }
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (texList.empty())
+                ImGui::TextDisabled("%s", SJ("(キャッシュにテクスチャがありません)").c_str());
+            else if (shownCount == 0)
+                ImGui::TextDisabled("%s", SJ("(フィルタに一致する項目なし)").c_str());
+            ImGui::EndChild();
+
+            if (ImGui::Button(SJ("閉じる").c_str()))
+                ImGui::CloseCurrentPopup();
+
+            ImGui::EndPopup();
+        }
+        ImGui::PopID();
     }
 }
 
@@ -147,217 +547,10 @@ void ModelRenderComponent::ShowModelSelectPopup()
     }
 }
 
-bool ModelRenderComponent::EnsureShaders(bool forceRecreateLayout)
-{
-    auto* sm = ShaderManager::GetInstance();
-
-    ID3D11VertexShader* vs = sm->GetVertexShader(m_vsName);
-    ID3D11PixelShader* ps = sm->GetPixelShader(m_psName);
-
-    if (!vs || !ps) {
-        sm->UpdateAndCompileShaders();
-        vs = sm->GetVertexShader(m_vsName);
-        ps = sm->GetPixelShader(m_psName);
-        if (!vs || !ps) {
-            std::string msg = "[ModelRenderComponent] シェーダーが見つかりません: " + m_vsName + ", " + m_psName + "\n";
-            OutputDebugStringA(msg.c_str());
-            return false;
-        }
-    }
-
-    // 変更検知 (名前が変わった場合に再設定)
-    s_vs = vs;
-    s_ps = ps;
-
-    if (forceRecreateLayout || !s_layout) {
-        RecreateInputLayout();
-    }
-
-    // サンプラ
-    if (!s_linearSmp) {
-        D3D11_SAMPLER_DESC sd{};
-        sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-        sd.AddressU = sd.AddressV = sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        sd.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-        sd.MinLOD = 0;
-        sd.MaxLOD = D3D11_FLOAT32_MAX;
-        auto dev = DirectX11::GetInstance()->GetDevice();
-        dev->CreateSamplerState(&sd, s_linearSmp.GetAddressOf());
-    }
-    EnsureWhiteTexture();
-    return true;
-}
-
-void ModelRenderComponent::RecreateInputLayout()
-{
-    s_layout.Reset();
-    const void* bc = nullptr;
-    size_t bcSize = 0;
-    if (!ShaderManager::GetInstance()->GetVSBytecode(m_vsName, &bc, &bcSize)) {
-        OutputDebugStringA("[ModelRenderComponent] VS bytecode 取得失敗(InputLayout再構築)\n");
-        return;
-    }
-    EnsureInputLayout(bc, bcSize);
-}
-
-bool ModelRenderComponent::EnsureInputLayout(const void* vsBytecode, size_t size)
-{
-    if (s_layout) return true;
-
-    D3D11_INPUT_ELEMENT_DESC desc[] =
-    {
-        {"POSITION",     0, DXGI_FORMAT_R32G32B32_FLOAT,    0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"NORMAL",       0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"TANGENT",      0, DXGI_FORMAT_R32G32B32A32_FLOAT,0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"TEXCOORD",     0, DXGI_FORMAT_R32G32_FLOAT,      0, 40, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"BLENDWEIGHT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT,0, 64, D3D11_INPUT_PER_VERTEX_DATA, 0},
-    };
-    auto dev = DirectX11::GetInstance()->GetDevice();
-    HRESULT hr = dev->CreateInputLayout(desc, _countof(desc), vsBytecode, size, s_layout.GetAddressOf());
-    if (FAILED(hr)) {
-        OutputDebugStringA("[ModelRenderComponent] InputLayout 作成失敗\n");
-        return false;
-    }
-    return true;
-}
-
-bool ModelRenderComponent::EnsureConstantBuffer()
-{
-    if (m_cb) return true;
-    auto dev = DirectX11::GetInstance()->GetDevice();
-    D3D11_BUFFER_DESC bd{};
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.ByteWidth = sizeof(CBData);
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    HRESULT hr = dev->CreateBuffer(&bd, nullptr, m_cb.GetAddressOf());
-    if (FAILED(hr)) {
-        OutputDebugStringA("[ModelRenderComponent] 定数バッファ作成失敗\n");
-        return false;
-    }
-    return true;
-}
-
-DirectX::XMMATRIX ModelRenderComponent::BuildWorldMatrix() const
-{
-    Transform t = _Parent->GetTransform();
-    XMMATRIX S = XMMatrixScaling(t.scale.x, t.scale.y, t.scale.z);
-    XMMATRIX R = XMMatrixRotationRollPitchYaw(t.rotation.x, t.rotation.y, t.rotation.z);
-    XMMATRIX T = XMMatrixTranslation(t.position.x, t.position.y, t.position.z);
-    return S * R * T;
-}
-
-std::string ModelRenderComponent::ResolveTexturePath(const std::string& modelLogical, const std::string& rawPath)
-{
-    if (rawPath.empty()) return {};
-
-    // 埋め込みテクスチャ (例: "*0") は現バージョン非対応
-    if (rawPath[0] == '*') {
-        OutputDebugStringA(("[ModelManager] Embedded texture unsupported: " + rawPath + "\n").c_str());
-        return {};
-    }
-
-    std::string norm = NormalizeRelativePath(rawPath);
-
-    // 絶対パスならファイル名のみ
-    {
-        std::error_code ec;
-        std::filesystem::path p(norm);
-        if (p.is_absolute()) {
-            norm = p.filename().generic_string();
-        }
-    }
-
-    // モデルのディレクトリ
-    std::string modelDir;
-    if (auto pos = modelLogical.find_last_of("/\\"); pos != std::string::npos) {
-        modelDir = modelLogical.substr(0, pos + 1); // 末尾に '/'
-        for (auto& c : modelDir) if (c == '\\') c = '/';
-    }
-
-    // raw のファイル名
-    std::string filename = norm;
-    if (auto pos = norm.find_last_of('/'); pos != std::string::npos) {
-        filename = norm.substr(pos + 1);
-    }
-
-    // 候補リスト
-    std::vector<std::string> candidates;
-
-    // もし raw がサブフォルダ付き相対ならそのまま最優先
-    if (norm.find('/') != std::string::npos) {
-        candidates.push_back(norm);
-    }
-    // 同階層
-    candidates.push_back(modelDir + norm);
-    // 同階層 + filename (raw がフォルダ付きで存在しない場合への保険)
-    candidates.push_back(modelDir + filename);
-    // 同階層 Textures/
-    candidates.push_back(modelDir + "Textures/" + filename);
-    // 共有 Textures/
-    candidates.push_back(std::string("Textures/") + filename);
-    // ルート直下
-    candidates.push_back(filename);
-
-    // 重複削除
-    {
-        std::vector<std::string> unique;
-        unique.reserve(candidates.size());
-        std::unordered_set<std::string> seen;
-        for (auto& c : candidates) {
-            auto n = NormalizeRelativePath(c);
-            if (seen.insert(n).second) unique.push_back(n);
-        }
-        candidates.swap(unique);
-    }
-
-    for (auto& c : candidates) {
-        if (AssetManager::Instance()->Exists(c)) {
-            return c; // 見つかった
-        }
-    }
-
-    // 見つからず
-    OutputDebugStringA(("[ModelManager] Texture not found for material raw=" + rawPath + " (model=" + modelLogical + ")\n").c_str());
-    return {}; // 失敗時は空を返し、GUI で上書き可
-}
-
-bool ModelRenderComponent::EnsureWhiteTexture()
-{
-    if (s_whiteTexSRV) return true;
-    auto dev = DirectX11::GetInstance()->GetDevice();
-    if (!dev) return false;
-
-    // 1x1 RGBA (255,255,255,255)
-    uint32_t pixel = 0xFFFFFFFF;
-    D3D11_TEXTURE2D_DESC td{};
-    td.Width = 1;
-    td.Height = 1;
-    td.MipLevels = 1;
-    td.ArraySize = 1;
-    td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    td.SampleDesc.Count = 1;
-    td.Usage = D3D11_USAGE_DEFAULT;
-    td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-
-    D3D11_SUBRESOURCE_DATA init{};
-    init.pSysMem = &pixel;
-    init.SysMemPitch = 4;
-
-    Microsoft::WRL::ComPtr<ID3D11Texture2D> tex;
-    HRESULT hr = dev->CreateTexture2D(&td, &init, tex.GetAddressOf());
-    if (FAILED(hr)) return false;
-
-    hr = dev->CreateShaderResourceView(tex.Get(), nullptr, s_whiteTexSRV.GetAddressOf());
-    if (FAILED(hr)) return false;
-
-    return true;
-}
-
-void ModelRenderComponent::ShowTextureSelectPopup(int materialIndex){
+void ModelRenderComponent::ShowTextureSelectPopup(int materialIndex) {
     if (!m_openTexPopup || materialIndex < 0 || materialIndex >= (int)m_materials.size())
     {
-		MessageBox(nullptr, "Invalid state in ShowTextureSelectPopup", "Error", MB_OK);
+        MessageBox(nullptr, "Invalid state in ShowTextureSelectPopup", "Error", MB_OK);
         return;
     }
 
@@ -396,125 +589,4 @@ void ModelRenderComponent::ShowTextureSelectPopup(int materialIndex){
         }
         ImGui::EndPopup();
     }
-}
-
-void ModelRenderComponent::Draw()
-{
-    if (!m_ready || !m_model) return;
-
-    Scene* scene = _Parent->GetParentScene();
-    if (!scene) return;
-    CameraComponent* cam = scene->GetMainCamera();
-    if (!cam) return;
-
-    XMMATRIX view = cam->GetView();
-    XMMATRIX proj = cam->GetProjection();
-    XMMATRIX world = BuildWorldMatrix();
-
-    CBData cbd;
-    cbd.World = XMMatrixTranspose(world);
-    cbd.View = XMMatrixTranspose(view);
-    cbd.Proj = XMMatrixTranspose(proj);
-    cbd.BaseColor = m_color;
-
-    auto ctx = DirectX11::GetInstance()->GetContext();
-    ctx->UpdateSubresource(m_cb.Get(), 0, nullptr, &cbd, 0, 0);
-
-    UINT stride = sizeof(ModelVertex);
-    UINT offset = 0;
-    ID3D11Buffer* vb = m_model->vb.Get();
-    ID3D11Buffer* ib = m_model->ib.Get();
-    ctx->IASetVertexBuffers(0, 1, &vb, &stride, &offset);
-    ctx->IASetIndexBuffer(ib, DXGI_FORMAT_R32_UINT, 0);
-    ctx->IASetInputLayout(s_layout.Get());
-    ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    ctx->VSSetShader(s_vs.Get(), nullptr, 0);
-    ctx->PSSetShader(s_ps.Get(), nullptr, 0);
-    ID3D11Buffer* cbs[] = { m_cb.Get() };
-    ctx->VSSetConstantBuffers(0, 1, cbs);
-    ctx->PSSetConstantBuffers(0, 1, cbs);
-    ID3D11SamplerState* smp = s_linearSmp.Get();
-    ctx->PSSetSamplers(0, 1, &smp);
-
-    EnsureWhiteTexture();
-
-    for (size_t i = 0; i < m_model->submeshes.size(); ++i) {
-        const auto& sm = m_model->submeshes[i];
-        ID3D11ShaderResourceView* srv = s_whiteTexSRV.Get(); // デフォルト白
-        if (i < m_materials.size()) {
-            auto& mat = m_materials[i];
-            if (!mat.tex && !mat.texName.empty()) {
-                mat.tex = TextureManager::Instance()->LoadOrGet(mat.texName);
-            }
-            if (mat.tex && mat.tex->srv) srv = mat.tex->srv.Get();
-        }
-        ctx->PSSetShaderResources(0, 1, &srv);
-        ctx->DrawIndexed(sm.indexCount, sm.indexOffset, 0);
-    }
-
-    ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
-    ctx->PSSetShaderResources(0, 1, nullSRV);
-}
-
-void ModelRenderComponent::DrawInspector()
-{
-    auto SJ = [](const char* s)->std::string { return EditrGUI::GetInstance()->ShiftJISToUTF8(s); };
-
-    if (ImGui::CollapsingHeader("ModelRenderComponent", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Text("%s %s", SJ("モデル:").c_str(), m_modelPath.c_str());
-        static char pathBuf[256];
-        std::snprintf(pathBuf, sizeof(pathBuf), "%s", m_modelPath.c_str());
-        if (ImGui::InputText("Path", pathBuf, sizeof(pathBuf))) {}
-        ImGui::SameLine();
-        if (ImGui::Button(SJ("手動ロード").c_str())) { SetModel(pathBuf); }
-        ImGui::SameLine();
-        if (ImGui::Button(SJ("モデル選択...").c_str())) { ImGui::OpenPopup("ModelSelectPopup"); }
-        ShowModelSelectPopup();
-
-        // シェーダー設定（既存）... 省略 (前回実装を保持)
-
-        ImGui::ColorEdit4("Color", (float*)&m_color);
-
-        ImGui::Separator();
-        ImGui::Text("%s %zu", SJ("マテリアル数:").c_str(), m_materials.size());
-        for (size_t i = 0; i < m_materials.size(); ++i) {
-            ImGui::PushID((int)i);
-            ImGui::Text("Mat %zu", i);
-            ImGui::SameLine();
-            std::string showPath = m_materials[i].texName.empty() ? SJ("(なし)") : m_materials[i].texName;
-            ImGui::Text("%s%s", SJ("tex=").c_str(), showPath.c_str());
-            ImGui::SameLine();
-            if (ImGui::Button(SJ("テクスチャ選択...").c_str())) {
-                m_texPopupMatIndex = (int)i;
-                m_openTexPopup = true;
-                ImGui::OpenPopup("TextureSelectPopup");
-            }
-            ImGui::PopID();
-        }
-        if (m_openTexPopup)
-            ShowTextureSelectPopup(m_texPopupMatIndex);
-    }
-}
-
-void ModelRenderComponent::SaveToFile(std::ostream& out)
-{
-    out << m_modelPath << "\n";
-    out << m_color.x << " " << m_color.y << " " << m_color.z << " " << m_color.w << "\n";
-    out << m_vsName << "\n" << m_psName << "\n"; // *** シェーダー設定も保存
-}
-
-void ModelRenderComponent::LoadFromFile(std::istream& in)
-{
-    std::getline(in, m_modelPath);
-    if (!m_modelPath.empty() && m_modelPath.back() == '\r') m_modelPath.pop_back();
-    in >> m_color.x >> m_color.y >> m_color.z >> m_color.w;
-    in.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-    std::getline(in, m_vsName);
-    if (!m_vsName.empty() && m_vsName.back() == '\r') m_vsName.pop_back();
-    std::getline(in, m_psName);
-    if (!m_psName.empty() && m_psName.back() == '\r') m_psName.pop_back();
-
-    if (!m_modelPath.empty()) SetModel(m_modelPath);
 }

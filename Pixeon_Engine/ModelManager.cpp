@@ -7,6 +7,8 @@
 #include <assimp/postprocess.h>
 #include <Windows.h>
 #include "IMGUI/imgui.h"
+#include <filesystem>
+#include <unordered_set>
 
 #if _MSC_VER >= 1930
 #ifdef _DEBUG
@@ -27,6 +29,16 @@
 #pragma comment(lib, "assimp-vc141-mt.lib")
 #endif
 #endif
+
+static std::string MM_NormalizePath(std::string s) {
+    for (auto& c : s) if (c == '\\') c = '/';
+    while (s.size() && (s[0] == '/' || (s.size() >= 2 && s[0] == '.' && s[1] == '/'))) {
+        if (s[0] == '/') s.erase(0, 1);
+        else if (s.rfind("./", 0) == 0) s.erase(0, 2);
+        else break;
+    }
+    return s;
+}
 
 ModelManager* ModelManager::s_instance = nullptr;
 
@@ -114,6 +126,53 @@ std::shared_ptr<ModelSharedResource> ModelManager::LoadInternal(const std::strin
     return shared;
 }
 
+std::string ModelManager::ResolveTexturePath(const std::string& modelLogical, const std::string& rawPath){
+    if (rawPath.empty()) return {};
+    if (rawPath[0] == '*') { // 埋め込み未対応
+        OutputDebugStringA(("[ModelManager] Embedded texture unsupported: " + rawPath + "\n").c_str());
+        return {};
+    }
+    std::string norm = MM_NormalizePath(rawPath);
+
+    // 絶対パス -> ファイル名のみ
+    {
+        std::filesystem::path p(norm);
+        if (p.is_absolute()) norm = p.filename().generic_string();
+    }
+
+    // モデルのディレクトリ
+    std::string modelDir;
+    if (auto pos = modelLogical.find_last_of("/\\"); pos != std::string::npos) {
+        modelDir = modelLogical.substr(0, pos + 1);
+        for (auto& c : modelDir) if (c == '\\') c = '/';
+    }
+    std::string filename = norm;
+    if (auto pos = norm.find_last_of('/'); pos != std::string::npos)
+        filename = norm.substr(pos + 1);
+
+    std::vector<std::string> candidates;
+    if (norm.find('/') != std::string::npos) candidates.push_back(norm);
+    candidates.push_back(modelDir + norm);
+    candidates.push_back(modelDir + filename);
+    candidates.push_back(modelDir + "Textures/" + filename);
+    candidates.push_back("Textures/" + filename);
+    candidates.push_back(filename);
+
+    std::unordered_set<std::string> seen;
+    std::vector<std::string> uniq;
+    for (auto& c : candidates) {
+        auto n = MM_NormalizePath(c);
+        if (seen.insert(n).second) uniq.push_back(n);
+    }
+    for (auto& c : uniq) {
+        if (AssetManager::Instance()->Exists(c)) {
+            return c;
+        }
+    }
+    OutputDebugStringA(("[ModelManager] Texture NOT FOUND raw=" + rawPath + " model=" + modelLogical + "\n").c_str());
+    return {};
+}
+
 void ModelManager::ProcessNode(aiNode* node, const aiScene* scene,
     std::vector<ModelVertex>& vertices,
     std::vector<uint32_t>& indices,
@@ -190,6 +249,31 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
         }
     }
 
+    {
+        // UV が全部 0 の場合検知
+        bool anyUV = false;
+        bool allZero = true;
+        for (uint32_t i = 0; i < mesh->mNumVertices; ++i) {
+            if (mesh->mTextureCoords[0]) {
+                anyUV = true;
+                if (!(mesh->mTextureCoords[0][i].x == 0.0f && mesh->mTextureCoords[0][i].y == 0.0f)) {
+                    allZero = false;
+                    break;
+                }
+            }
+        }
+        if (!anyUV) {
+            char buf[128];
+            sprintf_s(buf, "[ModelManager] Mesh mat=%u UV channel MISSING\n", mesh->mMaterialIndex);
+            OutputDebugStringA(buf);
+        }
+        else if (allZero) {
+            char buf[128];
+            sprintf_s(buf, "[ModelManager] Mesh mat=%u UV ALL ZERO\n", mesh->mMaterialIndex);
+            OutputDebugStringA(buf);
+        }
+    }
+
     subMesh.indexCount = static_cast<uint32_t>(indices.size()) - subMesh.indexOffset;
     shared->submeshes.push_back(subMesh);
 }
@@ -236,25 +320,19 @@ void ModelManager::ProcessMaterials(const aiScene* scene, std::shared_ptr<ModelS
         aiMaterial* mat = scene->mMaterials[i];
         MaterialShared material;
 
-        // ベースカラーの取得
         aiColor4D color;
         if (AI_SUCCESS == mat->Get(AI_MATKEY_COLOR_DIFFUSE, color)) {
             material.baseColor = DirectX::XMFLOAT4(color.r, color.g, color.b, color.a);
         }
 
-        // メタリック・ラフネスの取得（可能な場合）
         float metallic, roughness;
-        if (AI_SUCCESS == mat->Get(AI_MATKEY_METALLIC_FACTOR, metallic)) {
-            material.metallic = metallic;
-        }
-        if (AI_SUCCESS == mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness)) {
-            material.roughness = roughness;
-        }
+        if (AI_SUCCESS == mat->Get(AI_MATKEY_METALLIC_FACTOR, metallic)) material.metallic = metallic;
+        if (AI_SUCCESS == mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness)) material.roughness = roughness;
 
-        // テクスチャパスの取得
         aiString texPath;
         if (AI_SUCCESS == mat->GetTexture(aiTextureType_DIFFUSE, 0, &texPath)) {
-            material.baseColorTex = texPath.C_Str();
+            std::string resolved = ResolveTexturePath(shared->source, texPath.C_Str());
+            material.baseColorTex = resolved;
         }
 
         shared->materials.push_back(material);

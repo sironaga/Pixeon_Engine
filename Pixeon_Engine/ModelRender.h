@@ -49,15 +49,19 @@ private:
     bool EnsureInputLayout(const void* vsBytecode, size_t size); 
     bool EnsureConstantBuffer();
     void RefreshMaterialCache();
+
     void ShowModelSelectPopup();
+    void ShowTextureSelectPopup(int materialIndex);
 
     void RecreateInputLayout(); 
     DirectX::XMMATRIX BuildWorldMatrix() const;
     std::string ResolveTexturePath(const std::string& modelLogical, const std::string& rawPath);
 
     bool EnsureWhiteTexture(); 
-    void ShowTextureSelectPopup(int materialIndex);
+    bool EnsureDebugFallbackTextures(); // Åö (îí+É}É[ÉìÉ^)
 private:
+
+
     std::string m_modelPath;
     std::shared_ptr<ModelSharedResource> m_model;
     std::vector<MaterialRuntime> m_materials;
@@ -75,6 +79,7 @@ private:
     static Microsoft::WRL::ComPtr<ID3D11InputLayout>  s_layout;
     static Microsoft::WRL::ComPtr<ID3D11SamplerState> s_linearSmp;
     static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_whiteTexSRV;
+    static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_magentaTexSRV;
 
     bool m_ready = false;
     bool m_openTexPopup = false;
