@@ -537,8 +537,8 @@ ID3D11ShaderResourceView* EditrGUI::LoadImg(const std::wstring& filename, ID3D11
     IWICFormatConverter* converter = nullptr;
     ID3D11ShaderResourceView* srv = nullptr;
 
-    HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-    if (SUCCEEDED(hr)) hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
+    // COM は Main::Init() で既に初期化されているため、ここでは初期化不要
+    HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
     if (SUCCEEDED(hr)) hr = factory->CreateDecoderFromFilename(filename.c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnDemand, &decoder);
     if (SUCCEEDED(hr)) hr = decoder->GetFrame(0, &frame);
     if (SUCCEEDED(hr)) hr = factory->CreateFormatConverter(&converter);
@@ -573,7 +573,7 @@ ID3D11ShaderResourceView* EditrGUI::LoadImg(const std::wstring& filename, ID3D11
     if (frame) frame->Release();
     if (decoder) decoder->Release();
     if (factory) factory->Release();
-    CoUninitialize();
+    // COM は Main::UnInit() で終了処理されるため、ここでは終了処理不要
 
     return srv;
 }
