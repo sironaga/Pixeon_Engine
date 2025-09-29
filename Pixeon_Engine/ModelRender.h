@@ -3,6 +3,7 @@
 #include "ModelManager.h"
 #include "TextureManager.h"
 #include "ShaderManager.h"
+#include "EditrGUI.h"
 #include <wrl/client.h>
 #include <d3d11.h>
 #include <DirectXMath.h>
@@ -13,7 +14,7 @@ class ModelRenderComponent : public Component
 {
 public:
     ModelRenderComponent() = default;
-    ~ModelRenderComponent()= default;
+    ~ModelRenderComponent() = default;
 
     void Init(Object* owner) override;
     void Draw() override;
@@ -25,7 +26,6 @@ public:
     void SetColor(const DirectX::XMFLOAT4& c) { m_color = c; }
     DirectX::XMFLOAT4 GetColor() const { return m_color; }
 
-    // セーブ / ロード（シーン保存用）
     void SaveToFile(std::ostream& out) override;
     void LoadFromFile(std::istream& in) override;
 
@@ -40,33 +40,43 @@ private:
 
     struct MaterialRuntime
     {
-        std::string                           texName;
-        std::shared_ptr<TextureResource>      tex; // null 可
-        DirectX::XMFLOAT4                     color;
+        std::string                          texName;
+        std::shared_ptr<TextureResource>     tex;
+        DirectX::XMFLOAT4                    color;
     };
 
-    bool EnsureShaders();
-    bool EnsureInputLayout();
+    bool EnsureShaders(bool forceRecreateLayout = false); 
+    bool EnsureInputLayout(const void* vsBytecode, size_t size); 
     bool EnsureConstantBuffer();
     void RefreshMaterialCache();
     void ShowModelSelectPopup();
 
+    void RecreateInputLayout(); 
     DirectX::XMMATRIX BuildWorldMatrix() const;
+    std::string ResolveTexturePath(const std::string& modelLogical, const std::string& rawPath);
 
+    bool EnsureWhiteTexture(); 
+    void ShowTextureSelectPopup(int materialIndex);
 private:
     std::string m_modelPath;
     std::shared_ptr<ModelSharedResource> m_model;
     std::vector<MaterialRuntime> m_materials;
 
-    DirectX::XMFLOAT4 m_color{ 1,1,1,1 };  // 上書きカラー（単純化）
+    DirectX::XMFLOAT4 m_color{ 1,1,1,1 };
 
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_cb;
 
-    // 共有リソース（最初のインスタンスで作成）
+    // シェーダー選択用名前 *** 追加
+    std::string m_vsName = "VS_ModelStatic";
+    std::string m_psName = "PS_ModelStatic";
+
     static Microsoft::WRL::ComPtr<ID3D11VertexShader> s_vs;
     static Microsoft::WRL::ComPtr<ID3D11PixelShader>  s_ps;
     static Microsoft::WRL::ComPtr<ID3D11InputLayout>  s_layout;
     static Microsoft::WRL::ComPtr<ID3D11SamplerState> s_linearSmp;
+    static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_whiteTexSRV;
 
     bool m_ready = false;
+    bool m_openTexPopup = false;
+    int  m_texPopupMatIndex = -1;
 };

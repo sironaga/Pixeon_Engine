@@ -9,6 +9,8 @@
 #include <memory>
 #include <mutex>
 
+
+
 class ModelManager {
 public:
     static ModelManager* Instance();
@@ -16,6 +18,7 @@ public:
     void GarbageCollect();
     void DrawDebugGUI();
 private:
+
 
     void ProcessNode(aiNode* node, const aiScene* scene,
         std::vector<ModelVertex>& vertices,

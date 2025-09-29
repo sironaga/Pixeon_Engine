@@ -315,3 +315,26 @@ std::vector<std::string> AssetManager::GetCachedAssetNames(bool onlyModelExt) co
     std::sort(result.begin(), result.end());
     return result;
 }
+
+std::vector<std::string> AssetManager::GetCachedTextureNames() const{
+    static const char* exts[] = { ".png", ".jpg", ".jpeg", ".tga", ".dds", ".bmp", ".hdr" };
+    std::vector<std::string> result;
+    {
+        std::lock_guard<std::mutex> lk(m_mtx);
+        result.reserve(m_cache.size());
+        for (auto& kv : m_cache) {
+            std::string lower = kv.first;
+            for (auto& c : lower) c = (char)tolower(c);
+            auto hasExt = [&](const char* ext)->bool {
+                size_t Ls = lower.size(), Le = std::strlen(ext);
+                if (Ls < Le) return false;
+                return lower.compare(Ls - Le, Le, ext) == 0;
+                };
+            for (auto* e : exts) {
+                if (hasExt(e)) { result.push_back(kv.first); break; }
+            }
+        }
+    }
+    std::sort(result.begin(), result.end());
+    return result;
+}
