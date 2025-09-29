@@ -2,11 +2,14 @@
 #include "ModelManager.h"
 #include "AssetManager.h"
 #include "System.h"
+#include "ErrorLog.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <Windows.h>
 #include "IMGUI/imgui.h"
+#include <filesystem>
+#include <unordered_set>
 
 #if _MSC_VER >= 1930
 #ifdef _DEBUG
@@ -27,6 +30,16 @@
 #pragma comment(lib, "assimp-vc141-mt.lib")
 #endif
 #endif
+
+static std::string MM_NormalizePath(std::string s) {
+    for (auto& c : s) if (c == '\\') c = '/';
+    while (s.size() && (s[0] == '/' || (s.size() >= 2 && s[0] == '.' && s[1] == '/'))) {
+        if (s[0] == '/') s.erase(0, 1);
+        else if (s.rfind("./", 0) == 0) s.erase(0, 2);
+        else break;
+    }
+    return s;
+}
 
 ModelManager* ModelManager::s_instance = nullptr;
 
@@ -63,7 +76,7 @@ std::shared_ptr<ModelSharedResource> ModelManager::LoadOrGet(const std::string& 
 std::shared_ptr<ModelSharedResource> ModelManager::LoadInternal(const std::string& logicalName) {
     std::vector<uint8_t> data;
     if (!AssetManager::Instance()->LoadAsset(logicalName, data) || data.empty()) {
-        OutputDebugStringA(("[ModelManager] Raw load failed: " + logicalName + "\n").c_str());
+		ErrorLogger::Instance().LogError("ModelManager", "Failed to load model asset: " + logicalName);
         return nullptr;
     }
 
@@ -79,39 +92,87 @@ std::shared_ptr<ModelSharedResource> ModelManager::LoadInternal(const std::strin
         aiProcess_SortByPType);
 
     if (!scene || !scene->mRootNode) {
-        OutputDebugStringA(("[ModelManager] Assimp parse failed: " + logicalName + "\n").c_str());
+        ErrorLogger::Instance().LogError("ModelManager", "Assimp parse failed: " + logicalName + 
+			(importer.GetErrorString()[0] ? (" (" + std::string(importer.GetErrorString()) + ")") : ""));
         return nullptr;
     }
 
     auto shared = std::make_shared<ModelSharedResource>();
     shared->source = logicalName;
 
-    // ’¸“_EƒCƒ“ƒfƒbƒNƒXƒf[ƒ^‚Ìˆ—
+    // ï¿½ï¿½ï¿½_ï¿½Eï¿½Cï¿½ï¿½ï¿½fï¿½bï¿½Nï¿½Xï¿½fï¿½[ï¿½^ï¿½Ìï¿½ï¿½ï¿½
     std::vector<ModelVertex> vertices;
     std::vector<uint32_t> indices;
 
     ProcessNode(scene->mRootNode, scene, vertices, indices, shared);
 
-    // GPUƒoƒbƒtƒ@‚Ìì¬
+    // GPUï¿½oï¿½bï¿½tï¿½@ï¿½Ìì¬
     if (!CreateGPUBuffers(vertices, indices, shared)) {
-        OutputDebugStringA(("[ModelManager] GPU buffer creation failed: " + logicalName + "\n").c_str());
+		ErrorLogger::Instance().LogError("ModelManager", "GPU buffer creation failed: " + logicalName);
         return nullptr;
     }
 
-    // ƒ}ƒeƒŠƒAƒ‹î•ñ‚Ìˆ—
+    // ï¿½}ï¿½eï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½Ìï¿½ï¿½ï¿½
     ProcessMaterials(scene, shared);
 
-    // ƒ{[ƒ“î•ñ‚Ìˆ—
+    // ï¿½{ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Ìï¿½ï¿½ï¿½
     ProcessBones(scene, shared);
 
-    // ƒAƒjƒ[ƒVƒ‡ƒ“î•ñ‚Ìˆ—
+    // ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìï¿½ï¿½ï¿½
     ProcessAnimations(scene, shared);
 
-    // ƒƒ‚ƒŠg—p—Ê‚ÌŒvZ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½gï¿½pï¿½Ê‚ÌŒvï¿½Z
     shared->gpuBytes = vertices.size() * sizeof(ModelVertex) + indices.size() * sizeof(uint32_t);
 
-    OutputDebugStringA(("[ModelManager] Load OK: " + logicalName + "\n").c_str());
+	//ErrorLogger::Instance().LogError("ModelManager", "Load OK: " + logicalName, false, 5);
     return shared;
+}
+
+std::string ModelManager::ResolveTexturePath(const std::string& modelLogical, const std::string& rawPath){
+    if (rawPath.empty()) return {};
+    if (rawPath[0] == '*') { // ï¿½ï¿½ï¿½ßï¿½ï¿½İ–ï¿½ï¿½Î‰ï¿½
+		ErrorLogger::Instance().LogError("ModelManager", "Embedded texture unsupported: " + rawPath);
+        return {};
+    }
+    std::string norm = MM_NormalizePath(rawPath);
+
+    // ï¿½ï¿½Îƒpï¿½X -> ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½Ì‚ï¿½
+    {
+        std::filesystem::path p(norm);
+        if (p.is_absolute()) norm = p.filename().generic_string();
+    }
+
+    // ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½Ìƒfï¿½Bï¿½ï¿½ï¿½Nï¿½gï¿½ï¿½
+    std::string modelDir;
+    if (auto pos = modelLogical.find_last_of("/\\"); pos != std::string::npos) {
+        modelDir = modelLogical.substr(0, pos + 1);
+        for (auto& c : modelDir) if (c == '\\') c = '/';
+    }
+    std::string filename = norm;
+    if (auto pos = norm.find_last_of('/'); pos != std::string::npos)
+        filename = norm.substr(pos + 1);
+
+    std::vector<std::string> candidates;
+    if (norm.find('/') != std::string::npos) candidates.push_back(norm);
+    candidates.push_back(modelDir + norm);
+    candidates.push_back(modelDir + filename);
+    candidates.push_back(modelDir + "Textures/" + filename);
+    candidates.push_back("Textures/" + filename);
+    candidates.push_back(filename);
+
+    std::unordered_set<std::string> seen;
+    std::vector<std::string> uniq;
+    for (auto& c : candidates) {
+        auto n = MM_NormalizePath(c);
+        if (seen.insert(n).second) uniq.push_back(n);
+    }
+    for (auto& c : uniq) {
+        if (AssetManager::Instance()->Exists(c)) {
+            return c;
+        }
+    }
+	ErrorLogger::Instance().LogError("ModelManager", "Texture not found: " + rawPath + " (tried " + std::to_string(uniq.size()) + " paths)", false, 3);
+    return {};
 }
 
 void ModelManager::ProcessNode(aiNode* node, const aiScene* scene,
@@ -119,13 +180,13 @@ void ModelManager::ProcessNode(aiNode* node, const aiScene* scene,
     std::vector<uint32_t>& indices,
     std::shared_ptr<ModelSharedResource> shared) {
 
-    // ƒƒbƒVƒ…‚Ìˆ—
+    // ï¿½ï¿½ï¿½bï¿½Vï¿½ï¿½ï¿½Ìï¿½ï¿½ï¿½
     for (uint32_t i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         ProcessMesh(mesh, scene, vertices, indices, shared);
     }
 
-    // qƒm[ƒh‚Ìˆ—
+    // ï¿½qï¿½mï¿½[ï¿½hï¿½Ìï¿½ï¿½ï¿½
     for (uint32_t i = 0; i < node->mNumChildren; i++) {
         ProcessNode(node->mChildren[i], scene, vertices, indices, shared);
     }
@@ -143,23 +204,23 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
 
     uint32_t vertexOffset = static_cast<uint32_t>(vertices.size());
 
-    // ’¸“_ƒf[ƒ^‚Ìˆ—
+    // ï¿½ï¿½ï¿½_ï¿½fï¿½[ï¿½^ï¿½Ìï¿½ï¿½ï¿½
     for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
         ModelVertex vertex = {};
 
-        // ˆÊ’u
+        // ï¿½Ê’u
         vertex.position[0] = mesh->mVertices[i].x;
         vertex.position[1] = mesh->mVertices[i].y;
         vertex.position[2] = mesh->mVertices[i].z;
 
-        // –@ü
+        // ï¿½@ï¿½ï¿½
         if (mesh->HasNormals()) {
             vertex.normal[0] = mesh->mNormals[i].x;
             vertex.normal[1] = mesh->mNormals[i].y;
             vertex.normal[2] = mesh->mNormals[i].z;
         }
 
-        // ƒ^ƒ“ƒWƒFƒ“ƒg
+        // ï¿½^ï¿½ï¿½ï¿½Wï¿½Fï¿½ï¿½ï¿½g
         if (mesh->mTangents) {
             vertex.tangent[0] = mesh->mTangents[i].x;
             vertex.tangent[1] = mesh->mTangents[i].y;
@@ -167,13 +228,13 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
             vertex.tangent[3] = 1.0f;
         }
 
-        // UVÀ•W
+        // UVï¿½ï¿½ï¿½W
         if (mesh->mTextureCoords[0]) {
             vertex.uv[0] = mesh->mTextureCoords[0][i].x;
             vertex.uv[1] = mesh->mTextureCoords[0][i].y;
         }
 
-        // ƒ{[ƒ“‚ÌƒEƒFƒCƒgi‰Šú‰»j
+        // ï¿½{ï¿½[ï¿½ï¿½ï¿½ÌƒEï¿½Fï¿½Cï¿½gï¿½iï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½j
         for (int j = 0; j < 4; j++) {
             vertex.boneIndices[j] = 0;
             vertex.boneWeights[j] = 0.0f;
@@ -182,13 +243,65 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
         vertices.push_back(vertex);
     }
 
-    // ƒCƒ“ƒfƒbƒNƒXƒf[ƒ^‚Ìˆ—
+    // ï¿½Cï¿½ï¿½ï¿½fï¿½bï¿½Nï¿½Xï¿½fï¿½[ï¿½^ï¿½Ìï¿½ï¿½ï¿½
     for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
         aiFace face = mesh->mFaces[i];
         for (uint32_t j = 0; j < face.mNumIndices; j++) {
             indices.push_back(vertexOffset + face.mIndices[j]);
         }
     }
+
+    {
+        // UV ï¿½ï¿½ï¿½Sï¿½ï¿½ 0 ï¿½Ìê‡ï¿½ï¿½ï¿½m
+        bool anyUV = false;
+        bool allZero = true;
+        for (uint32_t i = 0; i < mesh->mNumVertices; ++i) {
+            if (mesh->mTextureCoords[0]) {
+                anyUV = true;
+                if (!(mesh->mTextureCoords[0][i].x == 0.0f && mesh->mTextureCoords[0][i].y == 0.0f)) {
+                    allZero = false;
+                    break;
+                }
+            }
+        }
+        if (!anyUV) {
+            char buf[128];
+            sprintf_s(buf, "[ModelManager] Mesh mat=%u UV channel MISSING\n", mesh->mMaterialIndex);
+			ErrorLogger::Instance().LogError("ModelManager", buf, false, 3);
+        }
+        else if (allZero) {
+            char buf[128];
+            sprintf_s(buf, "[ModelManager] Mesh mat=%u UV ALL ZERO\n", mesh->mMaterialIndex);
+			ErrorLogger::Instance().LogError("ModelManager", buf, false, 3);
+        }
+    }
+
+    bool anyUV = false;
+    bool allZero = true;
+    if (mesh->mTextureCoords[0]) {
+        anyUV = true;
+        for (uint32_t i = 0; i < mesh->mNumVertices; ++i) {
+            float ux = mesh->mTextureCoords[0][i].x;
+            float uy = mesh->mTextureCoords[0][i].y;
+            if (!(ux == 0.0f && uy == 0.0f)) {
+                allZero = false;
+                break;
+            }
+        }
+    }
+    subMesh.hasUV = anyUV;
+    subMesh.uvAllZero = anyUV ? allZero : false;
+
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ErrorLogger ï¿½Ä‚Ñoï¿½ï¿½ï¿½Í‚ï¿½ï¿½Ì‚Ü‚ï¿½/ï¿½Ü‚ï¿½ï¿½ÍˆÈ‰ï¿½ï¿½Ì‚æ‚¤ï¿½Éï¿½ï¿½ï¿½
+    if (!anyUV) {
+        ErrorLogger::Instance().LogError("ModelManager",
+            "[Mesh mat=" + std::to_string(mesh->mMaterialIndex) + "] UV channel MISSING", false, 3);
+    }
+    else if (allZero) {
+        ErrorLogger::Instance().LogError("ModelManager",
+            "[Mesh mat=" + std::to_string(mesh->mMaterialIndex) + "] UV ALL ZERO", false, 3);
+    }
+
 
     subMesh.indexCount = static_cast<uint32_t>(indices.size()) - subMesh.indexOffset;
     shared->submeshes.push_back(subMesh);
@@ -201,7 +314,7 @@ bool ModelManager::CreateGPUBuffers(const std::vector<ModelVertex>& vertices,
     auto device = DirectX11::GetInstance()->GetDevice();
     if (!device) return false;
 
-    // ’¸“_ƒoƒbƒtƒ@‚Ìì¬
+    // ï¿½ï¿½ï¿½_ï¿½oï¿½bï¿½tï¿½@ï¿½Ìì¬
     D3D11_BUFFER_DESC vbDesc = {};
     vbDesc.Usage = D3D11_USAGE_DEFAULT;
     vbDesc.ByteWidth = static_cast<UINT>(vertices.size() * sizeof(ModelVertex));
@@ -213,7 +326,7 @@ bool ModelManager::CreateGPUBuffers(const std::vector<ModelVertex>& vertices,
     HRESULT hr = device->CreateBuffer(&vbDesc, &vbData, shared->vb.GetAddressOf());
     if (FAILED(hr)) return false;
 
-    // ƒCƒ“ƒfƒbƒNƒXƒoƒbƒtƒ@‚Ìì¬
+    // ï¿½Cï¿½ï¿½ï¿½fï¿½bï¿½Nï¿½Xï¿½oï¿½bï¿½tï¿½@ï¿½Ìì¬
     D3D11_BUFFER_DESC ibDesc = {};
     ibDesc.Usage = D3D11_USAGE_DEFAULT;
     ibDesc.ByteWidth = static_cast<UINT>(indices.size() * sizeof(uint32_t));
@@ -228,6 +341,8 @@ bool ModelManager::CreateGPUBuffers(const std::vector<ModelVertex>& vertices,
     shared->vertexCount = static_cast<uint32_t>(vertices.size());
     shared->indexCount = static_cast<uint32_t>(indices.size());
 
+
+
     return true;
 }
 
@@ -236,25 +351,41 @@ void ModelManager::ProcessMaterials(const aiScene* scene, std::shared_ptr<ModelS
         aiMaterial* mat = scene->mMaterials[i];
         MaterialShared material;
 
-        // ƒx[ƒXƒJƒ‰[‚Ìæ“¾
         aiColor4D color;
         if (AI_SUCCESS == mat->Get(AI_MATKEY_COLOR_DIFFUSE, color)) {
             material.baseColor = DirectX::XMFLOAT4(color.r, color.g, color.b, color.a);
         }
 
-        // ƒƒ^ƒŠƒbƒNEƒ‰ƒtƒlƒX‚Ìæ“¾i‰Â”\‚Èê‡j
         float metallic, roughness;
-        if (AI_SUCCESS == mat->Get(AI_MATKEY_METALLIC_FACTOR, metallic)) {
-            material.metallic = metallic;
-        }
-        if (AI_SUCCESS == mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness)) {
-            material.roughness = roughness;
-        }
+        if (AI_SUCCESS == mat->Get(AI_MATKEY_METALLIC_FACTOR, metallic)) material.metallic = metallic;
+        if (AI_SUCCESS == mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness)) material.roughness = roughness;
 
-        // ƒeƒNƒXƒ`ƒƒƒpƒX‚Ìæ“¾
         aiString texPath;
-        if (AI_SUCCESS == mat->GetTexture(aiTextureType_DIFFUSE, 0, &texPath)) {
-            material.baseColorTex = texPath.C_Str();
+        // è¤‡æ•°ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚¿ã‚¤ãƒ—ã‚’å„ªå…ˆé †ã§è©¦è¡Œ (DIFFUSE â†’ BASE_COLOR â†’ EMISSIVE â†’ AMBIENT)
+        aiTextureType texTypes[] = { 
+            aiTextureType_DIFFUSE, 
+            aiTextureType_BASE_COLOR, 
+            aiTextureType_EMISSIVE, 
+            aiTextureType_AMBIENT 
+        };
+        
+        bool foundTexture = false;
+        for (aiTextureType texType : texTypes) {
+            if (AI_SUCCESS == mat->GetTexture(texType, 0, &texPath)) {
+                std::string resolved = ResolveTexturePath(shared->source, texPath.C_Str());
+                material.baseColorTex = resolved;
+                foundTexture = true;
+                // ãƒ‡ãƒãƒƒã‚°ç”¨: ã©ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚¿ã‚¤ãƒ—ã§è¦‹ã¤ã‹ã£ãŸã‹ãƒ­ã‚°å‡ºåŠ›
+                OutputDebugStringA(("[ModelManager] Material " + std::to_string(i) + 
+                    " texture found in type " + std::to_string(texType) + 
+                    ": " + resolved + "\n").c_str());
+                break; // æœ€åˆã«è¦‹ã¤ã‹ã£ãŸãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ä½¿ç”¨
+            }
+        }
+        
+        if (!foundTexture) {
+            OutputDebugStringA(("[ModelManager] Material " + std::to_string(i) + 
+                " has no texture in any supported type\n").c_str());
         }
 
         shared->materials.push_back(material);
@@ -262,8 +393,8 @@ void ModelManager::ProcessMaterials(const aiScene* scene, std::shared_ptr<ModelS
 }
 
 void ModelManager::ProcessBones(const aiScene* scene, std::shared_ptr<ModelSharedResource> shared) {
-    // ƒ{[ƒ“î•ñ‚Ìˆ—iŠÈˆÕÀ‘•j
-    // ÀÛ‚ÌƒvƒƒWƒFƒNƒg‚Å‚ÍA‚æ‚èÚ×‚ÈÀ‘•‚ª•K—v
+    // ï¿½{ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Ìï¿½ï¿½ï¿½ï¿½iï¿½ÈˆÕï¿½ï¿½ï¿½ï¿½j
+    // ï¿½ï¿½ï¿½Û‚Ìƒvï¿½ï¿½ï¿½Wï¿½Fï¿½Nï¿½gï¿½Å‚ÍAï¿½ï¿½ï¿½Ú×‚Èï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Kï¿½v
     shared->hasSkin = false;
     for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
         if (scene->mMeshes[i]->HasBones()) {
@@ -274,7 +405,7 @@ void ModelManager::ProcessBones(const aiScene* scene, std::shared_ptr<ModelShare
 }
 
 void ModelManager::ProcessAnimations(const aiScene* scene, std::shared_ptr<ModelSharedResource> shared) {
-    // ƒAƒjƒ[ƒVƒ‡ƒ“î•ñ‚Ìˆ—iŠÈˆÕÀ‘•j
+    // ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìï¿½ï¿½ï¿½ï¿½iï¿½ÈˆÕï¿½ï¿½ï¿½ï¿½j
     for (uint32_t i = 0; i < scene->mNumAnimations; i++) {
         aiAnimation* anim = scene->mAnimations[i];
         AnimationClip clip;

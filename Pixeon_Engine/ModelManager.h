@@ -2,12 +2,14 @@
 
 #pragma once
 #include "AssetTypes.h"
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
+#include "assimp/Importer.hpp"
+#include "assimp/scene.h"
+#include "assimp/postprocess.h"
 #include <unordered_map>
 #include <memory>
 #include <mutex>
+
+
 
 class ModelManager {
 public:
@@ -16,7 +18,7 @@ public:
     void GarbageCollect();
     void DrawDebugGUI();
 private:
-
+    std::string ResolveTexturePath(const std::string& modelLogical, const std::string& rawPath);
     void ProcessNode(aiNode* node, const aiScene* scene,
         std::vector<ModelVertex>& vertices,
         std::vector<uint32_t>& indices,

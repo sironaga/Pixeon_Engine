@@ -2,6 +2,7 @@
 #include <fstream>
 #include <Windows.h>
 #include "IMGUI/imgui.h"
+#include "ErrorLog.h"
 
 AssetManager* AssetManager::s_instance = nullptr;
 
@@ -50,7 +51,7 @@ bool AssetManager::LoadAsset(const std::string& logicalName, std::vector<uint8_t
     std::filesystem::path p = std::filesystem::path(m_root) / norm;
     std::ifstream ifs(p, std::ios::binary);
     if (!ifs) {
-        OutputDebugStringA(("[AssetsManager] Open failed: " + p.string() + "\n").c_str());
+		ErrorLogger::Instance().LogError("AssetManager", "Failed to open asset: " + norm);
         return false;
     }
     ifs.seekg(0, std::ios::end);
@@ -59,7 +60,7 @@ bool AssetManager::LoadAsset(const std::string& logicalName, std::vector<uint8_t
     outData.resize(sz);
     ifs.read((char*)outData.data(), sz);
     if (!ifs) {
-        OutputDebugStringA(("[AssetsManager] Read failed: " + norm + "\n").c_str());
+		ErrorLogger::Instance().LogError("AssetManager", "Failed to read asset: " + norm);
         return false;
     }
     {
@@ -85,7 +86,7 @@ void AssetManager::PushChange(ChangeType type, const std::string& path) {
 void AssetManager::StartAutoSync(std::chrono::milliseconds interval, bool recursive) {
     if (m_watchRunning.load()) return;
     if (m_root.empty()) {
-        OutputDebugStringA("[AssetManager] StartAutoSync: root not set.\n");
+		ErrorLogger::Instance().LogError("AssetManager", "StartAutoSync failed: root not set.");
         return;
     }
     m_interval = interval;
@@ -286,4 +287,53 @@ void AssetManager::DrawDebugGUI()
         ImGui::Text("%s (size=%zu bytes)", kv.first.c_str(), kv.second.size());
     }
     ImGui::EndChild();
+}
+
+std::vector<std::string> AssetManager::GetCachedAssetNames(bool onlyModelExt) const {
+    std::vector<std::string> result;
+    {
+        std::lock_guard<std::mutex> lk(m_mtx);
+        result.reserve(m_cache.size());
+        for (auto& kv : m_cache) {
+            if (!onlyModelExt) {
+                result.push_back(kv.first);
+            }
+            else {
+                std::string lower = kv.first;
+                for (auto& c : lower) c = (char)tolower(c);
+                auto hasExt = [&](const char* ext)->bool {
+                    size_t Ls = lower.size(), Le = std::strlen(ext);
+                    if (Ls < Le) return false;
+                    return lower.compare(Ls - Le, Le, ext) == 0;
+                    };
+                if (hasExt(".fbx") || hasExt(".obj") || hasExt(".gltf") || hasExt(".glb"))
+                    result.push_back(kv.first);
+            }
+        }
+    }
+    std::sort(result.begin(), result.end());
+    return result;
+}
+
+std::vector<std::string> AssetManager::GetCachedTextureNames() const{
+    static const char* exts[] = { ".png", ".jpg", ".jpeg", ".tga", ".dds", ".bmp", ".hdr" };
+    std::vector<std::string> result;
+    {
+        std::lock_guard<std::mutex> lk(m_mtx);
+        result.reserve(m_cache.size());
+        for (auto& kv : m_cache) {
+            std::string lower = kv.first;
+            for (auto& c : lower) c = (char)tolower(c);
+            auto hasExt = [&](const char* ext)->bool {
+                size_t Ls = lower.size(), Le = std::strlen(ext);
+                if (Ls < Le) return false;
+                return lower.compare(Ls - Le, Le, ext) == 0;
+                };
+            for (auto* e : exts) {
+                if (hasExt(e)) { result.push_back(kv.first); break; }
+            }
+        }
+    }
+    std::sort(result.begin(), result.end());
+    return result;
 }

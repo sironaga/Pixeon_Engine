@@ -15,6 +15,7 @@ public:
 		NONE = -1,
 		CAMERA,
 		GEOMETRY,
+		MODEL,
 		MAX,
 	};
 

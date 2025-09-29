@@ -19,10 +19,12 @@ struct TextureResource {
 
 // SubMesh情報
 struct SubMesh {
-	uint32_t indexOffset	= 0;		// インデックスオフセット
-	uint32_t indexCount		= 0;		// インデックス数
-	uint32_t materialIndex	= 0;		// マテリアルインデックス
-	bool skinned			= false;	// スキニング有無
+    uint32_t indexOffset = 0;   // インデックスオフセット
+    uint32_t indexCount = 0;   // インデックス数
+    uint32_t materialIndex = 0;   // マテリアルインデックス
+    bool     skinned = false; // スキン有無
+    bool     hasUV = false; // UVチャネルを持つ
+    bool     uvAllZero = false; // UVが全て(0,0)
 };
 
 // マテリアル共通データ

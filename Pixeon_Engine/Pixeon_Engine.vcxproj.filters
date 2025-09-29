@@ -152,6 +152,12 @@
     <ClCompile Include="AssetManager.cpp">
       <Filter>ソース ファイル\Assets</Filter>
     </ClCompile>
+    <ClCompile Include="ModelRender.cpp">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="ErrorLog.cpp">
+      <Filter>ソース ファイル\Sys</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -255,6 +261,12 @@
     </ClInclude>
     <ClInclude Include="AssetTypes.h">
       <Filter>ソース ファイル\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelRender.h">
+      <Filter>ソース ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="ErrorLog.h">
+      <Filter>ソース ファイル\Sys</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
