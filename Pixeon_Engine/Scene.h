@@ -8,6 +8,7 @@
 #include <mutex>
 
 class Object;
+class LightComponent;
 
 class Scene
 {
@@ -38,9 +39,14 @@ public: // Setter And Getter
 	int GetMainCameraNumber() { return _MainCameraNumber; }
 	void SetMainCameraNumber(int num) { _MainCameraNumber = num; }
 
+	std::vector<LightComponent*> *GetLights() { return &_lights; }
+
+	void RegisterLight(LightComponent* l);
+	void UnregisterLight(LightComponent* l);
+
 private://“à•”ˆ—
 	void ProcessThreadSafeAdditions();
-
+	void UploadLightsToGPU();
 private:
 	std::string _name = "DefaultScene";
 
@@ -49,6 +55,7 @@ private:
 	std::vector<Object*> _ToBeRemoved;
 	std::vector<Object*> _ToBeAdded;
 	std::vector<Object*> _ToBeAddedBuffer;
+	std::vector<LightComponent*> _lights;
 	std::mutex _mtx;
 	CameraComponent* _MainCamera = nullptr;
 	int _MainCameraNumber = -1;

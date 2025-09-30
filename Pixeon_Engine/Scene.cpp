@@ -4,13 +4,24 @@
 #include "Component.h"
 #include "ComponentManager.h"
 #include "SettingManager.h"
+#include "LightComponent.h"
 #include <thread>
 #include <mutex>
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iostream>
-
 #include "System.h"
+
+struct LightGPU {
+	DirectX::XMFLOAT3 position; float intensity;
+	DirectX::XMFLOAT3 direction; float type;      // type: 0=Dir,1=Point,2=Spot
+	DirectX::XMFLOAT3 color;     float range;
+	float innerCos; float outerCos; float enabled; float pad; // 16B アライメント
+};
+
+static ID3D11Buffer* gLightCB = nullptr;
+static const int kMaxLights = 8;
+
 // 開放処理
 Scene::~Scene(){
 }
@@ -67,6 +78,7 @@ void Scene::EditUpdate(){
 			}
 		}
 	}
+
 
 	if(_MainCamera)_MainCameraNumber = _MainCamera->GetCameraNumber();
 	else _MainCameraNumber = -1;
@@ -134,7 +146,7 @@ void Scene::PlayUpdate(){
 }
 
 void Scene::Draw() {
-
+	UploadLightsToGPU();
 	// オブジェクトの描画
 	std::vector<Object*> sortedList = _objects;
 	if (_MainCamera) {
@@ -277,12 +289,93 @@ void Scene::LoadToFile(){
 	}
 }
 
+void Scene::RegisterLight(LightComponent* l){
+	if (!l) return;
+	if (std::find(_lights.begin(), _lights.end(), l) == _lights.end())
+		_lights.push_back(l);
+}
+
+void Scene::UnregisterLight(LightComponent* l){
+	auto it = std::remove(_lights.begin(), _lights.end(), l);
+	if (it != _lights.end()) _lights.erase(it, _lights.end());
+}
+
 void Scene::ProcessThreadSafeAdditions(){
 	std::lock_guard<std::mutex> lock(_mtx);
 	for (auto& obj : _ToBeAddedBuffer) {
 		if (obj)_ToBeAdded.push_back(obj);
 	}
 	_ToBeAddedBuffer.clear();
+}
+
+void Scene::UploadLightsToGPU(){
+	auto dev = DirectX11::GetInstance()->GetDevice();
+	auto ctx = DirectX11::GetInstance()->GetContext();
+	if (!dev || !ctx) return;
+
+	if (!gLightCB) {
+		D3D11_BUFFER_DESC bd{};
+		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		bd.ByteWidth = sizeof(LightGPU) * kMaxLights + 16; // 余裕
+		bd.Usage = D3D11_USAGE_DYNAMIC;
+		bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		dev->CreateBuffer(&bd, nullptr, &gLightCB);
+	}
+	if (!gLightCB) return;
+
+	LightGPU lights[kMaxLights]{};
+	int count = 0;
+	for (auto* l : _lights) {
+		if (!l || !l->IsEnabled()) continue;
+		if (count >= kMaxLights) break;
+		auto pos = l->GetWorldPosition();
+		auto dir = l->GetWorldDirection();
+		lights[count].position = pos;
+		lights[count].direction = dir;
+		lights[count].intensity = l->GetIntensity();
+		lights[count].color = l->GetColor();
+		lights[count].type = (float)((int)l->GetType());
+		lights[count].range = l->GetRange();
+		float innerRad = DirectX::XMConvertToRadians(l->GetSpotInner());
+		float outerRad = DirectX::XMConvertToRadians(l->GetSpotOuter());
+		lights[count].innerCos = cosf(innerRad * 0.5f); // 半角で扱うなら適宜
+		lights[count].outerCos = cosf(outerRad * 0.5f);
+		lights[count].enabled = 1.0f;
+		++count;
+	}
+
+	// 末尾に LightCount を埋める別 cbuffer に分けてもよいが今回は同バッファ末尾に書かず別 CB 用意
+	// 簡素化のため LightCount 用追加 cbuffer
+	struct LightCountCB { int count; float pad[3]; };
+	static ID3D11Buffer* gLightCountCB = nullptr;
+	if (!gLightCountCB) {
+		D3D11_BUFFER_DESC bd{};
+		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		bd.ByteWidth = sizeof(LightCountCB);
+		bd.Usage = D3D11_USAGE_DYNAMIC;
+		bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		dev->CreateBuffer(&bd, nullptr, &gLightCountCB);
+	}
+
+	// 更新
+	{
+		D3D11_MAPPED_SUBRESOURCE mp{};
+		if (SUCCEEDED(ctx->Map(gLightCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mp))) {
+			memcpy(mp.pData, lights, sizeof(LightGPU) * kMaxLights);
+			ctx->Unmap(gLightCB, 0);
+		}
+		D3D11_MAPPED_SUBRESOURCE mp2{};
+		if (SUCCEEDED(ctx->Map(gLightCountCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mp2))) {
+			((LightCountCB*)mp2.pData)->count = count;
+			ctx->Unmap(gLightCountCB, 0);
+		}
+	}
+
+	// PS ステージへバインド (b1=LightArray, b2=LightCount 例)
+	ID3D11Buffer* cbs1[] = { gLightCB };
+	ctx->PSSetConstantBuffers(1, 1, cbs1);
+	ID3D11Buffer* cbs2[] = { gLightCountCB };
+	ctx->PSSetConstantBuffers(2, 1, cbs2);
 }
 
 // ローカルスレッドでのオブジェクト追加
