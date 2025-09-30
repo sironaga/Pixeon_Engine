@@ -10,6 +10,7 @@
 #include "ComponentManager.h"
 #include "Object.h"
 
+// グローバル変数
 HWND ghWnd;
 GameRenderTarget* gGameRenderTarget;
 bool bInGame;
@@ -21,38 +22,41 @@ int Init(const EngineConfig& InPut){
 	// COM の初期化 (WIC/DirectXTex のため必須)
 	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	if (FAILED(hr)) return -1;
-
+	// Wndハンドルのコピー
 	ghWnd = InPut.hWnd;
+	// DirectX の初期化
 	hr = DirectX11::GetInstance()->Init(InPut.hWnd, InPut.screenWidth, InPut.screenHeight, InPut.fullscreen);
 	if (FAILED(hr)) {
 		CoUninitialize();
 		return -1;
 	}
-
+	//　Configの読み込み
 	SettingManager::GetInstance()->LoadConfig();
-
+	// アセットマネージャーの設定
 	AssetManager::Instance()->SetRoot(SettingManager::GetInstance()->GetAssetsFilePath());
 	AssetManager::Instance()->SetLoadMode(AssetManager::LoadMode::FromSource);
 	AssetManager::Instance()->StartAutoSync(std::chrono::milliseconds(1000), true);
-
+	// レンダラーターゲットの作成
 	gGameRenderTarget = new GameRenderTarget();
 	gGameRenderTarget->Init(DirectX11::GetInstance()->GetDevice(), InPut.screenWidth, InPut.screenHeight);
 	gGameRenderTarget->SetRenderZBuffer(SettingManager::GetInstance()->GetZBuffer());
-
+	// GUI の初期化
 	EditrGUI::GetInstance()->Init();
 	bInGame = false;
-
+	// シーンマネージャーの初期化
 	SceneManger::GetInstance()->Init();
-
+	// コンテンツの初期化
 	gContentsObjects.clear();
-
+	// シェーダーマネージャーの初期化
 	ShaderManager::GetInstance()->Initialize(DirectX11::GetInstance()->GetDevice());
+	// コンポーネントマネージャーの初期化
 	ComponentManager::GetInstance()->Init();
 
 	return 0;
 }
 
 void Update(){
+	// ZBufferの設定更新
 	gGameRenderTarget->SetRenderZBuffer(SettingManager::GetInstance()->GetZBuffer());
 
 	if(bInGame){
@@ -148,12 +152,13 @@ void RemoveContentsObject(Object* obj){
 void OpenExplorer(const std::string& path)
 {
 	ShellExecuteA(
-		NULL,           // �E�B���h�E�n���h��
-		"open",         // ����iopen��OK�j
-		"explorer.exe", // ���s�t�@�C��
-		path.c_str(),   // �p�����[�^�i�J�������p�X�j
-		NULL,           // �f�B���N�g���iNULL��OK�j
-		SW_SHOWNORMAL   // �E�B���h�E�\�����@
+		NULL,
+		"open",        
+		"explorer.exe", 
+		path.c_str(),  
+		NULL,       
+		SW_SHOWNORMAL   
+
 	);
 }
 
@@ -169,8 +174,7 @@ std::string GetExePath() {
 std::string RemoveExeFromPath(const std::string& exePath)
 {
 	size_t pos = exePath.find_last_of("\\/");
-	if (pos != std::string::npos)
-	{
+	if (pos != std::string::npos){
 		return exePath.substr(0, pos);
 	}
 	return exePath;
