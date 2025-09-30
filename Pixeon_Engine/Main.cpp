@@ -23,31 +23,30 @@ int Init(const EngineConfig& InPut){
 	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	if (FAILED(hr)) return -1;
 
-	// DirectX11�̏�����
 	ghWnd = InPut.hWnd;
 	hr = DirectX11::GetInstance()->Init(InPut.hWnd, InPut.screenWidth, InPut.screenHeight, InPut.fullscreen);
 	if (FAILED(hr)) {
 		CoUninitialize();
 		return -1;
 	}
-	// �ݒ�̓ǂݍ���
+
 	SettingManager::GetInstance()->LoadConfig();
-	//�@�A�Z�b�g�}�l�[�W���[�̋N��
+
 	AssetManager::Instance()->SetRoot(SettingManager::GetInstance()->GetAssetsFilePath());
 	AssetManager::Instance()->SetLoadMode(AssetManager::LoadMode::FromSource);
 	AssetManager::Instance()->StartAutoSync(std::chrono::milliseconds(1000), true);
 
-	// �Q�[�������_�����O�^�[�Q�b�g�̏�����
 	gGameRenderTarget = new GameRenderTarget();
 	gGameRenderTarget->Init(DirectX11::GetInstance()->GetDevice(), InPut.screenWidth, InPut.screenHeight);
-	// GUI�̏�����
+	gGameRenderTarget->SetRenderZBuffer(SettingManager::GetInstance()->GetZBuffer());
+
 	EditrGUI::GetInstance()->Init();
 	bInGame = false;
-	// �V�[���}�l�[�W���[�̏�����
+
 	SceneManger::GetInstance()->Init();
-	// ContentsObjects�̏�����
+
 	gContentsObjects.clear();
-	// �V�F�[�_�[�}�l�[�W���[�̏�����
+
 	ShaderManager::GetInstance()->Initialize(DirectX11::GetInstance()->GetDevice());
 	ComponentManager::GetInstance()->Init();
 
@@ -55,6 +54,8 @@ int Init(const EngineConfig& InPut){
 }
 
 void Update(){
+	gGameRenderTarget->SetRenderZBuffer(SettingManager::GetInstance()->GetZBuffer());
+
 	if(bInGame){
 		InGameUpdate();}
 	else{
@@ -74,11 +75,9 @@ void UnInit(){
 	SettingManager::DestroyInstance();
 	DirectX11::DestroyInstance();
 	
-	// COM の終了処理
 	CoUninitialize();
 }
 
-// ��������
 
 void EditeUpdate(){
 	ShaderManager::GetInstance()->UpdateAndCompileShaders();
@@ -163,7 +162,6 @@ std::string GetExePath() {
 	char path[MAX_PATH];
 	DWORD length = GetModuleFileNameA(nullptr, path, MAX_PATH);
 	if (length == 0 || length == MAX_PATH) {
-		// �擾���s
 		return "";
 	}
 	return std::string(path, length);
@@ -174,10 +172,9 @@ std::string RemoveExeFromPath(const std::string& exePath)
 	size_t pos = exePath.find_last_of("\\/");
 	if (pos != std::string::npos)
 	{
-		// �t�@�C�����������������A�t�H���_�p�X�ɂ���
 		return exePath.substr(0, pos);
 	}
-	return exePath; // ��؂肪������Ȃ������ꍇ�͂��̂܂ܕԂ�
+	return exePath;
 }
 
 bool CallAssetPacker(const std::string& toolPath, const std::string& assetDir, const std::string& outputPak) {
@@ -190,9 +187,6 @@ bool CallAssetPacker(const std::string& toolPath, const std::string& assetDir, c
 
 	if (!result) return false;
 
-	MessageBoxA(NULL, "�A�[�J�C�u�����J�n���܂����B�����܂ł��΂炭���҂����������B", "���", MB_OK | MB_ICONINFORMATION);
-
-	// �v���Z�X�I���܂őҋ@
 	WaitForSingleObject(pi.hProcess, INFINITE);
 
 	DWORD exitCode = 0;
@@ -206,7 +200,6 @@ bool CallAssetPacker(const std::string& toolPath, const std::string& assetDir, c
 
 bool RunArchiveTool(const std::string& toolExePath, const std::string& assetDir, const std::string& archivePath)
 {
-	// �R�}���h���C����: "SceneRoot/Tool/Tool.exe" "SceneRoot/Assets" "SceneRoot/Archive/assets.PixAssets"
 	std::string cmd = "\"" + toolExePath + "\" \"" + assetDir + "\" \"" + archivePath + "\"";
 
 	STARTUPINFOA si = { sizeof(si) };
@@ -225,12 +218,9 @@ bool RunArchiveTool(const std::string& toolExePath, const std::string& assetDir,
 	);
 
 	if (!result) {
-		std::string ErrorMsg = "�c�[���̋N���Ɏ��s: " + std::to_string(GetLastError());
-		MessageBoxA(NULL, ErrorMsg.c_str(), "�G���[", MB_OK | MB_ICONERROR);
 		return false;
 	}
 
-	// �N����I���܂őҋ@
 	WaitForSingleObject(pi.hProcess, INFINITE);
 
 	DWORD exitCode = 0;
