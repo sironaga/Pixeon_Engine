@@ -10,7 +10,6 @@
 #include "ComponentManager.h"
 #include "Object.h"
 
-
 HWND ghWnd;
 GameRenderTarget* gGameRenderTarget;
 bool bInGame;
