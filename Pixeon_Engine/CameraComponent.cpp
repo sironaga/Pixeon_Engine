@@ -71,7 +71,14 @@ void CameraComponent::DrawInspector(){
 
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0); ImGui::Text("Rotation");
-			ImGui::TableSetColumnIndex(1); ImGui::DragFloat3("##Rotation", &_Rotation.x, 0.01f);
+			DirectX::XMFLOAT3 rot;
+			rot.x = DirectX::XMConvertToDegrees(_Rotation.x);
+			rot.y = DirectX::XMConvertToDegrees(_Rotation.y);
+			rot.z = DirectX::XMConvertToDegrees(_Rotation.z);
+			ImGui::TableSetColumnIndex(1); ImGui::DragFloat3("##Rotation", &rot.x, 0.01f);
+			_Rotation.x = DirectX::XMConvertToRadians(rot.x);
+			_Rotation.y = DirectX::XMConvertToRadians(rot.y);
+			_Rotation.z = DirectX::XMConvertToRadians(rot.z);
 
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0); ImGui::Text("Fixation");
