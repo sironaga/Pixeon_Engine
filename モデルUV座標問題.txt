@@ -1,0 +1,103 @@
+モデルUV座標問題の分析結果
+================================
+
+【問題の概要】
+モデルのテクスチャ描画が一部おかしくなる問題が発見されました。
+テクスチャ画像と比べて色が変わっているわけではなく、画像内にある色で構成されているため、
+UV座標がズレている可能性が高いと考えられます。
+
+【根本原因】
+DirectXとOpenGLではUV座標系のY軸の向きが異なります。
+
+OpenGLのUV座標系：
+  0,0 -------- 1,0
+   |            |
+   |            |
+   |            |
+  0,1 -------- 1,1
+
+DirectXのUV座標系：
+  0,1 -------- 1,1
+   |            |
+   |            |
+   |            |
+  0,0 -------- 1,0
+
+【問題箇所】
+ファイル: Pixeon_Engine/ModelManager.cpp
+行番号: 84-92
+
+現在のAssimpインポート設定:
+```cpp
+const aiScene* scene = importer.ReadFileFromMemory(
+    data.data(), data.size(),
+    aiProcess_Triangulate |
+    aiProcess_CalcTangentSpace |
+    aiProcess_GenNormals |
+    aiProcess_JoinIdenticalVertices |
+    aiProcess_LimitBoneWeights |
+    aiProcess_ImproveCacheLocality |
+    aiProcess_SortByPType);
+```
+
+この設定には `aiProcess_FlipUVs` フラグが含まれていません。
+
+【推奨される修正】
+DirectX環境でモデルを正しく描画するには、AssimpのインポートフラグにaiProcess_FlipUVsを追加する必要があります。
+
+修正後のコード:
+```cpp
+const aiScene* scene = importer.ReadFileFromMemory(
+    data.data(), data.size(),
+    aiProcess_Triangulate |
+    aiProcess_CalcTangentSpace |
+    aiProcess_GenNormals |
+    aiProcess_JoinIdenticalVertices |
+    aiProcess_LimitBoneWeights |
+    aiProcess_ImproveCacheLocality |
+    aiProcess_SortByPType |
+    aiProcess_FlipUVs);  // DirectX用にV座標を反転
+```
+
+【Assimpドキュメントからの引用】
+Pixeon_Engine/assimp/postprocess.h の516-520行目:
+"You'll probably want to consider this flag if you use Direct3D for rendering."
+（Direct3Dでレンダリングする場合は、このフラグの使用を検討することをお勧めします。）
+
+【確認された事実】
+1. このプロジェクトはDirectX 11 (D3D11) を使用している
+   - AssetTypes.hでID3D11Bufferが使用されている
+   - ModelManager.cppでDirectX11::GetInstance()が呼ばれている
+   
+2. UV座標は現在、Assimpから直接読み込まれている（行253-256）
+   ```cpp
+   vertex.uv[0] = mesh->mTextureCoords[useUVChannel][i].x;
+   vertex.uv[1] = mesh->mTextureCoords[useUVChannel][i].y;
+   ```
+
+3. シェーダー(VS_ModelStatic.hlsl)はUV座標をそのまま使用している
+   ```hlsl
+   o.uv = i.uv;
+   ```
+
+【副次的な問題：文字化けしたコメント】
+ModelManager.cppには文字化けした日本語コメントが複数あります。
+これらはおそらくShift-JISとして書かれたものがUTF-8として誤って解釈されたものです。
+
+主な文字化け箇所:
+- 行103: // 頂点・インデックスデータの処理
+- 行115: // マテリアルの処理
+- 行118: // ボーンの処理
+- 行121: // アニメーションの処理
+- 行124: // メモリ使用量の計算
+- 行133: // 埋め込みテクスチャ未対応
+- 行139: // 絶対パス -> ファイル名のみ
+- 行145: // モデルのディレクトリ
+- 行259: // ボーンのウェイト（初期値）
+- 行267: // インデックスデータの処理
+- 行274: // UV が全て 0 の場合を確認
+- 行421: // アニメーションの処理（簡易実装）
+
+【結論】
+UV座標の問題は、aiProcess_FlipUVsフラグの欠如が原因です。
+このフラグを追加することで、DirectX環境での正しいテクスチャマッピングが実現できます。
