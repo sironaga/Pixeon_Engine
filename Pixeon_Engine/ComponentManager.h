@@ -16,6 +16,7 @@ public:
 		CAMERA,
 		GEOMETRY,
 		MODEL,
+		LIGHT,
 		MAX,
 	};
 

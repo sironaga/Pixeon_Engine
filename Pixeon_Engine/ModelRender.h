@@ -44,35 +44,31 @@ public:
     void LoadFromFile(std::istream& in) override;
 
 private:
-    struct CBData
-    {
+    struct CBData {
         DirectX::XMMATRIX World;
         DirectX::XMMATRIX View;
         DirectX::XMMATRIX Proj;
         DirectX::XMFLOAT4 BaseColor;
     };
-
-    struct MaterialRuntime
-    {
+    struct MaterialRuntime {
         std::string                          texName;
         std::shared_ptr<TextureResource>     tex;
         DirectX::XMFLOAT4                    color;
     };
 
-    bool EnsureShaders(bool forceRecreateLayout = false); 
-    bool EnsureInputLayout(const void* vsBytecode, size_t size); 
+    bool EnsureShaders(bool forceRecreateLayout = false);
+    bool EnsureInputLayout(const void* vsBytecode, size_t size);
     bool EnsureConstantBuffer();
     void RefreshMaterialCache();
 
     void ShowModelSelectPopup();
     void ShowTextureSelectPopup(int materialIndex);
 
-    void RecreateInputLayout(); 
+    void RecreateInputLayout();
     DirectX::XMMATRIX BuildWorldMatrix() const;
-    std::string ResolveTexturePath(const std::string& modelLogical, const std::string& rawPath);
 
-    bool EnsureWhiteTexture(); 
-    bool EnsureDebugFallbackTextures(); // ★ (白+マゼンタ)
+    bool EnsureWhiteTexture();
+    bool EnsureDebugFallbackTextures();
 
     void DiagnoseAndReportTextureIssue(size_t submeshIdx,
         const SubMesh& sm,
@@ -80,28 +76,31 @@ private:
         ID3D11ShaderResourceView* chosenSRV,
         bool usedMagentaFallback,
         bool usedWhiteFallback);
+
 private:
-
-
     std::string m_modelPath;
     std::shared_ptr<ModelSharedResource> m_model;
     std::vector<MaterialRuntime> m_materials;
 
     DirectX::XMFLOAT4 m_color{ 1,1,1,1 };
 
-    Microsoft::WRL::ComPtr<ID3D11Buffer> m_cb;
+    Microsoft::WRL::ComPtr<ID3D11Buffer>        m_cb;
 
-    // シェーダー選択用名前 *** 追加
+    // 以前 static だったものをインスタンスメンバへ
+    Microsoft::WRL::ComPtr<ID3D11VertexShader>  m_vs;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader>   m_ps;
+    Microsoft::WRL::ComPtr<ID3D11InputLayout>   m_layout;
+
+    // シェーダ名保持
     std::string m_vsName = "VS_ModelStatic";
     std::string m_psName = "PS_ModelStatic";
 
-    static Microsoft::WRL::ComPtr<ID3D11VertexShader> s_vs;
-    static Microsoft::WRL::ComPtr<ID3D11PixelShader>  s_ps;
-    static Microsoft::WRL::ComPtr<ID3D11InputLayout>  s_layout;
-    static Microsoft::WRL::ComPtr<ID3D11SamplerState> s_linearSmp;
-    static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_whiteTexSRV;
-    static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_magentaTexSRV;
-    std::vector<uint8_t> m_texIssueReported; // submesh数に合わせる(0=未報告,1=報告済)
+    // 共有で良いものは static のまま
+    static Microsoft::WRL::ComPtr<ID3D11SamplerState>        s_linearSmp;
+    static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  s_whiteTexSRV;
+    static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  s_magentaTexSRV;
+
+    std::vector<uint8_t> m_texIssueReported;
 
     bool m_ready = false;
     bool m_openTexPopup = false;

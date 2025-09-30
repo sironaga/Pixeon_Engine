@@ -30,7 +30,17 @@ void EditrGUI::ShowInspector()
 			if (ImGui::DragFloat3(ShiftJISToUTF8("位置").c_str(), &TempTransform.position.x, 0.1f)) {
 				SelectedObject->SetPosition(TempTransform.position.x, TempTransform.position.y, TempTransform.position.z);
 			}
-			if (ImGui::DragFloat3(ShiftJISToUTF8("回転").c_str(), &TempTransform.rotation.x, 0.1f)) {
+
+			DirectX::XMFLOAT3 rot;
+			rot.x = DirectX::XMConvertToDegrees(TempTransform.rotation.x);
+			rot.y = DirectX::XMConvertToDegrees(TempTransform.rotation.y);
+			rot.z = DirectX::XMConvertToDegrees(TempTransform.rotation.z);
+
+			if (ImGui::DragFloat3(ShiftJISToUTF8("回転").c_str(), &rot.x, 0.1f)) {
+				TempTransform.rotation.x = DirectX::XMConvertToRadians(rot.x);
+				TempTransform.rotation.y = DirectX::XMConvertToRadians(rot.y);
+				TempTransform.rotation.z = DirectX::XMConvertToRadians(rot.z);
+
 				SelectedObject->SetRotation(TempTransform.rotation.x, TempTransform.rotation.y, TempTransform.rotation.z);
 			}
 			if (ImGui::DragFloat3(ShiftJISToUTF8("スケール").c_str(), &TempTransform.scale.x, 0.1f)) {
