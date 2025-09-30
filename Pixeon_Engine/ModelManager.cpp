@@ -1,4 +1,4 @@
-
+#define NOMINMAX
 #include "ModelManager.h"
 #include "AssetManager.h"
 #include "System.h"
@@ -180,13 +180,11 @@ void ModelManager::ProcessNode(aiNode* node, const aiScene* scene,
     std::vector<uint32_t>& indices,
     std::shared_ptr<ModelSharedResource> shared) {
 
-    // ���b�V���̏���
     for (uint32_t i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         ProcessMesh(mesh, scene, vertices, indices, shared);
     }
 
-    // �q�m�[�h�̏���
     for (uint32_t i = 0; i < node->mNumChildren; i++) {
         ProcessNode(node->mChildren[i], scene, vertices, indices, shared);
     }
@@ -204,23 +202,19 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
 
     uint32_t vertexOffset = static_cast<uint32_t>(vertices.size());
 
-    // ���_�f�[�^�̏���
     for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
         ModelVertex vertex = {};
 
-        // �ʒu
         vertex.position[0] = mesh->mVertices[i].x;
         vertex.position[1] = mesh->mVertices[i].y;
         vertex.position[2] = mesh->mVertices[i].z;
 
-        // �@��
         if (mesh->HasNormals()) {
             vertex.normal[0] = mesh->mNormals[i].x;
             vertex.normal[1] = mesh->mNormals[i].y;
             vertex.normal[2] = mesh->mNormals[i].z;
         }
 
-        // �^���W�F���g
         if (mesh->mTangents) {
             vertex.tangent[0] = mesh->mTangents[i].x;
             vertex.tangent[1] = mesh->mTangents[i].y;
@@ -228,13 +222,40 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
             vertex.tangent[3] = 1.0f;
         }
 
-        // UV���W
         if (mesh->mTextureCoords[0]) {
-            vertex.uv[0] = mesh->mTextureCoords[0][i].x;
-            vertex.uv[1] = mesh->mTextureCoords[0][i].y;
+            unsigned useUVChannel = 0;
+            if (mesh->GetNumUVChannels() > 1) {
+                // “広がり” が最大のチャンネルを採用する簡易ヒューリスティック
+                float bestArea = -1.0f;
+                for (unsigned ch = 0; ch < mesh->GetNumUVChannels(); ++ch) {
+                    float minU = 1e9f, maxU = -1e9f, minV = 1e9f, maxV = -1e9f;
+                    for (uint32_t vi = 0; vi < mesh->mNumVertices; ++vi) {
+                        auto& uv = mesh->mTextureCoords[ch][vi];
+                        minU = std::min(minU, uv.x);
+                        maxU = std::max(maxU, uv.x);
+                        minV = std::min(minV, uv.y);
+                        maxV = std::max(maxV, uv.y);
+                    }
+                    float du = maxU - minU;
+                    float dv = maxV - minV;
+                    float area = du * dv;
+                    if (area > bestArea) {
+                        bestArea = area;
+                        useUVChannel = ch;
+                    }
+                }
+                char dbg[128];
+                sprintf_s(dbg, "[ModelManager] Mesh mat=%u auto UV channel=%u\n", mesh->mMaterialIndex, useUVChannel);
+                OutputDebugStringA(dbg);
+            }
+
+            // ループ内 (各頂点)
+            if (mesh->mTextureCoords[useUVChannel]) {
+                vertex.uv[0] = mesh->mTextureCoords[useUVChannel][i].x;
+                vertex.uv[1] = mesh->mTextureCoords[useUVChannel][i].y;
+            }
         }
 
-        // �{�[���̃E�F�C�g�i�������j
         for (int j = 0; j < 4; j++) {
             vertex.boneIndices[j] = 0;
             vertex.boneWeights[j] = 0.0f;
@@ -243,7 +264,6 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
         vertices.push_back(vertex);
     }
 
-    // �C���f�b�N�X�f�[�^�̏���
     for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
         aiFace face = mesh->mFaces[i];
         for (uint32_t j = 0; j < face.mNumIndices; j++) {
@@ -252,7 +272,6 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
     }
 
     {
-        // UV ���S�� 0 �̏ꍇ���m
         bool anyUV = false;
         bool allZero = true;
         for (uint32_t i = 0; i < mesh->mNumVertices; ++i) {
@@ -292,7 +311,6 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
     subMesh.hasUV = anyUV;
     subMesh.uvAllZero = anyUV ? allZero : false;
 
-    // ������ ErrorLogger �Ăяo���͂��̂܂�/�܂��͈ȉ��̂悤�ɐ���
     if (!anyUV) {
         ErrorLogger::Instance().LogError("ModelManager",
             "[Mesh mat=" + std::to_string(mesh->mMaterialIndex) + "] UV channel MISSING", false, 3);
@@ -314,7 +332,6 @@ bool ModelManager::CreateGPUBuffers(const std::vector<ModelVertex>& vertices,
     auto device = DirectX11::GetInstance()->GetDevice();
     if (!device) return false;
 
-    // ���_�o�b�t�@�̍쐬
     D3D11_BUFFER_DESC vbDesc = {};
     vbDesc.Usage = D3D11_USAGE_DEFAULT;
     vbDesc.ByteWidth = static_cast<UINT>(vertices.size() * sizeof(ModelVertex));
@@ -326,7 +343,6 @@ bool ModelManager::CreateGPUBuffers(const std::vector<ModelVertex>& vertices,
     HRESULT hr = device->CreateBuffer(&vbDesc, &vbData, shared->vb.GetAddressOf());
     if (FAILED(hr)) return false;
 
-    // �C���f�b�N�X�o�b�t�@�̍쐬
     D3D11_BUFFER_DESC ibDesc = {};
     ibDesc.Usage = D3D11_USAGE_DEFAULT;
     ibDesc.ByteWidth = static_cast<UINT>(indices.size() * sizeof(uint32_t));
@@ -340,8 +356,6 @@ bool ModelManager::CreateGPUBuffers(const std::vector<ModelVertex>& vertices,
 
     shared->vertexCount = static_cast<uint32_t>(vertices.size());
     shared->indexCount = static_cast<uint32_t>(indices.size());
-
-
 
     return true;
 }
@@ -393,8 +407,7 @@ void ModelManager::ProcessMaterials(const aiScene* scene, std::shared_ptr<ModelS
 }
 
 void ModelManager::ProcessBones(const aiScene* scene, std::shared_ptr<ModelSharedResource> shared) {
-    // �{�[�����̏����i�ȈՎ����j
-    // ���ۂ̃v���W�F�N�g�ł́A���ڍׂȎ������K�v
+
     shared->hasSkin = false;
     for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
         if (scene->mMeshes[i]->HasBones()) {
