@@ -19,12 +19,13 @@ void CameraComponent::Init(Object* Prt){
 	_radius = 10.0f;  // 半径を大きく
 }
 
-
 void CameraComponent::EditUpdate(){
 
 	if (_IsKeyMove) {
 		// カメラ操作
 	}
+
+
 	if (_IsChangeCalculation){
 		//　カメラの位置から注視点を計算
 		_Fixation.x = _Position.x - cosf(_Rotation.y) * sinf(_Rotation.x) * _radius;
@@ -43,6 +44,7 @@ void CameraComponent::InGameUpdate(){
 	if (_IsKeyMove) {
 		// カメラ操作
 	}
+
 
 	if (_IsChangeCalculation) {
 		//　カメラの位置から注視点を計算
@@ -75,7 +77,7 @@ void CameraComponent::DrawInspector(){
 			rot.x = DirectX::XMConvertToDegrees(_Rotation.x);
 			rot.y = DirectX::XMConvertToDegrees(_Rotation.y);
 			rot.z = DirectX::XMConvertToDegrees(_Rotation.z);
-			ImGui::TableSetColumnIndex(1); ImGui::DragFloat3("##Rotation", &rot.x, 0.01f);
+			ImGui::TableSetColumnIndex(1); ImGui::DragFloat3("##Rotation", &rot.x, 0.1f);
 			_Rotation.x = DirectX::XMConvertToRadians(rot.x);
 			_Rotation.y = DirectX::XMConvertToRadians(rot.y);
 			_Rotation.z = DirectX::XMConvertToRadians(rot.z);
