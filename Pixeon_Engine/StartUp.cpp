@@ -1,5 +1,6 @@
-// DLLのエントリーポイント
-// コアモジュール
+/*
+* Engine StartUp
+*/
 
 #include "System.h"
 #include "Main.h"
@@ -8,10 +9,10 @@
 #include "StartUp.h"
 
 #define VERSION (1)
-int g_nScreenWidth = 1920;
+int g_nScreenWidth	= 1920;
 int g_nScreenHeight = 1080;
-bool g_bInit = false;
-bool g_bRun = false;
+bool g_bInit		= false;
+bool g_bRun			= false;
 
 extern "C" {
 

@@ -211,8 +211,7 @@
     <ClCompile Include="TextureManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\Pixeon_Engine仕様書.txt" />
-    <Text Include="実装リスト.txt" />
+    <Text Include="仕様書.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
