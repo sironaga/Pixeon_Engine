@@ -24,7 +24,7 @@ void SettingManager::DestroyInstance()
 	}
 }
 
-
+// Config‚Ì“Ç‚İ‚İ
 void SettingManager::LoadConfig(){
 	// JSONƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚Ş
 	std::ifstream configFile(CONFIG_FILE_PATH);

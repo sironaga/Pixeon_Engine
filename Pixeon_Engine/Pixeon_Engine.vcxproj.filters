@@ -161,6 +161,9 @@
     <ClCompile Include="LightComponent.cpp">
       <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
+    <ClCompile Include="EngineManager.cpp">
+      <Filter>ソース ファイル\App</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -273,6 +276,9 @@
     </ClInclude>
     <ClInclude Include="LightComponent.h">
       <Filter>ソース ファイル\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineManager.h">
+      <Filter>ソース ファイル\App</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

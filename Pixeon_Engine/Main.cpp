@@ -1,3 +1,4 @@
+
 #include "Main.h"
 #include "System.h"
 #include "AssetManager.h"
@@ -10,9 +11,9 @@
 #include "ComponentManager.h"
 #include "Object.h"
 
-HWND ghWnd;
-GameRenderTarget* gGameRenderTarget;
-bool bInGame;
+HWND g_hWnd;
+GameRenderTarget* g_GameRenderTarget;
+bool g_bInGame;
 std::vector<PostEffectBase*> gPostEffects;
 std::vector<Object*> gContentsObjects;
 
@@ -21,41 +22,40 @@ int Init(const EngineConfig& InPut){
 	// COM の初期化 (WIC/DirectXTex のため必須)
 	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	if (FAILED(hr)) return -1;
-
-	ghWnd = InPut.hWnd;
+	g_hWnd = InPut.hWnd;
+	// DirectX11 初期化
 	hr = DirectX11::GetInstance()->Init(InPut.hWnd, InPut.screenWidth, InPut.screenHeight, InPut.fullscreen);
 	if (FAILED(hr)) {
 		CoUninitialize();
 		return -1;
 	}
-
+	// 設定読み込み
 	SettingManager::GetInstance()->LoadConfig();
-
+	// AssetManager 初期化
 	AssetManager::Instance()->SetRoot(SettingManager::GetInstance()->GetAssetsFilePath());
 	AssetManager::Instance()->SetLoadMode(AssetManager::LoadMode::FromSource);
 	AssetManager::Instance()->StartAutoSync(std::chrono::milliseconds(1000), true);
-
-	gGameRenderTarget = new GameRenderTarget();
-	gGameRenderTarget->Init(DirectX11::GetInstance()->GetDevice(), InPut.screenWidth, InPut.screenHeight);
-	gGameRenderTarget->SetRenderZBuffer(SettingManager::GetInstance()->GetZBuffer());
-
+	// エンジン用レンダーテクスチャ初期化
+	g_GameRenderTarget = new GameRenderTarget();
+	g_GameRenderTarget->Init(DirectX11::GetInstance()->GetDevice(), InPut.screenWidth, InPut.screenHeight);
+	g_GameRenderTarget->SetRenderZBuffer(SettingManager::GetInstance()->GetZBuffer());
+	// GUI 初期化
 	EditrGUI::GetInstance()->Init();
-	bInGame = false;
-
+	g_bInGame = false;
+	// シーンマネージャー初期化
 	SceneManger::GetInstance()->Init();
-
-	gContentsObjects.clear();
-
+	// シェーダー初期化
 	ShaderManager::GetInstance()->Initialize(DirectX11::GetInstance()->GetDevice());
+	// コンポーネント初期化
 	ComponentManager::GetInstance()->Init();
 
 	return 0;
 }
 
 void Update(){
-	gGameRenderTarget->SetRenderZBuffer(SettingManager::GetInstance()->GetZBuffer());
+	g_GameRenderTarget->SetRenderZBuffer(SettingManager::GetInstance()->GetZBuffer());
 
-	if(bInGame){
+	if(g_bInGame){
 		InGameUpdate();}
 	else{
 		EditeUpdate();}
@@ -90,9 +90,9 @@ void InGameUpdate(){
 
 void EditeDraw(){
 
-	gGameRenderTarget->Begin(DirectX11::GetInstance()->GetContext());
+	g_GameRenderTarget->Begin(DirectX11::GetInstance()->GetContext());
 	SceneManger::GetInstance()->Draw();
-	gGameRenderTarget->End();
+	g_GameRenderTarget->End();
 
 	ID3D11DeviceContext* ctx = DirectX11::GetInstance()->GetContext();
     ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
@@ -111,19 +111,19 @@ void InGamDraw(){
 }
 
 HWND GetWindowHandle(){
-	return ghWnd;
+	return g_hWnd;
 }
 
 ID3D11ShaderResourceView* GetGameRender(){
-	return gGameRenderTarget->GetShaderResourceView();
+	return g_GameRenderTarget->GetShaderResourceView();
 }
 
 bool IsInGame(){
-	return bInGame;
+	return g_bInGame;
 }
 
 void SetInGame(bool inGame){
-	bInGame = inGame;
+	g_bInGame = inGame;
 }
 
 std::vector<Object*> GetContentsObjects(){

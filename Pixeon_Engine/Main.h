@@ -1,5 +1,4 @@
 // エンジンの基本処理
-// コア　モジュール	
 #pragma once
 
 #include <Windows.h>
@@ -9,6 +8,7 @@
 
 class Object;
 
+// エンジン設定
 struct EngineConfig {
 	HWND hWnd;
 	int screenWidth;
@@ -24,7 +24,6 @@ void Update();
 void Draw();
 void UnInit();
 
-// 内部処理
 void EditeUpdate();
 void InGameUpdate();
 void EditeDraw();
