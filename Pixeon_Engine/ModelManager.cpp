@@ -1,4 +1,4 @@
-
+#define NOMINMAX
 #include "ModelManager.h"
 #include "AssetManager.h"
 #include "System.h"
@@ -50,6 +50,13 @@ ModelManager* ModelManager::Instance() {
     return s_instance;
 }
 
+void ModelManager::DeleteInstance() {
+    if (s_instance) {
+        delete s_instance;
+        s_instance = nullptr;
+    }
+}
+
 std::shared_ptr<ModelSharedResource> ModelManager::LoadOrGet(const std::string& logicalName) {
     std::lock_guard<std::mutex> lk(m_mtx);
     m_frame++;
@@ -89,7 +96,8 @@ std::shared_ptr<ModelSharedResource> ModelManager::LoadInternal(const std::strin
         aiProcess_JoinIdenticalVertices |
         aiProcess_LimitBoneWeights |
         aiProcess_ImproveCacheLocality |
-        aiProcess_SortByPType);
+        aiProcess_SortByPType |
+        aiProcess_FlipUVs);
 
     if (!scene || !scene->mRootNode) {
         ErrorLogger::Instance().LogError("ModelManager", "Assimp parse failed: " + logicalName + 
@@ -100,28 +108,22 @@ std::shared_ptr<ModelSharedResource> ModelManager::LoadInternal(const std::strin
     auto shared = std::make_shared<ModelSharedResource>();
     shared->source = logicalName;
 
-    // ���_�E�C���f�b�N�X�f�[�^�̏���
     std::vector<ModelVertex> vertices;
     std::vector<uint32_t> indices;
 
     ProcessNode(scene->mRootNode, scene, vertices, indices, shared);
 
-    // GPU�o�b�t�@�̍쐬
     if (!CreateGPUBuffers(vertices, indices, shared)) {
 		ErrorLogger::Instance().LogError("ModelManager", "GPU buffer creation failed: " + logicalName);
         return nullptr;
     }
 
-    // �}�e���A�����̏���
     ProcessMaterials(scene, shared);
 
-    // �{�[�����̏���
     ProcessBones(scene, shared);
 
-    // �A�j���[�V�������̏���
     ProcessAnimations(scene, shared);
 
-    // �������g�p�ʂ̌v�Z
     shared->gpuBytes = vertices.size() * sizeof(ModelVertex) + indices.size() * sizeof(uint32_t);
 
 	//ErrorLogger::Instance().LogError("ModelManager", "Load OK: " + logicalName, false, 5);
@@ -130,19 +132,19 @@ std::shared_ptr<ModelSharedResource> ModelManager::LoadInternal(const std::strin
 
 std::string ModelManager::ResolveTexturePath(const std::string& modelLogical, const std::string& rawPath){
     if (rawPath.empty()) return {};
-    if (rawPath[0] == '*') { // ���ߍ��ݖ��Ή�
+    if (rawPath[0] == '*') { 
 		ErrorLogger::Instance().LogError("ModelManager", "Embedded texture unsupported: " + rawPath);
         return {};
     }
     std::string norm = MM_NormalizePath(rawPath);
 
-    // ��΃p�X -> �t�@�C�����̂�
+   
     {
         std::filesystem::path p(norm);
         if (p.is_absolute()) norm = p.filename().generic_string();
     }
 
-    // ���f���̃f�B���N�g��
+
     std::string modelDir;
     if (auto pos = modelLogical.find_last_of("/\\"); pos != std::string::npos) {
         modelDir = modelLogical.substr(0, pos + 1);
@@ -180,13 +182,11 @@ void ModelManager::ProcessNode(aiNode* node, const aiScene* scene,
     std::vector<uint32_t>& indices,
     std::shared_ptr<ModelSharedResource> shared) {
 
-    // ���b�V���̏���
     for (uint32_t i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         ProcessMesh(mesh, scene, vertices, indices, shared);
     }
 
-    // �q�m�[�h�̏���
     for (uint32_t i = 0; i < node->mNumChildren; i++) {
         ProcessNode(node->mChildren[i], scene, vertices, indices, shared);
     }
@@ -204,23 +204,46 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
 
     uint32_t vertexOffset = static_cast<uint32_t>(vertices.size());
 
-    // ���_�f�[�^�̏���
-    for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
-        ModelVertex vertex = {};
+    // ★ UV チャンネル決定をループ外に移動
+    unsigned useUVChannel = 0;
+    if (mesh->GetNumUVChannels() > 1) {
+        float bestArea = -1.0f;
+        for (unsigned ch = 0; ch < mesh->GetNumUVChannels(); ++ch) {
+            if (!mesh->mTextureCoords[ch]) continue;
+            float minU = 1e9f, maxU = -1e9f, minV = 1e9f, maxV = -1e9f;
+            for (uint32_t vi = 0; vi < mesh->mNumVertices; ++vi) {
+                auto& uv = mesh->mTextureCoords[ch][vi];
+                minU = std::min(minU, uv.x);
+                maxU = std::max(maxU, uv.x);
+                minV = std::min(minV, uv.y);
+                maxV = std::max(maxV, uv.y);
+            }
+            float du = maxU - minU;
+            float dv = maxV - minV;
+            float area = du * dv;
+            if (area > bestArea) {
+                bestArea = area;
+                useUVChannel = ch;
+            }
+        }
+        char dbg[128];
+        sprintf_s(dbg, "[ModelManager] Mesh mat=%u select UV channel=%u\n",
+            mesh->mMaterialIndex, useUVChannel);
+        OutputDebugStringA(dbg);
+    }
 
-        // �ʒu
+    for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
+        ModelVertex vertex{};
         vertex.position[0] = mesh->mVertices[i].x;
         vertex.position[1] = mesh->mVertices[i].y;
         vertex.position[2] = mesh->mVertices[i].z;
 
-        // �@��
         if (mesh->HasNormals()) {
             vertex.normal[0] = mesh->mNormals[i].x;
             vertex.normal[1] = mesh->mNormals[i].y;
             vertex.normal[2] = mesh->mNormals[i].z;
         }
 
-        // �^���W�F���g
         if (mesh->mTangents) {
             vertex.tangent[0] = mesh->mTangents[i].x;
             vertex.tangent[1] = mesh->mTangents[i].y;
@@ -228,13 +251,12 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
             vertex.tangent[3] = 1.0f;
         }
 
-        // UV���W
-        if (mesh->mTextureCoords[0]) {
-            vertex.uv[0] = mesh->mTextureCoords[0][i].x;
-            vertex.uv[1] = mesh->mTextureCoords[0][i].y;
+        if (mesh->mTextureCoords[useUVChannel]) {
+            vertex.uv[0] = mesh->mTextureCoords[useUVChannel][i].x;
+            vertex.uv[1] = mesh->mTextureCoords[useUVChannel][i].y;
+            // aiProcess_FlipUVs を使うのでここで 1 - v はしない
         }
 
-        // �{�[���̃E�F�C�g�i�������j
         for (int j = 0; j < 4; j++) {
             vertex.boneIndices[j] = 0;
             vertex.boneWeights[j] = 0.0f;
@@ -243,7 +265,6 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
         vertices.push_back(vertex);
     }
 
-    // �C���f�b�N�X�f�[�^�̏���
     for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
         aiFace face = mesh->mFaces[i];
         for (uint32_t j = 0; j < face.mNumIndices; j++) {
@@ -252,7 +273,6 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
     }
 
     {
-        // UV ���S�� 0 �̏ꍇ���m
         bool anyUV = false;
         bool allZero = true;
         for (uint32_t i = 0; i < mesh->mNumVertices; ++i) {
@@ -292,7 +312,6 @@ void ModelManager::ProcessMesh(aiMesh* mesh, const aiScene* scene,
     subMesh.hasUV = anyUV;
     subMesh.uvAllZero = anyUV ? allZero : false;
 
-    // ������ ErrorLogger �Ăяo���͂��̂܂�/�܂��͈ȉ��̂悤�ɐ���
     if (!anyUV) {
         ErrorLogger::Instance().LogError("ModelManager",
             "[Mesh mat=" + std::to_string(mesh->mMaterialIndex) + "] UV channel MISSING", false, 3);
@@ -314,7 +333,6 @@ bool ModelManager::CreateGPUBuffers(const std::vector<ModelVertex>& vertices,
     auto device = DirectX11::GetInstance()->GetDevice();
     if (!device) return false;
 
-    // ���_�o�b�t�@�̍쐬
     D3D11_BUFFER_DESC vbDesc = {};
     vbDesc.Usage = D3D11_USAGE_DEFAULT;
     vbDesc.ByteWidth = static_cast<UINT>(vertices.size() * sizeof(ModelVertex));
@@ -326,7 +344,6 @@ bool ModelManager::CreateGPUBuffers(const std::vector<ModelVertex>& vertices,
     HRESULT hr = device->CreateBuffer(&vbDesc, &vbData, shared->vb.GetAddressOf());
     if (FAILED(hr)) return false;
 
-    // �C���f�b�N�X�o�b�t�@�̍쐬
     D3D11_BUFFER_DESC ibDesc = {};
     ibDesc.Usage = D3D11_USAGE_DEFAULT;
     ibDesc.ByteWidth = static_cast<UINT>(indices.size() * sizeof(uint32_t));
@@ -340,8 +357,6 @@ bool ModelManager::CreateGPUBuffers(const std::vector<ModelVertex>& vertices,
 
     shared->vertexCount = static_cast<uint32_t>(vertices.size());
     shared->indexCount = static_cast<uint32_t>(indices.size());
-
-
 
     return true;
 }
@@ -393,8 +408,7 @@ void ModelManager::ProcessMaterials(const aiScene* scene, std::shared_ptr<ModelS
 }
 
 void ModelManager::ProcessBones(const aiScene* scene, std::shared_ptr<ModelSharedResource> shared) {
-    // �{�[�����̏����i�ȈՎ����j
-    // ���ۂ̃v���W�F�N�g�ł́A���ڍׂȎ������K�v
+
     shared->hasSkin = false;
     for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
         if (scene->mMeshes[i]->HasBones()) {
@@ -405,7 +419,6 @@ void ModelManager::ProcessBones(const aiScene* scene, std::shared_ptr<ModelShare
 }
 
 void ModelManager::ProcessAnimations(const aiScene* scene, std::shared_ptr<ModelSharedResource> shared) {
-    // �A�j���[�V�������̏����i�ȈՎ����j
     for (uint32_t i = 0; i < scene->mNumAnimations; i++) {
         aiAnimation* anim = scene->mAnimations[i];
         AnimationClip clip;

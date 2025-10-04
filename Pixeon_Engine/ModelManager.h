@@ -14,6 +14,7 @@
 class ModelManager {
 public:
     static ModelManager* Instance();
+	static void DeleteInstance();
     std::shared_ptr<ModelSharedResource> LoadOrGet(const std::string& logicalName);
     void GarbageCollect();
     void DrawDebugGUI();

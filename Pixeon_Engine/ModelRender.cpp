@@ -109,12 +109,12 @@ void ModelRenderComponent::RecreateInputLayout() {
 bool ModelRenderComponent::EnsureInputLayout(const void* vsBytecode, size_t size) {
     if (m_layout) return true;
     D3D11_INPUT_ELEMENT_DESC desc[] = {
-        {"POSITION",     0, DXGI_FORMAT_R32G32B32_FLOAT,    0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"NORMAL",       0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"TANGENT",      0, DXGI_FORMAT_R32G32B32A32_FLOAT,0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"TEXCOORD",     0, DXGI_FORMAT_R32G32_FLOAT,      0, 40, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"BLENDWEIGHT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT,0, 64, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        { "POSITION",0, DXGI_FORMAT_R32G32B32_FLOAT,    0,(UINT)offsetof(ModelVertex,position),    D3D11_INPUT_PER_VERTEX_DATA,0 },
+        { "NORMAL",  0, DXGI_FORMAT_R32G32B32_FLOAT,    0,(UINT)offsetof(ModelVertex,normal),      D3D11_INPUT_PER_VERTEX_DATA,0 },
+        { "TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,(UINT)offsetof(ModelVertex,tangent),     D3D11_INPUT_PER_VERTEX_DATA,0 },
+        { "TEXCOORD",0, DXGI_FORMAT_R32G32_FLOAT,       0,(UINT)offsetof(ModelVertex,uv),          D3D11_INPUT_PER_VERTEX_DATA,0 },
+        { "BLENDINDICES",0, DXGI_FORMAT_R32G32B32A32_UINT, 0,(UINT)offsetof(ModelVertex,boneIndices), D3D11_INPUT_PER_VERTEX_DATA,0 },
+        { "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT,0,(UINT)offsetof(ModelVertex,boneWeights), D3D11_INPUT_PER_VERTEX_DATA,0 },
     };
     auto dev = DirectX11::GetInstance()->GetDevice();
     HRESULT hr = dev->CreateInputLayout(desc, _countof(desc), vsBytecode, size, m_layout.GetAddressOf());
@@ -186,7 +186,7 @@ bool ModelRenderComponent::EnsureDebugFallbackTextures() {
             dev->CreateShaderResourceView(tex.Get(), nullptr, s_whiteTexSRV.GetAddressOf());
     }
     if (!s_magentaTexSRV) {
-        uint8_t pix[4] = { 255,0,255,255 };
+        uint8_t pix[4] = { 255,255,255,255 };
         D3D11_TEXTURE2D_DESC td{};
         td.Width = td.Height = 1;
         td.MipLevels = 1; td.ArraySize = 1;
