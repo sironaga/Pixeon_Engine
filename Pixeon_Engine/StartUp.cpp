@@ -1,5 +1,6 @@
 /*
 * Engine StartUp
+* 制作者: アキノ
 */
 
 #include "System.h"
@@ -8,7 +9,8 @@
 #include "IMGUI/imgui_impl_dx11.h"
 #include "StartUp.h"
 
-#define VERSION (1)
+// バージョン
+#define VERSION (100)
 int g_nScreenWidth	= 1920;
 int g_nScreenHeight = 1080;
 bool g_bInit		= false;
