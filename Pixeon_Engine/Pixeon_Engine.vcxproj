@@ -147,6 +147,7 @@
     <ClInclude Include="EditrGUI.h" />
     <ClInclude Include="EngineManager.h" />
     <ClInclude Include="ErrorLog.h" />
+    <ClInclude Include="File.h" />
     <ClInclude Include="GameRenderTarget.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="HashUtill.h" />
@@ -187,6 +188,7 @@
     <ClCompile Include="EditrGUI_Inspector.cpp" />
     <ClCompile Include="EngineManager.cpp" />
     <ClCompile Include="ErrorLog.cpp" />
+    <ClCompile Include="File.cpp" />
     <ClCompile Include="GameRenderTarget.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="HashUtill.cpp" />

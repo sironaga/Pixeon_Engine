@@ -49,7 +49,6 @@ private:
 	~EngineManager() {};
 	
 private:
-
 	static EngineManager* instance_;
 
 	HWND m_hWnd_;
@@ -58,8 +57,11 @@ private:
 	bool m_bInGame_;
 	// GUI•\Ž¦”»’è
 	bool m_bIsShowGUI_;
-
 };
+
+
+
+
 
 #endif // !ENGINE_MANAGER_H
 

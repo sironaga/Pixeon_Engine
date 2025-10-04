@@ -164,6 +164,9 @@
     <ClCompile Include="EngineManager.cpp">
       <Filter>ソース ファイル\App</Filter>
     </ClCompile>
+    <ClCompile Include="File.cpp">
+      <Filter>ソース ファイル\Sys</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -279,6 +282,9 @@
     </ClInclude>
     <ClInclude Include="EngineManager.h">
       <Filter>ソース ファイル\App</Filter>
+    </ClInclude>
+    <ClInclude Include="File.h">
+      <Filter>ソース ファイル\Sys</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
