@@ -1,7 +1,9 @@
-#pragma once
+#ifndef FILE_H
+#define FILE_H
 
 #include <string>
 
+// I/O関連のユーティリティクラス
 class File
 {
 public:
@@ -11,4 +13,6 @@ public:
 	static bool CallAssetPacker(const std::string& toolPath, const std::string& assetDir, const std::string& outputPak);
 	static bool RunArchiveTool(const std::string& toolExePath, const std::string& assetDir, const std::string& archivePath);
 };
+
+#endif // !FILE_H
 

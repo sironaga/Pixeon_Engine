@@ -172,7 +172,6 @@
     <ClInclude Include="SoundManager.h" />
     <ClInclude Include="Struct.h" />
     <ClInclude Include="System.h" />
-    <ClInclude Include="Main.h" />
     <ClInclude Include="StartUp.h" />
     <ClInclude Include="TextureManager.h" />
   </ItemGroup>
@@ -200,7 +199,6 @@
     <ClCompile Include="IMGUI\imgui_tables.cpp" />
     <ClCompile Include="IMGUI\imgui_widgets.cpp" />
     <ClCompile Include="LightComponent.cpp" />
-    <ClCompile Include="Main.cpp" />
     <ClCompile Include="ModelManager.cpp" />
     <ClCompile Include="ModelRender.cpp" />
     <ClCompile Include="Object.cpp" />

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef TEXTURE_MANAGER_H
+#define TEXTURE_MANAGER_H
+
 #include "AssetTypes.h"
 #include <unordered_map>
 #include <memory>
@@ -9,6 +11,9 @@
 class TextureManager {
 public:
     static TextureManager* Instance();
+	static void DeleteInstance();
+
+	void UnInit();
 
     std::shared_ptr<TextureResource> LoadOrGet(const std::string& logicalName);
 
@@ -50,3 +55,5 @@ private:
 
     static TextureManager* s_instance;
 };
+
+#endif // TEXTURE_MANAGER_H

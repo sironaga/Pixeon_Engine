@@ -1,6 +1,8 @@
 // AssetManager
 // アセットのi/oを管理するクラス
-#pragma once
+#ifndef ASSETMANAGER_H
+#define ASSETMANAGER_H
+
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -17,6 +19,9 @@ class AssetManager
 public:
     enum class LoadMode { FromSource, FromArchive };
     static AssetManager* Instance();
+	static void DeleteInstance();
+
+    void UnInit();
 
     void SetRoot(const std::string& root);
     void SetLoadMode(LoadMode m);
@@ -83,3 +88,4 @@ private:
 	static AssetManager* s_instance;
 };
 
+#endif // ASSETMANAGER_H

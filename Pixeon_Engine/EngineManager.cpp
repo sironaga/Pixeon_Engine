@@ -3,6 +3,9 @@
 #include "GameRenderTarget.h"
 #include "EditrGUI.h"
 #include "PostEffectBase.h"
+#include "ModelManager.h"
+#include "TextureManager.h"
+#include "ResourceService.h"
 #include "AssetManager.h"
 #include "SceneManger.h"
 #include "SettingManager.h"
@@ -85,8 +88,14 @@ void EngineManager::UnInit() {
 	SceneManger::GetInstance()->Save();
 	SettingManager::GetInstance()->SaveConfig();
 	// ”jŠüˆ—
+	AssetManager::DeleteInstance();
+	ComponentManager::DestroyInstance();
 	SceneManger::DestroyInstance();
 	SettingManager::DestroyInstance();
+	ShaderManager::DestroyInstance();
+	TextureManager::DeleteInstance();
+	ModelManager::DeleteInstance();
+	ResourceService::DeleteInstance();
 	DirectX11::GetInstance()->Uninit();
 	DirectX11::DestroyInstance();
 	CoUninitialize();

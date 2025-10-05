@@ -1,6 +1,8 @@
 // サウンドリソースの管理
 
-#pragma once
+#ifndef SOUND_MANAGER_H
+#define SOUND_MANAGER_H
+
 #include "AssetTypes.h"
 #include <unordered_map>
 #include <memory>
@@ -9,6 +11,8 @@
 class SoundManager {
 public:
     static SoundManager* Instance();
+	static void DeleteInstance();
+	void UnInit();
     std::shared_ptr<SoundResource> LoadOrGet(const std::string& logicalName, bool streaming = false);
     void GarbageCollect();
     void DrawDebugGUI();
@@ -22,4 +26,6 @@ private:
     std::mutex m_mtx;
 
 	static SoundManager* s_instance;
-};
+}; 
+
+#endif // SOUND_MANAGER_H

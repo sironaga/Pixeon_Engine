@@ -98,9 +98,6 @@
     <ClCompile Include="IMGUI\imgui_widgets.cpp">
       <Filter>ソース ファイル\GUI\Internal processing</Filter>
     </ClCompile>
-    <ClCompile Include="Main.cpp">
-      <Filter>ソース ファイル\App</Filter>
-    </ClCompile>
     <ClCompile Include="Scene.cpp">
       <Filter>ソース ファイル\BaseClass</Filter>
     </ClCompile>
@@ -213,9 +210,6 @@
     </ClInclude>
     <ClInclude Include="Scene.h">
       <Filter>ソース ファイル\BaseClass</Filter>
-    </ClInclude>
-    <ClInclude Include="Main.h">
-      <Filter>ソース ファイル\App</Filter>
     </ClInclude>
     <ClInclude Include="GameRenderTarget.h">
       <Filter>ソース ファイル\Sys</Filter>

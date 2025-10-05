@@ -14,6 +14,25 @@ AssetManager* AssetManager::Instance()
     return s_instance;
 }
 
+void AssetManager::DeleteInstance()
+{
+    if (s_instance) {
+        s_instance->UnInit();
+        delete s_instance;
+        s_instance = nullptr;
+    }
+}
+
+void AssetManager::UnInit()
+{
+    StopAutoSync();
+    ClearRawCache();
+    {
+        std::lock_guard<std::mutex> lk(m_mtx);
+        m_recentChanges.clear();
+    }
+}
+
 AssetManager::~AssetManager() {
     StopAutoSync();
 }

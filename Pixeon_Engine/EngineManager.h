@@ -59,9 +59,5 @@ private:
 	bool m_bIsShowGUI_;
 };
 
-
-
-
-
 #endif // !ENGINE_MANAGER_H
 

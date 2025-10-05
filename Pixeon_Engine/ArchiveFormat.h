@@ -1,4 +1,6 @@
-#pragma once
+#ifndef ARCHIVE_FORMAT_H
+#define ARCHIVE_FORMAT_H
+
 #include <cstdint>
 #include <cstring>
 
@@ -13,9 +15,6 @@ struct PakHeader {
     uint8_t  reserved[32];  // 0
 };
 #pragma pack(pop)
-
-// TOC v1: (nameLen, name, compression, 3*res, crc32, originalSize, storedSize, offset)
-// TOC v2: è„ãL + sha256[32]
 
 // à≥èkéÌï 
 enum class AssetCompression : uint16_t {
@@ -33,3 +32,5 @@ enum AssetFlags : uint16_t {
 inline bool HasFlag(uint16_t f, AssetFlags bit) {
     return (f & static_cast<uint16_t>(bit)) != 0;
 }
+
+#endif // !ARCHIVE_FORMAT_H

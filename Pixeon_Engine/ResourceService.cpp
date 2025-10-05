@@ -12,6 +12,13 @@ ResourceService& ResourceService::Instance() {
     return *s_instance;
 }
 
+void ResourceService::DeleteInstance() {
+    if (s_instance) {
+        delete s_instance;
+        s_instance = nullptr;
+    }
+}
+
 std::shared_ptr<TextureResource> ResourceService::GetTexture(const std::string& name) {
     return TextureManager::Instance()->LoadOrGet(name);
 }
