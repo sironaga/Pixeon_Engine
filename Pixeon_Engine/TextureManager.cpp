@@ -14,6 +14,22 @@ TextureManager* TextureManager::Instance() {
     return s_instance;
 }
 
+void TextureManager::DeleteInstance() {
+    if (s_instance) {
+        s_instance->UnInit();
+        delete s_instance;
+        s_instance = nullptr;
+    }
+}
+
+void TextureManager::UnInit() {
+    std::lock_guard<std::mutex> lk(m_mtx);
+    m_cache.clear();
+    m_pinned.clear();
+    m_failReasons.clear();
+    m_frame = 0;
+}
+
 void TextureManager::SetFail(const std::string& name, const std::string& reason) {
     m_failReasons[name] = reason;
     ErrorLogger::Instance().LogError("TextureManager", name + " : " + reason, false, 1);

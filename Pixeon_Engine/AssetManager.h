@@ -1,6 +1,9 @@
 // AssetManager
 // アセットのi/oを管理するクラス
-#pragma once
+
+#ifndef ASSETMANAGER_H
+#define ASSETMANAGER_H
+
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -16,7 +19,11 @@ class AssetManager
 {
 public:
     enum class LoadMode { FromSource, FromArchive };
+
     static AssetManager* Instance();
+	static void DeleteInstance();
+
+    void UnInit();
 
     void SetRoot(const std::string& root);
     void SetLoadMode(LoadMode m);
@@ -31,7 +38,7 @@ public:
 
 	void StopAutoSync();
 
-    bool IsAutoSyncRunning() const { return m_watchRunning.load(); }
+    bool IsAutoSyncRunning() const { return m_watchRunning_.load(); }
 
     std::vector<std::string> GetCachedAssetNames(bool onlyModelExt = false) const;
     std::vector<std::string> GetCachedTextureNames() const;
@@ -58,28 +65,32 @@ private:
 
     void PushChange(ChangeType type, const std::string& path);
 
-    std::string m_root;
-    LoadMode m_mode = LoadMode::FromSource;
+private:
 
-    std::unordered_map<std::string, std::vector<uint8_t>> m_cache;
-    std::unordered_map<std::string, FileMeta> m_fileMeta;
+    std::string m_root_;
+    LoadMode m_mode_ = LoadMode::FromSource;
 
-    std::deque<ChangeLog> m_recentChanges;
-    static constexpr size_t kMaxRecentChanges = 64;
+    std::unordered_map<std::string, std::vector<uint8_t>> m_cache_;
+    std::unordered_map<std::string, FileMeta> m_fileMeta_;
 
-    std::thread m_watchThread;
-    std::atomic<bool> m_watchRunning{ false };
-    std::chrono::milliseconds m_interval{ 1000 };
-    bool m_recursive = true;
+    std::deque<ChangeLog> m_recentChanges_;
 
-    std::atomic<uint64_t> m_scanCount{ 0 };
-    std::atomic<uint64_t> m_lastDiffAdds{ 0 };
-    std::atomic<uint64_t> m_lastDiffRemoves{ 0 };
-    std::atomic<uint64_t> m_lastDiffMods{ 0 };
-    std::atomic<uint64_t> m_lastScanDurationMs{ 0 };
 
-    mutable std::mutex m_mtx;
+    std::thread m_watchThread_;
+    std::atomic<bool> m_watchRunning_{ false };
+    std::chrono::milliseconds m_interval_{ 1000 };
+    bool m_recursive_ = true;
 
-	static AssetManager* s_instance;
+    std::atomic<uint64_t> m_scanCount_{ 0 };
+    std::atomic<uint64_t> m_lastDiffAdds_{ 0 };
+    std::atomic<uint64_t> m_lastDiffRemoves_{ 0 };
+    std::atomic<uint64_t> m_lastDiffMods_{ 0 };
+    std::atomic<uint64_t> m_lastScanDurationMs_{ 0 };
+
+    mutable std::mutex m_mtx_;
+
+	static AssetManager* s_instance_;
+    static constexpr size_t kMaxRecentChanges_ = 64;
 };
 
+#endif // ASSETMANAGER_H

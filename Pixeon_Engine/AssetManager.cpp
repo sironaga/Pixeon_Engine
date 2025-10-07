@@ -4,22 +4,41 @@
 #include "IMGUI/imgui.h"
 #include "ErrorLog.h"
 
-AssetManager* AssetManager::s_instance = nullptr;
+AssetManager* AssetManager::s_instance_ = nullptr;
 
 AssetManager* AssetManager::Instance()
 {
-    if (!s_instance) {
-        s_instance = new AssetManager();
+    if (!s_instance_) {
+        s_instance_ = new AssetManager();
     }
-    return s_instance;
+    return s_instance_;
+}
+
+void AssetManager::DeleteInstance()
+{
+    if (s_instance_) {
+        s_instance_->UnInit();
+        delete s_instance_;
+        s_instance_ = nullptr;
+    }
+}
+
+void AssetManager::UnInit()
+{
+    StopAutoSync();
+    ClearRawCache();
+    {
+        std::lock_guard<std::mutex> lk(m_mtx_);
+        m_recentChanges_.clear();
+    }
 }
 
 AssetManager::~AssetManager() {
     StopAutoSync();
 }
 
-void AssetManager::SetRoot(const std::string& root) { m_root = root; }
-void AssetManager::SetLoadMode(LoadMode m) { m_mode = m; }
+void AssetManager::SetRoot(const std::string& root) { m_root_ = root; }
+void AssetManager::SetLoadMode(LoadMode m) { m_mode_ = m; }
 
 std::string AssetManager::Normalize(const std::string& name) const {
     std::string s = name;
@@ -30,25 +49,25 @@ std::string AssetManager::Normalize(const std::string& name) const {
 bool AssetManager::Exists(const std::string& logicalName) {
     std::string norm = Normalize(logicalName);
     {
-        std::lock_guard<std::mutex> lk(m_mtx);
-        if (m_cache.find(norm) != m_cache.end()) return true;
+        std::lock_guard<std::mutex> lk(m_mtx_);
+        if (m_cache_.find(norm) != m_cache_.end()) return true;
     }
-    std::filesystem::path p = std::filesystem::path(m_root) / norm;
+    std::filesystem::path p = std::filesystem::path(m_root_) / norm;
     return std::filesystem::exists(p);
 }
 
 bool AssetManager::LoadAsset(const std::string& logicalName, std::vector<uint8_t>& outData) {
     std::string norm = Normalize(logicalName);
     {
-        std::lock_guard<std::mutex> lk(m_mtx);
-        auto it = m_cache.find(norm);
-        if (it != m_cache.end()) {
+        std::lock_guard<std::mutex> lk(m_mtx_);
+        auto it = m_cache_.find(norm);
+        if (it != m_cache_.end()) {
             outData = it->second;
             return true;
         }
     }
 
-    std::filesystem::path p = std::filesystem::path(m_root) / norm;
+    std::filesystem::path p = std::filesystem::path(m_root_) / norm;
     std::ifstream ifs(p, std::ios::binary);
     if (!ifs) {
 		ErrorLogger::Instance().LogError("AssetManager", "Failed to open asset: " + norm);
@@ -64,55 +83,54 @@ bool AssetManager::LoadAsset(const std::string& logicalName, std::vector<uint8_t
         return false;
     }
     {
-        std::lock_guard<std::mutex> lk(m_mtx);
-        m_cache[norm] = outData;
+        std::lock_guard<std::mutex> lk(m_mtx_);
+        m_cache_[norm] = outData;
     }
     return true;
 }
 
 void AssetManager::ClearRawCache() {
-    std::lock_guard<std::mutex> lk(m_mtx);
-    m_cache.clear();
-    m_fileMeta.clear();
+    std::lock_guard<std::mutex> lk(m_mtx_);
+    m_cache_.clear();
+    m_fileMeta_.clear();
 }
 
 void AssetManager::PushChange(ChangeType type, const std::string& path) {
-    std::lock_guard<std::mutex> lk(m_mtx);
-    if (m_recentChanges.size() >= kMaxRecentChanges)
-        m_recentChanges.pop_front();
-    m_recentChanges.push_back({ type, path, m_scanCount.load() });
+    std::lock_guard<std::mutex> lk(m_mtx_);
+    if (m_recentChanges_.size() >= kMaxRecentChanges_)
+        m_recentChanges_.pop_front();
+    m_recentChanges_.push_back({ type, path, m_scanCount_.load() });
 }
 
 void AssetManager::StartAutoSync(std::chrono::milliseconds interval, bool recursive) {
-    if (m_watchRunning.load()) return;
-    if (m_root.empty()) {
+    if (m_watchRunning_.load()) return;
+    if (m_root_.empty()) {
 		ErrorLogger::Instance().LogError("AssetManager", "StartAutoSync failed: root not set.");
         return;
     }
-    m_interval = interval;
-    m_recursive = recursive;
-    m_watchRunning = true;
-    m_watchThread = std::thread(&AssetManager::WatchLoop, this);
+    m_interval_ = interval;
+    m_recursive_ = recursive;
+    m_watchRunning_ = true;
+    m_watchThread_ = std::thread(&AssetManager::WatchLoop, this);
     OutputDebugStringA("[AssetManager] AutoSync started.\n");
 }
 
 void AssetManager::StopAutoSync() {
-    if (!m_watchRunning.load()) return;
-    m_watchRunning = false;
-    if (m_watchThread.joinable()) m_watchThread.join();
+    if (!m_watchRunning_.load()) return;
+    m_watchRunning_ = false;
+    if (m_watchThread_.joinable()) m_watchThread_.join();
     OutputDebugStringA("[AssetManager] AutoSync stopped.\n");
 }
 
 void AssetManager::WatchLoop() {
-    // 初回スキャンで現存ファイルをメタに登録（ロードは要求時）
-    PerformScan(); // 初回に差分反映（追加扱いで即ロードしたければこのままでOK）
-    while (m_watchRunning.load()) {
+    PerformScan(); 
+    while (m_watchRunning_.load()) {
         auto t0 = std::chrono::steady_clock::now();
         PerformScan();
         auto t1 = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
-        m_lastScanDurationMs.store((uint64_t)elapsed);
-        std::this_thread::sleep_for(m_interval);
+        m_lastScanDurationMs_.store((uint64_t)elapsed);
+        std::this_thread::sleep_for(m_interval_);
     }
 }
 
@@ -124,7 +142,7 @@ void AssetManager::PerformScan() {
     std::vector<std::string> modifications;
     std::vector<std::string> deletions;
 
-    const path rootPath(m_root);
+    const path rootPath(m_root_);
     if (!exists(rootPath)) {
         OutputDebugStringA("[AssetManager] Root path does not exist.\n");
         return;
@@ -134,7 +152,7 @@ void AssetManager::PerformScan() {
 
     // ディレクトリ列挙
     std::error_code ec;
-    if (m_recursive) {
+    if (m_recursive_) {
         for (recursive_directory_iterator it(rootPath, ec), end; it != end && !ec; ++it) {
             if (!it->is_regular_file()) continue;
             auto rel = relative(it->path(), rootPath, ec);
@@ -161,11 +179,11 @@ void AssetManager::PerformScan() {
 
     // 差分判定
     {
-        std::lock_guard<std::mutex> lk(m_mtx);
+        std::lock_guard<std::mutex> lk(m_mtx_);
         // 追加 / 変更
         for (auto& kv : current) {
-            auto itOld = m_fileMeta.find(kv.first);
-            if (itOld == m_fileMeta.end()) {
+            auto itOld = m_fileMeta_.find(kv.first);
+            if (itOld == m_fileMeta_.end()) {
                 additions.push_back(kv.first);
             }
             else {
@@ -176,7 +194,7 @@ void AssetManager::PerformScan() {
             }
         }
         // 削除
-        for (auto& old : m_fileMeta) {
+        for (auto& old : m_fileMeta_) {
             if (current.find(old.first) == current.end()) {
                 deletions.push_back(old.first);
             }
@@ -204,69 +222,56 @@ void AssetManager::PerformScan() {
     }
     // 削除適用
     {
-        std::lock_guard<std::mutex> lk(m_mtx);
+        std::lock_guard<std::mutex> lk(m_mtx_);
         for (auto& del : deletions) {
-            m_cache.erase(del);
-            m_fileMeta.erase(del);
+            m_cache_.erase(del);
+            m_fileMeta_.erase(del);
             PushChange(ChangeType::Removed, del);
         }
         // ファイルメタ更新
         for (auto& kv : current) {
-            m_fileMeta[kv.first] = kv.second;
+            m_fileMeta_[kv.first] = kv.second;
         }
     }
 
-    m_lastDiffAdds.store(additions.size());
-    m_lastDiffMods.store(modifications.size());
-    m_lastDiffRemoves.store(deletions.size());
-    m_scanCount.fetch_add(1);
+    m_lastDiffAdds_.store(additions.size());
+    m_lastDiffMods_.store(modifications.size());
+    m_lastDiffRemoves_.store(deletions.size());
+    m_scanCount_.fetch_add(1);
 }
 
 void AssetManager::DrawDebugGUI()
 {
-    std::lock_guard<std::mutex> lk(m_mtx);
+    std::lock_guard<std::mutex> lk(m_mtx_);
     ImGui::TextUnformatted("AssetManager");
     ImGui::Separator();
-    ImGui::Text("Root: %s", m_root.c_str());
-    ImGui::Text("Mode: %s", (m_mode == LoadMode::FromSource) ? "FromSource" : "FromArchive");
-    ImGui::Text("Cached Raw Files: %zu", m_cache.size());
-    ImGui::Text("AutoSync: %s", m_watchRunning.load() ? "Running" : "Stopped");
-    ImGui::Text("ScanCount: %llu", (unsigned long long)m_scanCount.load());
+    ImGui::Text("Root: %s", m_root_.c_str());
+    ImGui::Text("Mode: %s", (m_mode_ == LoadMode::FromSource) ? "FromSource" : "FromArchive");
+    ImGui::Text("Cached Raw Files: %zu", m_cache_.size());
+    ImGui::Text("AutoSync: %s", m_watchRunning_.load() ? "Running" : "Stopped");
+    ImGui::Text("ScanCount: %llu", (unsigned long long)m_scanCount_.load());
     ImGui::Text("LastDiff A=%llu M=%llu R=%llu",
-        (unsigned long long)m_lastDiffAdds.load(),
-        (unsigned long long)m_lastDiffMods.load(),
-        (unsigned long long)m_lastDiffRemoves.load());
-    ImGui::Text("LastScanDuration: %llu ms", (unsigned long long)m_lastScanDurationMs.load());
-
-    if (!m_watchRunning.load()) {
-        if (ImGui::Button("Start AutoSync")) {
-            // デフォルト 1000ms で開始
-            // （GUI側で設定できるよう拡張可）
-            // ロック外で呼ぶため一旦抜ける工夫をするなら別途フラグでもOK
-        }
-    }
-    else {
-        if (ImGui::Button("Stop AutoSync")) {
-            // 外部で実際の StopAutoSync 呼び出し推奨（ここで直接呼ぶのも可）
-        }
-    }
+        (unsigned long long)m_lastDiffAdds_.load(),
+        (unsigned long long)m_lastDiffMods_.load(),
+        (unsigned long long)m_lastDiffRemoves_.load());
+    ImGui::Text("LastScanDuration: %llu ms", (unsigned long long)m_lastScanDurationMs_.load());
 
     static char filter[128] = "";
     ImGui::InputText("Filter (substring)", filter, sizeof(filter));
 
     if (ImGui::Button("Clear Raw Cache")) {
-        m_cache.clear();
-        m_fileMeta.clear();
+        m_cache_.clear();
+        m_fileMeta_.clear();
     }
     ImGui::SameLine();
     if (ImGui::Button("Clear Change Log")) {
-        m_recentChanges.clear();
+        m_recentChanges_.clear();
     }
 
     ImGui::Separator();
     ImGui::TextUnformatted("Recent Changes:");
     ImGui::BeginChild("AssetManagerChanges", ImVec2(0, 120), true);
-    for (auto it = m_recentChanges.rbegin(); it != m_recentChanges.rend(); ++it) {
+    for (auto it = m_recentChanges_.rbegin(); it != m_recentChanges_.rend(); ++it) {
         const char* t = "";
         switch (it->type) {
         case ChangeType::Added: t = "ADD"; break;
@@ -282,7 +287,7 @@ void AssetManager::DrawDebugGUI()
     ImGui::Separator();
     ImGui::TextUnformatted("Cache Entries:");
     ImGui::BeginChild("AssetManagerCacheList", ImVec2(0, 160), true);
-    for (auto& kv : m_cache) {
+    for (auto& kv : m_cache_) {
         if (filter[0] && kv.first.find(filter) == std::string::npos) continue;
         ImGui::Text("%s (size=%zu bytes)", kv.first.c_str(), kv.second.size());
     }
@@ -292,9 +297,9 @@ void AssetManager::DrawDebugGUI()
 std::vector<std::string> AssetManager::GetCachedAssetNames(bool onlyModelExt) const {
     std::vector<std::string> result;
     {
-        std::lock_guard<std::mutex> lk(m_mtx);
-        result.reserve(m_cache.size());
-        for (auto& kv : m_cache) {
+        std::lock_guard<std::mutex> lk(m_mtx_);
+        result.reserve(m_cache_.size());
+        for (auto& kv : m_cache_) {
             if (!onlyModelExt) {
                 result.push_back(kv.first);
             }
@@ -319,9 +324,9 @@ std::vector<std::string> AssetManager::GetCachedTextureNames() const{
     static const char* exts[] = { ".png", ".jpg", ".jpeg", ".tga", ".dds", ".bmp", ".hdr" };
     std::vector<std::string> result;
     {
-        std::lock_guard<std::mutex> lk(m_mtx);
-        result.reserve(m_cache.size());
-        for (auto& kv : m_cache) {
+        std::lock_guard<std::mutex> lk(m_mtx_);
+        result.reserve(m_cache_.size());
+        for (auto& kv : m_cache_) {
             std::string lower = kv.first;
             for (auto& c : lower) c = (char)tolower(c);
             auto hasExt = [&](const char* ext)->bool {

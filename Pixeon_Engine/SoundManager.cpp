@@ -13,6 +13,20 @@ SoundManager* SoundManager::Instance()
     return s_instance;
 }
 
+void SoundManager::DeleteInstance() {
+    if (s_instance) {
+        s_instance->UnInit();
+        delete s_instance;
+        s_instance = nullptr;
+    }
+}
+
+void SoundManager::UnInit() {
+    std::lock_guard<std::mutex> lk(m_mtx);
+    m_cache.clear();
+    m_frame = 0;
+}
+
 std::shared_ptr<SoundResource> SoundManager::LoadOrGet(const std::string& logicalName, bool streaming) {
     std::lock_guard<std::mutex> lk(m_mtx);
     m_frame++;

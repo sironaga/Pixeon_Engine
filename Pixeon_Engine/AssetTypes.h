@@ -1,6 +1,8 @@
 // アセットの種類を定義するヘッダーファイル
 // 2025/09/29 By Akino
-#pragma once
+#ifndef ASSETTYPES_H
+#define ASSETTYPES_H
+
 #include <string>
 #include <memory>
 #include <vector>
@@ -88,3 +90,5 @@ struct ModelVertex {
     uint32_t boneIndices[4];
     float boneWeights[4];
 };
+
+#endif // ASSETTYPES_H

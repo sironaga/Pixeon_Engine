@@ -1,4 +1,6 @@
-#pragma once
+#ifndef HASHUTIL_H
+#define HASHUTIL_H
+
 #include <cstdint>
 #include <cstddef>
 #include <array>
@@ -41,3 +43,5 @@ namespace HashUtil {
     }
 
 } 
+
+#endif // !HASHUTIL_H

@@ -1,6 +1,8 @@
 // モデルの共有リソースを管理するシングルトンクラス
 
-#pragma once
+#ifndef MODELMANAGER_H
+#define MODELMANAGER_H
+
 #include "AssetTypes.h"
 #include "assimp/Importer.hpp"
 #include "assimp/scene.h"
@@ -9,13 +11,12 @@
 #include <memory>
 #include <mutex>
 
-
-
 class ModelManager {
 public:
     static ModelManager* Instance();
 	static void DeleteInstance();
     std::shared_ptr<ModelSharedResource> LoadOrGet(const std::string& logicalName);
+    void UnInit();
     void GarbageCollect();
     void DrawDebugGUI();
 private:
@@ -47,3 +48,5 @@ private:
     std::mutex m_mtx;
 	static ModelManager* s_instance;
 };
+
+#endif // MODELMANAGER_H

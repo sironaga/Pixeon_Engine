@@ -1,3 +1,4 @@
+
 #define NOMINMAX
 #include "ModelManager.h"
 #include "AssetManager.h"
@@ -52,9 +53,16 @@ ModelManager* ModelManager::Instance() {
 
 void ModelManager::DeleteInstance() {
     if (s_instance) {
+		s_instance->UnInit();
         delete s_instance;
         s_instance = nullptr;
     }
+}
+
+void ModelManager::UnInit() {
+    std::lock_guard<std::mutex> lk(m_mtx);
+    m_cache.clear();
+    m_frame = 0;
 }
 
 std::shared_ptr<ModelSharedResource> ModelManager::LoadOrGet(const std::string& logicalName) {

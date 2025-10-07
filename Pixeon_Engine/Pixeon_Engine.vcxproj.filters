@@ -98,9 +98,6 @@
     <ClCompile Include="IMGUI\imgui_widgets.cpp">
       <Filter>ソース ファイル\GUI\Internal processing</Filter>
     </ClCompile>
-    <ClCompile Include="Main.cpp">
-      <Filter>ソース ファイル\App</Filter>
-    </ClCompile>
     <ClCompile Include="Scene.cpp">
       <Filter>ソース ファイル\BaseClass</Filter>
     </ClCompile>
@@ -161,6 +158,12 @@
     <ClCompile Include="LightComponent.cpp">
       <Filter>ソース ファイル\Component</Filter>
     </ClCompile>
+    <ClCompile Include="EngineManager.cpp">
+      <Filter>ソース ファイル\App</Filter>
+    </ClCompile>
+    <ClCompile Include="File.cpp">
+      <Filter>ソース ファイル\Sys</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="content_Item.h">
@@ -207,9 +210,6 @@
     </ClInclude>
     <ClInclude Include="Scene.h">
       <Filter>ソース ファイル\BaseClass</Filter>
-    </ClInclude>
-    <ClInclude Include="Main.h">
-      <Filter>ソース ファイル\App</Filter>
     </ClInclude>
     <ClInclude Include="GameRenderTarget.h">
       <Filter>ソース ファイル\Sys</Filter>
@@ -274,12 +274,15 @@
     <ClInclude Include="LightComponent.h">
       <Filter>ソース ファイル\Component</Filter>
     </ClInclude>
+    <ClInclude Include="EngineManager.h">
+      <Filter>ソース ファイル\App</Filter>
+    </ClInclude>
+    <ClInclude Include="File.h">
+      <Filter>ソース ファイル\Sys</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="実装リスト.txt">
-      <Filter>リソース ファイル\Text</Filter>
-    </Text>
-    <Text Include="..\Pixeon_Engine仕様書.txt">
+    <Text Include="仕様書.txt">
       <Filter>リソース ファイル\Text</Filter>
     </Text>
   </ItemGroup>

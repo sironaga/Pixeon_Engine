@@ -1,17 +1,22 @@
-// DLLのエントリーポイント
-// コアモジュール
+/*
+* Engine StartUp
+* 制作者: アキノ
+* コーディング規約: Google C++ Style Guide
+* https://ttsuki.github.io/styleguide/cppguide.ja.html
+*/
 
 #include "System.h"
-#include "Main.h"
+#include "EngineManager.h"
 #include "IMGUI/imgui_impl_win32.h" 
 #include "IMGUI/imgui_impl_dx11.h"
 #include "StartUp.h"
 
-#define VERSION (1)
-int g_nScreenWidth = 1920;
+// バージョン
+#define VERSION (100)
+int g_nScreenWidth	= 1920;
 int g_nScreenHeight = 1080;
-bool g_bInit = false;
-bool g_bRun = false;
+bool g_bInit		= false;
+bool g_bRun			= false;
 
 extern "C" {
 
@@ -20,30 +25,30 @@ extern "C" {
 		return VERSION;
 	}
 
-	__declspec(dllexport) int SoftInit(const EngineConfig& config){
+	__declspec(dllexport) int SoftInit(const EngineManager::EngineConfig& config){
 		int nResult = 0;
-		nResult = Init(config);
+		nResult = EngineManager::GetInstance()->Init(config);
 		g_nScreenHeight = config.screenHeight;
-		g_nScreenWidth = config.screenWidth;
-		g_bRun = true;
+		g_nScreenWidth	= config.screenWidth;
+		g_bRun	= true;
 		g_bInit = true;
 		return nResult;
 	}
 
 	__declspec(dllexport) void SoftUpdate(HWND hwnd){
-		Update();
+		EngineManager::GetInstance()->Update();
 	}
 
 	__declspec(dllexport) void SoftDraw() {
-		Draw();
+		EngineManager::GetInstance()->Draw();
 	}
 
 	__declspec(dllexport) void SoftShutDown(){
-		UnInit();
+		EngineManager::GetInstance()->UnInit();
+		EngineManager::DeleteInstance();
 	}
 
 	__declspec(dllexport) bool IsEngineRunning(){
-
 		return g_bRun;
 	}
 
