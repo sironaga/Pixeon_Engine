@@ -5,13 +5,14 @@
 #include "IMGUI/imgui_impl_win32.h"
 #include "IMGUI/imgui_internal.h"
 #include "System.h"
-#include "Main.h"
 #include "StartUp.h"
 #include "SettingManager.h"
 #include "SceneManger.h"
 #include "Object.h"
 #include "Component.h"
 #include "ComponentManager.h"
+#include "File.h"
+
 void EditrGUI::ShowInspector()
 {
     ImGui::Begin(ShiftJISToUTF8("インスペクター").c_str());

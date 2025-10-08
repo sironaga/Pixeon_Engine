@@ -5,12 +5,12 @@
 #include "IMGUI/imgui_impl_win32.h"
 #include "IMGUI/imgui_internal.h"
 #include "System.h"
-#include "Main.h"
 #include "StartUp.h"
 #include "SettingManager.h"
 #include "SceneManger.h"
 #include "Object.h"
 #include "Scene.h"
+#include "File.h"
 
 void EditrGUI::ShowHierarchy()
 {

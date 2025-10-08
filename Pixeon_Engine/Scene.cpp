@@ -1,10 +1,10 @@
 #include "Scene.h"
 #include "Object.h"
-#include "Main.h"
 #include "Component.h"
 #include "ComponentManager.h"
 #include "SettingManager.h"
 #include "LightComponent.h"
+#include "EngineManager.h"
 #include <thread>
 #include <mutex>
 #include <nlohmann/json.hpp>
@@ -169,7 +169,7 @@ void Scene::Draw() {
 // シーンの保存　json形式の状態のまま拡張子を.sceneに変更する
 void Scene::SaveToFile(){
 	std::vector<Object*> SaveObjects;
-	if(IsInGame()){
+	if(EngineManager::GetInstance()->IsInGame()){
 		SaveObjects = _SaveObjects;
 	}
 	else{
