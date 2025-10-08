@@ -103,8 +103,7 @@ void EngineManager::UnInit() {
 
 
 ID3D11ShaderResourceView* EngineManager::GetGameRender(){
-	if(!m_bInGame_)return m_gameRenderTarget_->GetShaderResourceView();
-	return nullptr;
+	return m_gameRenderTarget_->GetShaderResourceView();
 }
 
 
