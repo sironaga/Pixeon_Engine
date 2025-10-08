@@ -5,7 +5,8 @@
 #include "IMGUI/imgui_impl_win32.h"
 #include "IMGUI/imgui_internal.h"
 #include "System.h"
-#include "Main.h"
+#include "File.h"
+#include "EngineManager.h"
 #include "StartUp.h"
 #include "SettingManager.h"
 #include "ShaderManager.h"
@@ -44,7 +45,7 @@ void EditrGUI::Init(){
     io.IniFilename = nullptr;
 
     io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/meiryo.ttc", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
-    ImGui_ImplWin32_Init(GetWindowHandle());
+    ImGui_ImplWin32_Init(EngineManager::GetInstance()->GetWindowHandle());
     ImGui_ImplDX11_Init(DirectX11::GetInstance()->GetDevice(), DirectX11::GetInstance()->GetContext());
 
     ImGuiStyle& style = ImGui::GetStyle();
@@ -188,9 +189,9 @@ void EditrGUI::WindowGUI()
             if (ImGui::MenuItem(ShiftJISToUTF8("シェーダーエディタ").c_str())) ShowShaderEditorWindow = true;
 			
             if (ImGui::MenuItem(ShiftJISToUTF8("フォルダ").c_str())) {
-                std::string Path = GetExePath();
-                Path = RemoveExeFromPath(Path);
-				OpenExplorer(Path);
+                std::string Path = File::GetExePath();
+                Path = File::RemoveExeFromPath(Path);
+                File::OpenExplorer(Path);
             }
 
             if (ImGui::MenuItem(ShiftJISToUTF8("外部ツール").c_str())) ShowExternalToolsWindow = true;
@@ -222,7 +223,7 @@ void EditrGUI::WindowGUI()
 			ImGui::TextWrapped(ShiftJISToUTF8("アセットフォルダ内のファイルを一つのアーカイブファイルにまとめます。アーカイブ化には時間がかかる場合があります。").c_str());
             if (ImGui::Button(ShiftJISToUTF8("アーカイブ化実行").c_str(), ImVec2(120, 0))) {
                 bool OK = false;
-                OK = RunArchiveTool(SettingManager::GetInstance()->GetPackingToolFilePath(),
+                OK = File::RunArchiveTool(SettingManager::GetInstance()->GetPackingToolFilePath(),
                     SettingManager::GetInstance()->GetAssetsFilePath(),
                     SettingManager::GetInstance()->GetArchiveFilePath() + "/assets.PixAssets");
                 if(OK)
@@ -313,7 +314,7 @@ void EditrGUI::ShowGameView()
     ImGui::Separator();
 
     // --- ゲーム画面（プレビュー） ---
-    ID3D11ShaderResourceView* srv = GetGameRender();
+    ID3D11ShaderResourceView* srv = EngineManager::GetInstance()->GetGameRender();
     ImVec2 size = ImGui::GetContentRegionAvail();
     if (srv) {
         ImGui::Image((ImTextureID)srv, size);
