@@ -1,6 +1,11 @@
 #ifndef ENGINE_MANAGER_H
 #define ENGINE_MANAGER_H
 
+// エンジンの管理クラス
+// 全体管理を行う
+// シングルトン
+
+
 #include <Windows.h>
 #include <d3d11.h>
 #include <string> 

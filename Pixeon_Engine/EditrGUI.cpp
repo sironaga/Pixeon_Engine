@@ -294,20 +294,16 @@ void EditrGUI::ShowGameView()
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 6));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 6));
 
-	bool isGamePlaying = false; // ゲーム実行中かどうかのフラグ
+	bool isGamePlaying = EngineManager::GetInstance()->IsInGame();
 
     // 再生・停止ボタン
     if (!isGamePlaying) {
-        if (ImGui::Button(ShiftJISToUTF8("再生").c_str(), ImVec2(70, 0))) {
-            isGamePlaying = true;
-            // --- ここでゲーム実行処理を呼ぶ ---
-        }
+        if (ImGui::Button(ShiftJISToUTF8("再生").c_str(), ImVec2(70, 0))) isGamePlaying = true;
     } else {
-        if (ImGui::Button(ShiftJISToUTF8("停止").c_str(), ImVec2(70, 0))) {
-            isGamePlaying = false;
-            // --- ここでゲーム停止処理を呼ぶ ---
-        }
+        if (ImGui::Button(ShiftJISToUTF8("停止").c_str(), ImVec2(70, 0))) isGamePlaying = false;
     }
+
+	EngineManager::GetInstance()->SetInGame(isGamePlaying);
 
     ImGui::PopStyleVar(2);
 
@@ -316,12 +312,10 @@ void EditrGUI::ShowGameView()
     // --- ゲーム画面（プレビュー） ---
     ID3D11ShaderResourceView* srv = EngineManager::GetInstance()->GetGameRender();
     ImVec2 size = ImGui::GetContentRegionAvail();
-    if (srv) {
+    if (srv)
         ImGui::Image((ImTextureID)srv, size);
-    }
-    else {
-        ImGui::Text("SRVがnullです");
-    }
+    else
+        ImGui::Text("SRVがNullです");
     ImGui::End();
 }
 
