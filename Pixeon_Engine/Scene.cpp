@@ -244,6 +244,7 @@ void Scene::LoadToFile(){
 	// Objects‚Ì“Ç‚İ‚İ
 	for (const auto& objData : sceneData["Objects"]) {
 		Object* newObj = new Object();
+		newObj->SetParentScene(this);
 		newObj->SetObjectName(objData["Name"].get<std::string>());
 		// Transform‚Ì“Ç‚İ‚İ
 		auto pos = objData["Transform"]["Position"];
