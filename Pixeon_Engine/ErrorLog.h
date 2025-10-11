@@ -25,37 +25,37 @@ public:
         bool fatal = false,
         int perMsgLimit = 1)
     {
-        std::lock_guard<std::mutex> lk(m_mtx);
-        std::string key = tag + "||" + message;
-        auto& e = m_entries[key];
-        if (e.count == 0) {
-            e.tag = tag;
-            e.message = message;
-        }
-        e.count++;
+        //std::lock_guard<std::mutex> lk(m_mtx);
+        //std::string key = tag + "||" + message;
+        //auto& e = m_entries[key];
+        //if (e.count == 0) {
+        //    e.tag = tag;
+        //    e.message = message;
+        //}
+        //e.count++;
 
-        // 常にデバッグ出力
-        std::string dbg = "[ERROR][" + tag + "] " + message + " (count=" + std::to_string(e.count) + ")\n";
-        OutputDebugStringA(dbg.c_str());
+        //// 常にデバッグ出力
+        //std::string dbg = "[ERROR][" + tag + "] " + message + " (count=" + std::to_string(e.count) + ")\n";
+        //OutputDebugStringA(dbg.c_str());
 
-        // 表示条件:
-        // fatal の場合 → 常に MessageBox
-        // それ以外 → 初回 (e.count==1) か perMsgLimit 未満表示の間のみ
-        bool needBox = false;
-        if (fatal) {
-            needBox = true;
-        }
-        else if (!e.shownMessageBox && e.count <= perMsgLimit) {
-            needBox = true;
-        }
+        //// 表示条件:
+        //// fatal の場合 → 常に MessageBox
+        //// それ以外 → 初回 (e.count==1) か perMsgLimit 未満表示の間のみ
+        //bool needBox = false;
+        //if (fatal) {
+        //    needBox = true;
+        //}
+        //else if (!e.shownMessageBox && e.count <= perMsgLimit) {
+        //    needBox = true;
+        //}
 
-        if (needBox) {
-            std::string boxTitle = fatal ? ("FATAL: " + tag) : ("Error: " + tag);
-            MessageBoxA(nullptr, message.c_str(), boxTitle.c_str(), MB_OK | MB_ICONERROR);
-            if (!fatal && e.count >= perMsgLimit) {
-                e.shownMessageBox = true;
-            }
-        }
+        //if (needBox) {
+        //    std::string boxTitle = fatal ? ("FATAL: " + tag) : ("Error: " + tag);
+        //    MessageBoxA(nullptr, message.c_str(), boxTitle.c_str(), MB_OK | MB_ICONERROR);
+        //    if (!fatal && e.count >= perMsgLimit) {
+        //        e.shownMessageBox = true;
+        //    }
+        //}
     }
 
     // 警告（必要なら拡張）
